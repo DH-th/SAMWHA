@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>스마트 팩토리 다중 체크리스트 (실시간 연동)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 10px; color: #333; }
+  .container { max-width: 800px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  h2 { text-align: center; color: #2c3e50; margin-bottom: 5px; font-size: 22px; }
+  .live-status { text-align: center; font-size: 12px; color: #2ecc71; margin-bottom: 15px; font-weight: bold; }
+  
+  .date-container { text-align: center; margin-bottom: 15px; background: #e8f4f8; padding: 10px; border-radius: 8px; font-weight: bold; color: #2980b9; }
+  .date-container input[type="date"] { padding: 8px; border: 1px solid #bce8f1; border-radius: 4px; font-size: 16px; font-weight: bold; color: #2c3e50; outline: none; }
+
+  /* 3단 탭 버튼 스타일 */
+  .tabs { display: flex; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; }
+  .tab-btn { flex: 1; padding: 10px 5px; border: none; background: none; font-size: 15px; font-weight: bold; color: #7f8c8d; cursor: pointer; white-space: nowrap; }
+  .tab-btn.active { color: #2980b9; border-bottom: 3px solid #2980b9; }
+
+  /* 상단 선택 영역 */
+  .selector-group { display: flex; gap: 8px; margin-bottom: 15px; }
+  select { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #bdc3c7; font-size: 14px; outline: none; background: #fff; }
+  #addSheetBtn { display: none; background: #2980b9; color: white; border: none; border-radius: 6px; padding: 0 12px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 14px; }
+
+  /* 리스트 스타일 */
+  .item-list { display: flex; flex-direction: column; gap: 8px; }
+  
+  /* 현장 점검 상단 헤더 (오전/오후 표기) */
+  .worker-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 10px 10px 10px; margin-bottom: 5px; font-weight: bold; color: #2c3e50; border-bottom: 2px solid #bdc3c7; gap: 10px; }
+  .header-title { flex: 1; font-size: 14px; min-width: 0; }
+  /* 버튼 영역의 너비를 절대 줄어들지 않도록 min-width 고정 */
+  .header-labels { display: flex; gap: 8px; width: 150px; min-width: 150px; justify-content: space-between; flex-shrink: 0; }
+  .header-labels div { flex: 1; text-align: center; background: #e8f4f8; padding: 6px 0; border-radius: 6px; font-size: 13px; color: #2980b9; border: 1px solid #bce8f1; white-space: nowrap; }
+
+  /* 개별 항목 열 스타일 */
+  .item-row { display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 12px 10px; border-radius: 8px; border: 1px solid #eee; gap: 10px; }
+  
+  /* 텍스트가 넘치면 무조건 줄바꿈 되도록 (min-width: 0, word-break 속성 추가) */
+  .item-name { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; word-break: break-word; overflow-wrap: break-word; white-space: pre-wrap; line-height: 1.3; }
+  
+  /* 오전/오후 입력칸 컨테이너 (절대 밀리지 않게 고정) */
+  .am-pm-inputs { display: flex; gap: 8px; width: 150px; min-width: 150px; justify-content: space-between; flex-shrink: 0; }
+
+  /* 버튼 및 입력창 유동적 꽉참 지정 */
+  .check-btn { flex: 1; padding: 10px 0; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; box-sizing: border-box; white-space: nowrap; }
+  .unchecked { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  .checked { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+  
+  .number-input { width: 100%; flex: 1; padding: 10px 2px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 13px; text-align: center; outline: none; box-sizing: border-box; }
+  .number-input:focus { border-color: #3498db; box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); }
+
+  /* 관리자 설정 모드 스타일 */
+  .manager-notice { display: none; background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; margin-bottom: 10px; font-size: 14px; border: 1px solid #ffeeba; }
+  .type-label { font-size: 12px; color: #7f8c8d; width: 45px; font-weight: bold; text-align: center; background: #ecf0f1; padding: 4px; border-radius: 4px; flex-shrink: 0; }
+  textarea.edit-input { flex: 1; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; resize: vertical; min-height: 45px; font-family: inherit; line-height: 1.4; min-width: 0; word-break: break-word; }
+  input.edit-input { flex: 1; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; min-width: 0; }
+  .sheet-name-edit { background: #e8f4f8; border: 1px solid #bce8f1; margin-bottom: 15px; }
+  .del-btn { background-color: #e74c3c; color: white; border: none; border-radius: 4px; padding: 10px; font-weight: bold; cursor: pointer; white-space: nowrap; height: fit-content; flex-shrink: 0; }
+  .add-btn-group { display: flex; gap: 10px; margin-top: 10px; }
+  .add-item-btn { flex: 1; color: white; border: none; border-radius: 6px; padding: 12px; font-weight: bold; cursor: pointer; font-size: 14px; white-space: nowrap; }
+  .btn-bool { background-color: #2ecc71; } 
+  .btn-num { background-color: #f39c12; }  
+  .empty-msg { text-align: center; color: #7f8c8d; padding: 30px; font-weight: bold; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc; }
+
+  /* 모바일 친화적 통합 현황 (진행률 바 방식) 스타일 */
+  .dashboard-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
+  @media (min-width: 768px) { .dashboard-container { grid-template-columns: 1fr 1fr; } } 
+  .dash-card { background: #fff; border: 1px solid #bdc3c7; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .dash-card-header { background: #34495e; color: white; padding: 10px 15px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; }
+  
+  .dash-sheet-row { padding: 12px 10px; border-bottom: 1px solid #ecf0f1; }
+  .dash-sheet-row:last-child { border-bottom: none; }
+  .dash-sheet-name { font-weight: bold; font-size: 14px; color: #2980b9; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; word-break: break-word; min-width: 0; }
+  
+  .dash-shift-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .dash-shift-group:last-child { margin-bottom: 0; }
+  
+  /* 오전/오후 글자 영역 고정 */
+  .dash-shift-label { width: 35px; min-width: 35px; font-size: 13px; font-weight: bold; color: #7f8c8d; text-align: center; flex-shrink: 0; white-space: nowrap; }
+  
+  /* 프로그레스 바 스타일 */
+  .dash-progress-track { flex: 1; height: 16px; background-color: #f8d7da; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #f5c6cb; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); min-width: 50px; }
+  .dash-progress-fill { height: 100%; background-color: #2ecc71; transition: width 0.4s ease-in-out; }
+  
+  /* 달성률 숫자 영역 고정 */
+  .dash-progress-text { width: 55px; min-width: 55px; font-size: 12px; font-weight: bold; color: #2c3e50; text-align: right; flex-shrink: 0; white-space: nowrap; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🏭 스마트 라인 점검표</h2>
+  <div class="live-status">🟢 실시간 서버 연결됨</div>
+
+  <div class="date-container" id="dateSection">
+    📅 점검 일자: <input type="date" id="dateSelect" onchange="dateChanged()">
+    <span id="dayOfWeek"></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-worker" onclick="switchTab('worker')">🧑‍🔧 현장 점검</button>
+    <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">📊 통합 현황</button>
+    <button class="tab-btn" id="tab-manager" onclick="switchTab('manager')">👨‍💼 관리자 설정</button>
+  </div>
+
+  <div id="excelExportSection" style="display: none; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #bdc3c7; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <div style="font-weight: bold; margin-bottom: 10px; font-size: 14px; color: #2c3e50;">📊 월별 점검기록 엑셀 다운로드</div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <input type="month" id="excelMonth" style="padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 13px; outline: none; font-family: inherit;">
+      <button onclick="downloadExcel()" style="background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap;">파일 추출</button>
+    </div>
+  </div>
+
+  <div id="managerNotice" class="manager-notice">⚠️ 현재 선택된 라인의 항목만 독립적으로 수정됩니다.</div>
+
+  <div class="selector-group" id="selectorGroup">
+    <select id="lineSelect" onchange="lineChanged()"></select>
+    <select id="categorySelect" onchange="categoryChanged()">
+      <option value="MI">MI 공정</option>
+      <option value="Machine">Machine 공정</option>
+    </select>
+    <select id="sheetSelect" onchange="renderItems()"></select>
+    <button id="addSheetBtn" onclick="addSheet()">+ 시트 추가</button>
+  </div>
+
+  <div id="contentArea" class="item-list">
+    <div class="empty-msg">데이터를 불러오는 중입니다...</div>
+  </div>
+</div>
+
+<script type="module">
+  // 1. Firebase 라이브러리 불러오기
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+  // 2. 전달해주신 Firebase 설정
+  const firebaseConfig = {
+    apiKey: "AIzaSyBaXL7w9axRV5GwmNXcwpQkNeBIv6boSj8",
+    authDomain: "smart-factory-f5aef.firebaseapp.com",
+    databaseURL: "https://smart-factory-f5aef-default-rtdb.firebaseio.com",
+    projectId: "smart-factory-f5aef",
+    storageBucket: "smart-factory-f5aef.firebasestorage.app",
+    messagingSenderId: "262726766464",
+    appId: "1:262726766464:web:ac60c3e0c8b51af0dc3b65",
+    measurementId: "G-FS0KTF3T20"
+  };
+
+  // 3. Firebase 초기화
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dbRef = ref(db, 'smartFactoryData_V8'); // 데이터베이스 저장 위치
+
+  function generateId() { return 'id_' + Math.random().toString(36).substr(2, 9); }
+
+  let masterData = null;
+  let currentTab = 'worker';
+  let currentDate = '';
+  let isInitialized = false;
+
+  // 4. 실시간 데이터 수신 대기
+  onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    
+    if (data) {
+      masterData = data;
+      if (!masterData.recordsByDate) masterData.recordsByDate = {};
+    } else {
+      masterData = { lines: {}, recordsByDate: {} };
+      for (let i = 1; i <= 10; i++) {
+        masterData.lines[`Line${i}`] = {
+          MI: [ { id: generateId(), name: 'MI 기본점검', items: [ 
+            {id: generateId(), text: '정전기 링 착용\n(필수 지참)', type: 'boolean'}, 
+            {id: generateId(), text: '납땜 온도 (℃)', type: 'number'} 
+          ] } ],
+          Machine: [ { id: generateId(), name: 'Machine 기본점검', items: [ 
+            {id: generateId(), text: '설비 가동 상태', type: 'boolean'} 
+          ] } ]
+        };
+      }
+      saveData();
+    }
+
+    if (!isInitialized) {
+      initSelectBoxes();
+      initDate();
+      isInitialized = true;
+    } else {
+      renderItems(); 
+    }
+  });
+
+  function saveData() { 
+    set(dbRef, masterData); 
+  }
+
+  function initDate() {
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(today - offset)).toISOString().split('T')[0];
+    document.getElementById('dateSelect').value = localISOTime;
+    
+    // 엑셀 추출 기본 월 설정 (현재 월)
+    document.getElementById('excelMonth').value = localISOTime.substring(0, 7); 
+    
+    dateChanged();
+  }
+
+  function dateChanged() {
+    currentDate = document.getElementById('dateSelect').value;
+    const days = ['(일)', '(월)', '(화)', '(수)', '(목)', '(금)', '(토)'];
+    document.getElementById('dayOfWeek').innerText = days[new Date(currentDate).getDay()];
+    if (!masterData.recordsByDate[currentDate]) {
+      masterData.recordsByDate[currentDate] = {};
+      saveData();
+    }
+    renderItems();
+  }
+
+  function initSelectBoxes() {
+    const lineSel = document.getElementById('lineSelect');
+    lineSel.innerHTML = '';
+    for(let i=1; i<=10; i++) lineSel.add(new Option(`Line ${i}`, `Line${i}`));
+    updateSheetDropdown();
+  }
+
+  function lineChanged() {
+    updateSheetDropdown(); 
+    renderItems();
+  }
+
+  function categoryChanged() {
+    updateSheetDropdown();
+    renderItems();
+  }
+
+  function updateSheetDropdown(forceSelectId = null) {
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const sheetSel = document.getElementById('sheetSelect');
+    const currentVal = sheetSel.value; 
+    
+    sheetSel.innerHTML = ''; 
+    const sheets = masterData.lines[line][category] || [];
+    
+    sheets.forEach(sheet => {
+      sheetSel.add(new Option(sheet.name, sheet.id));
+    });
+
+    if (forceSelectId) {
+      sheetSel.value = forceSelectId;
+    } else if (currentVal && sheets.find(s => s.id === currentVal)) {
+      sheetSel.value = currentVal;
+    }
+  }
+
+  function renderItems() {
+    if (!masterData) return; 
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const sheetId = document.getElementById('sheetSelect').value;
+    const content = document.getElementById('contentArea');
+    
+    // 텍스트/숫자 입력 중일 때는 화면 새로고침 스킵
+    const activeEl = document.activeElement;
+    if (activeEl) {
+        const tag = activeEl.tagName;
+        if ((tag === 'INPUT' && activeEl.type !== 'date') || tag === 'TEXTAREA') {
+            return; 
+        }
+    }
+
+    content.innerHTML = ''; 
+
+    // 모바일 최적화된 대시보드 모드 (시트별 프로그레스 바 형태)
+    if (currentTab === 'dashboard') {
+      let html = `<div class="dashboard-container">`;
+      let hasAnyData = false;
+
+      for (let i = 1; i <= 10; i++) {
+        let currentLine = `Line${i}`;
+        
+        ['MI', 'Machine'].forEach(cat => {
+          let sheets = masterData.lines[currentLine][cat] || [];
+          let totalItemsInCat = sheets.reduce((sum, sheet) => sum + sheet.items.length, 0);
+          
+          if (totalItemsInCat === 0) return; 
+          hasAnyData = true;
+
+          html += `<div class="dash-card">
+                     <div class="dash-card-header">
+                       <span>🏭 Line ${i}</span>
+                       <span>${cat} 공정</span>
+                     </div>`;
+          
+          // 시트별 진행률 렌더링
+          sheets.forEach(sheet => {
+            let total = sheet.items.length;
+            if(total === 0) return;
+
+            let amCount = 0;
+            let pmCount = 0;
+
+            sheet.items.forEach(item => {
+              let keyAM = `${currentLine}_${cat}_${sheet.id}_${item.id}_AM`;
+              let keyPM = `${currentLine}_${cat}_${sheet.id}_${item.id}_PM`;
+              
+              let valAM = masterData.recordsByDate[currentDate] && masterData.recordsByDate[currentDate][keyAM];
+              let valPM = masterData.recordsByDate[currentDate] && masterData.recordsByDate[currentDate][keyPM];
+              
+              if (item.type === 'number') {
+                if (valAM !== undefined && valAM !== null && valAM !== '') amCount++;
+                if (valPM !== undefined && valPM !== null && valPM !== '') pmCount++;
+              } else {
+                if (valAM === true) amCount++;
+                if (valPM === true) pmCount++;
+              }
+            });
+
+            // 완료율(%) 계산
+            let amPercent = Math.round((amCount / total) * 100);
+            let pmPercent = Math.round((pmCount / total) * 100);
+
+            html += `<div class="dash-sheet-row">
+                       <div class="dash-sheet-name">📋 ${sheet.name}</div>
+                       <div class="dash-shift-group">
+                         <div class="dash-shift-label">오전</div>
+                         <div class="dash-progress-track">
+                           <div class="dash-progress-fill" style="width: ${amPercent}%;"></div>
+                         </div>
+                         <div class="dash-progress-text">${amCount} / ${total}</div>
+                       </div>
+                       <div class="dash-shift-group">
+                         <div class="dash-shift-label">오후</div>
+                         <div class="dash-progress-track">
+                           <div class="dash-progress-fill" style="width: ${pmPercent}%;"></div>
+                         </div>
+                         <div class="dash-progress-text">${pmCount} / ${total}</div>
+                       </div>
+                     </div>`;
+          });
+          html += `</div>`;
+        });
+      }
+
+      if(!hasAnyData) {
+        html += `<div class="empty-msg">등록된 점검 항목이 없습니다.</div>`;
+      }
+
+      html += `</div>`;
+      content.innerHTML = html;
+      return; 
+    }
+
+    // 작업자 및 관리자 모드
+    const sheets = masterData.lines[line]?.[category] || [];
+    const currentSheet = sheets.find(s => s.id === sheetId);
+
+    if (!currentSheet) {
+      content.innerHTML = `<div class="empty-msg">선택한 라인/공정에 등록된 시트가 없습니다.<br>관리자 설정에서 시트를 추가해주세요.</div>`;
+      return;
+    }
+
+    if (currentTab === 'manager') {
+      let sheetNameRow = document.createElement('div');
+      sheetNameRow.className = 'item-row sheet-name-edit';
+      sheetNameRow.innerHTML = `
+        <div style="font-weight:bold; white-space:nowrap; color:#2980b9;">시트 이름:</div>
+        <input type="text" class="edit-input" value="${currentSheet.name}" onchange="window.updateSheetName('${currentSheet.id}', this.value)">
+        <button class="del-btn" onclick="window.deleteSheet('${currentSheet.id}')">시트 삭제</button>
+      `;
+      content.appendChild(sheetNameRow);
+    } else if (currentTab === 'worker') {
+      let headerRow = document.createElement('div');
+      headerRow.className = 'worker-header';
+      headerRow.innerHTML = `
+        <div class="header-title">점검 내용</div>
+        <div class="header-labels">
+          <div>오전</div>
+          <div>오후</div>
+        </div>
+      `;
+      content.appendChild(headerRow);
+    }
+
+    currentSheet.items.forEach((item) => {
+      let row = document.createElement('div');
+      row.className = 'item-row';
+
+      if (currentTab === 'worker') {
+        let keyAM = `${line}_${category}_${sheetId}_${item.id}_AM`;
+        let keyPM = `${line}_${category}_${sheetId}_${item.id}_PM`;
+        let valAM = masterData.recordsByDate[currentDate]?.[keyAM];
+        let valPM = masterData.recordsByDate[currentDate]?.[keyPM];
+
+        row.innerHTML = `<div class="item-name">${item.text}</div>`;
+
+        let inputsContainer = document.createElement('div');
+        inputsContainer.className = 'am-pm-inputs';
+
+        const createInput = (key, val) => {
+          if (item.type === 'number') {
+            let input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'number-input';
+            input.placeholder = '수치 입력';
+            input.min = '0'; 
+            input.step = '0.01';
+            if (val !== undefined) input.value = val;
+            
+            input.oninput = function() { if(this.value < 0) this.value = 0; };
+            input.onchange = (e) => {
+              if(e.target.value < 0) e.target.value = 0; 
+              masterData.recordsByDate[currentDate][key] = e.target.value;
+              saveData();
+            };
+            return input;
+          } else {
+            let isChecked = val || false;
+            let btn = document.createElement('button');
+            btn.className = `check-btn ${isChecked ? 'checked' : 'unchecked'}`;
+            btn.innerText = isChecked ? '완료' : '미체크';
+            
+            btn.onclick = () => {
+              masterData.recordsByDate[currentDate][key] = !masterData.recordsByDate[currentDate][key];
+              saveData();
+            };
+            return btn;
+          }
+        };
+
+        inputsContainer.appendChild(createInput(keyAM, valAM));
+        inputsContainer.appendChild(createInput(keyPM, valPM));
+        
+        row.appendChild(inputsContainer);
+
+      } else if (currentTab === 'manager') {
+        let typeLabel = item.type === 'number' ? '[수치]' : '[체크]';
+        row.innerHTML = `
+          <div style="display: flex; gap: 10px; width: 100%; align-items: center;">
+            <div class="type-label">${typeLabel}</div>
+            <textarea class="edit-input" placeholder="항목 내용을 입력하세요 (엔터로 줄바꿈 가능)" onchange="window.updateItemText('${currentSheet.id}', '${item.id}', this.value)">${item.text}</textarea>
+            <button class="del-btn" onclick="window.deleteItem('${currentSheet.id}', '${item.id}')">삭제</button>
+          </div>
+        `;
+      }
+      content.appendChild(row);
+    });
+
+    if (currentTab === 'manager') {
+      let btnGroup = document.createElement('div');
+      btnGroup.className = 'add-btn-group';
+
+      let addBoolBtn = document.createElement('button');
+      addBoolBtn.className = 'add-item-btn btn-bool';
+      addBoolBtn.innerText = '+ 체크(O/X) 항목 추가';
+      addBoolBtn.onclick = () => window.addItem(currentSheet.id, 'boolean');
+
+      let addNumBtn = document.createElement('button');
+      addNumBtn.className = 'add-item-btn btn-num';
+      addNumBtn.innerText = '+ 수치 기입 항목 추가';
+      addNumBtn.onclick = () => window.addItem(currentSheet.id, 'number');
+
+      btnGroup.appendChild(addBoolBtn);
+      btnGroup.appendChild(addNumBtn);
+      content.appendChild(btnGroup);
+    }
+  }
+
+  function switchTab(tabId) {
+    if (tabId === 'manager') {
+      const password = prompt("관리자 비밀번호를 입력하세요:");
+      if (password !== "0000") {
+        alert("비밀번호가 일치하지 않습니다.");
+        return; 
+      }
+    }
+
+    currentTab = tabId;
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+
+    document.getElementById('selectorGroup').style.display = (tabId === 'dashboard') ? 'none' : 'flex';
+    document.getElementById('addSheetBtn').style.display = (tabId === 'manager') ? 'block' : 'none';
+    document.getElementById('managerNotice').style.display = (tabId === 'manager') ? 'block' : 'none';
+    
+    document.getElementById('excelExportSection').style.display = (tabId === 'manager') ? 'block' : 'none';
+
+    renderItems();
+  }
+
+  window.downloadExcel = function() {
+    const monthVal = document.getElementById('excelMonth').value; 
+    if(!monthVal) {
+        alert("다운로드할 월을 선택하세요.");
+        return;
+    }
+
+    if(!masterData || !masterData.recordsByDate) {
+        alert("기록된 점검 데이터가 없습니다.");
+        return;
+    }
+
+    const targetDates = Object.keys(masterData.recordsByDate)
+                              .filter(date => date.startsWith(monthVal))
+                              .sort();
+
+    if(targetDates.length === 0) {
+        alert("해당 월의 점검 기록이 없습니다.");
+        return;
+    }
+
+    const excelData = [
+        ["점검 일자", "라인", "공정", "시트 이름", "점검 항목", "입력 형식", "오전 결과", "오후 결과"]
+    ];
+
+    targetDates.forEach(date => {
+        const dayRecords = masterData.recordsByDate[date];
+        
+        for(let i = 1; i <= 10; i++) {
+            const lineKey = `Line${i}`;
+            ['MI', 'Machine'].forEach(cat => {
+                const sheets = masterData.lines[lineKey]?.[cat] || [];
+                sheets.forEach(sheet => {
+                    sheet.items.forEach(item => {
+                        const keyAM = `${lineKey}_${cat}_${sheet.id}_${item.id}_AM`;
+                        const keyPM = `${lineKey}_${cat}_${sheet.id}_${item.id}_PM`;
+                        
+                        const valAM = dayRecords[keyAM];
+                        const valPM = dayRecords[keyPM];
+                        
+                        if(valAM !== undefined || valPM !== undefined) {
+                            let strAM = valAM;
+                            let strPM = valPM;
+                            
+                            if(item.type === 'boolean') {
+                                strAM = valAM === true ? "완료(O)" : (valAM === false ? "미체크(X)" : "-");
+                                strPM = valPM === true ? "완료(O)" : (valPM === false ? "미체크(X)" : "-");
+                            } else {
+                                strAM = (valAM === undefined || valAM === '') ? "-" : valAM;
+                                strPM = (valPM === undefined || valPM === '') ? "-" : valPM;
+                            }
+                            
+                            excelData.push([
+                                date,
+                                `Line ${i}`,
+                                cat,
+                                sheet.name,
+                                item.text.replace(/\n/g, " "),
+                                item.type === 'number' ? '수치기입' : '체크(O/X)',
+                                strAM,
+                                strPM
+                            ]);
+                        }
+                    });
+                });
+            });
+        }
+    });
+
+    if(excelData.length === 1) {
+        alert("해당 월에 유효한 점검 기입 기록이 없습니다.");
+        return;
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    
+    ws['!cols'] = [
+        { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }, 
+        { wch: 35 }, { wch: 12 }, { wch: 12 }, { wch: 12 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "월별통합현황");
+    XLSX.writeFile(wb, `스마트팩토리_월별리포트_${monthVal}.xlsx`);
+  };
+
+  function addSheet() {
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const newSheet = { id: generateId(), name: '새 체크시트', items: [{ id: generateId(), text: '새 점검 항목', type: 'boolean' }] };
+    masterData.lines[line][category].push(newSheet);
+    saveData();
+    updateSheetDropdown(newSheet.id);
+  }
+
+  function deleteSheet(sheetId) {
+    if(!confirm('정말로 이 시트와 모든 항목을 삭제하시겠습니까?')) return;
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    masterData.lines[line][category] = masterData.lines[line][category].filter(s => s.id !== sheetId);
+    saveData();
+    updateSheetDropdown();
+  }
+
+  function addItem(sheetId, itemType) {
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const sheet = masterData.lines[line][category].find(s => s.id === sheetId);
+    let defaultText = itemType === 'number' ? '새 수치 항목' : '새 점검 항목';
+    sheet.items.push({ id: generateId(), text: defaultText, type: itemType });
+    saveData();
+  }
+
+  function deleteItem(sheetId, itemId) {
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const sheet = masterData.lines[line][category].find(s => s.id === sheetId);
+    sheet.items = sheet.items.filter(i => i.id !== itemId);
+    saveData();
+  }
+
+  function updateSheetName(sheetId, newName) {
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const sheet = masterData.lines[line][category].find(s => s.id === sheetId);
+    sheet.name = newName;
+    saveData();
+    updateSheetDropdown(sheetId);
+  }
+
+  function updateItemText(sheetId, itemId, newText) {
+    const line = document.getElementById('lineSelect').value;
+    const category = document.getElementById('categorySelect').value;
+    const sheet = masterData.lines[line][category].find(s => s.id === sheetId);
+    const item = sheet.items.find(i => i.id === itemId);
+    item.text = newText;
+    saveData();
+  }
+
+  window.dateChanged = dateChanged;
+  window.lineChanged = lineChanged;
+  window.categoryChanged = categoryChanged;
+  window.switchTab = switchTab;
+  window.addSheet = addSheet;
+  window.deleteSheet = deleteSheet;
+  window.updateSheetName = updateSheetName;
+  window.updateItemText = updateItemText;
+  window.addItem = addItem;
+  window.deleteItem = deleteItem;
+  window.renderItems = renderItems; 
+
+</script>
+</body>
+</html>
