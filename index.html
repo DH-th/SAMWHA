@@ -2,20 +2,16 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <title>SAMHWA SF</title>
-    <meta name="apple-mobile-web-app-title" content="SAMHWA SF">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>메인 화면</title>
 
-    <link rel="apple-touch-icon" href="mainlogo.png">
-
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
 
 :root {
     --primary-color: #4A90E2; 
-    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --bg-gradient: linear-gradient(135deg, #eef2f7 0%, #d9e4f5 100%);
     --text-main: #2c3e50;
 }
 
@@ -37,50 +33,59 @@ body {
         radial-gradient(circle at 80% 80%, rgba(120,200,180,0.25), transparent 40%),
         linear-gradient(135deg, #eef2f7, #d9e4f5);
 }
+
 /* 모바일 앱 화면 컨테이너 */
 .app-container {
     width: 100%;
     max-width: 480px;
     min-height: 100vh;
-
-    background:
-        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.5), transparent 40%),
-        radial-gradient(circle at 85% 80%, rgba(255,255,255,0.35), transparent 40%),
-        var(--bg-gradient);
-
+    
+    /* 배경 그라데이션 유지 */
+    background: var(--bg-gradient);
+    
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     position: relative;
     overflow: hidden;
 }
+
 /* 상단 헤더 */
 header {
     width: 100%;
     overflow: hidden;
-    border-bottom: 1px solid rgba(255,255,255,0.6);
+    
+    /* 로고 이미지의 완전 흰색 배경과 어우러지도록 배경색을 반투명 흰색으로 설정 */
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+    z-index: 10;
 }
 
-/* 로고 */
+/* 로고 (원래 크기를 유지하도록 max-height를 제거하고 padding을 줄임) */
 .logo {
     width: 100%;
     height: auto;
+    object-fit: contain;
     display: block;
+    padding: 0 0 10px; /* 아래쪽 여백만 살짝 */
 }
 
-/* 중간 버튼 영역 */
+/* 중간 버튼 영역 (여백 살짝 조정) */
 main {
     flex: 1;
-    padding: 50px 20px;
+    padding: 30px 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    z-index: 1;
 }
 
 .grid-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 80px 15px;
+    gap: 30px 15px; /* 위아래 간격을 살짝 더 줄임 */
 }
 
 /* 버튼 */
@@ -116,21 +121,24 @@ main {
 /* 푸터 */
 footer {
     text-align: center;
-    padding: 30px 20px 25px;
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255,255,255,0.6);
+    padding: 25px 20px 20px;
+    
+    /* 헤더와 동일한 반투명 흰색으로 설정하여 상하 통일감 부여 */
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
     margin-top: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
+    z-index: 10;
 }
 
 .qr-code {
-    width: 110px;
-    height: 110px;
+    width: 100px; /* 크기 살짝 줄임 */
+    height: 100px;
     object-fit: cover;
     background-color: #fff;
     padding: 5px;
@@ -151,57 +159,50 @@ footer {
 
 <div class="app-container">
 
-<header>
-<img src="mainlogo.png" alt="COMPANY LOGO" class="logo">
-</header>
+    <header>
+        <img src="mainlogo.png" alt="COMPANY LOGO" class="logo">
+    </header>
 
-<main>
+    <main>
+        <div class="grid-container">
+            <a href="./B-1. SAMHWA Checksheet/index.html" class="nav-button">
+                <img src="icon_01.png" alt="">
+                <span>Checksheet</span>
+            </a>
 
-<div class="grid-container">
+            <a href="./B-2. Maintence 알리미/index.html" class="nav-button">
+                <img src="icon_02.png" alt="">
+                <span>Maintenance</span>
+            </a>
 
-<a href="./B-1. SAMHWA Checksheet/index.html" class="nav-button">
-<img src="icon_01.png" alt="">
-<span>Checksheet</span>
-</a>
+            <a href="./button3/index.html" class="nav-button">
+                <img src="icon_03.png" alt="">
+                <span>Button_03</span>
+            </a>
 
-<a href="./B-2. Maintence 알리미/index.html" class="nav-button">
-<img src="icon_02.png" alt="">
-<span>Maintenance</span>
-</a>
+            <a href="./button4/index.html" class="nav-button">
+                <img src="icon_04.png" alt="">
+                <span>Button_04</span>
+            </a>
 
-<a href="./button3/index.html" class="nav-button">
-<img src="icon_03.png" alt="">
-<span>Button_03</span>
-</a>
+            <a href="./button5/index.html" class="nav-button">
+                <img src="icon_05.png" alt="">
+                <span>Button_05</span>
+            </a>
 
-<a href="./button4/index.html" class="nav-button">
-<img src="icon_04.png" alt="">
-<span>Button_04</span>
-</a>
+            <a href="./B-6. Spare parts/index.html" class="nav-button">
+                <img src="icon_06.png" alt="">
+                <span>Spare Parts</span>
+            </a>
+        </div>
+    </main>
 
-<a href="./button5/index.html" class="nav-button">
-<img src="icon_05.png" alt="">
-<span>Button_05</span>
-</a>
-
-<a href="./B-6. Spare parts/index.html" class="nav-button">
-<img src="icon_06.png" alt="">
-<span>Spare Parts</span>
-</a>
-
-</div>
-
-</main>
-
-<footer>
-
-<img src="qr_code.png" alt="" class="qr-code">
-
-<div class="copyright">
-Smart Factory System of SAMHWA
-</div>
-
-</footer>
+    <footer>
+        <img src="qr_code.png" alt="" class="qr-code">
+        <div class="copyright">
+            Smart Factory System of SAMHWA
+        </div>
+    </footer>
 
 </div>
 
