@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SAMWHA SF">
+<link rel="apple-touch-icon" href="app-logo.png">
+
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#eef2f7">
+
 <title>메인 화면</title>
 
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -40,7 +49,6 @@ body {
     max-width: 480px;
     min-height: 100vh;
     
-    /* 배경 그라데이션 유지 */
     background: var(--bg-gradient);
     
     display: flex;
@@ -55,24 +63,26 @@ header {
     width: 100%;
     overflow: hidden;
     
-    /* 로고 이미지의 완전 흰색 배경과 어우러지도록 배경색을 반투명 흰색으로 설정 */
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.6);
     z-index: 10;
+    
+    /* 아이폰 노치(상단 상태표시줄)를 고려하여 위쪽 여백 추가 */
+    padding-top: env(safe-area-inset-top); 
 }
 
-/* 로고 (원래 크기를 유지하도록 max-height를 제거하고 padding을 줄임) */
+/* 로고 */
 .logo {
     width: 100%;
     height: auto;
     object-fit: contain;
     display: block;
-    padding: 0 0 10px; /* 아래쪽 여백만 살짝 */
+    padding: 0 0 10px;
 }
 
-/* 중간 버튼 영역 (여백 살짝 조정) */
+/* 중간 버튼 영역 */
 main {
     flex: 1;
     padding: 30px 20px;
@@ -85,7 +95,7 @@ main {
 .grid-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 30px 15px; /* 위아래 간격을 살짝 더 줄임 */
+    gap: 30px 15px;
 }
 
 /* 버튼 */
@@ -95,6 +105,7 @@ main {
     align-items: center;
     text-decoration: none;
     transition: transform 0.2s;
+    -webkit-tap-highlight-color: transparent; /* 모바일 터치 시 깜빡임 제거 */
 }
 
 .nav-button:active {
@@ -121,9 +132,8 @@ main {
 /* 푸터 */
 footer {
     text-align: center;
-    padding: 25px 20px 20px;
+    padding: 25px 20px calc(20px + env(safe-area-inset-bottom)); /* 아이폰 하단 홈 바 고려 */
     
-    /* 헤더와 동일한 반투명 흰색으로 설정하여 상하 통일감 부여 */
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -137,7 +147,7 @@ footer {
 }
 
 .qr-code {
-    width: 100px; /* 크기 살짝 줄임 */
+    width: 100px;
     height: 100px;
     object-fit: cover;
     background-color: #fff;
