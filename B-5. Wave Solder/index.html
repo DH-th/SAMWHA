@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Solder 현황판</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --run: #27ae60;    /* 가동 (초록) */
+            --stby: #f39c12;   /* 스탠바이 (주황) */
+            --off: #bdc3c7;    /* 꺼짐 (회색) */
+            --repair: #e74c3c; /* 수리 중 (빨강) */
+            --primary: #2980b9;
+        }
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 50px;
+        }
+        header {
+            background-color: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .time-shift { font-size: 0.9em; color: #ecf0f1; margin-top: 5px; }
+        .container { padding: 15px; }
+        h2 { font-size: 1.1em; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 25px; }
+        
+        /* 공장 레이아웃 미니맵 */
+        .factory-map {
+            display: flex;
+            flex-direction: row; 
+            justify-content: space-between;
+            background-color: var(--card-bg);
+            padding: 15px 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .map-node {
+            width: 40px; 
+            height: 75px;
+            border-radius: 5px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 0.9em; font-weight: bold; color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* 상세 현황판 그리드 */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .line-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--off);
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .status-run { border-color: var(--run); }
+        .status-stby { border-color: var(--stby); }
+        .status-off { border-color: var(--off); }
+        .status-repair { border-color: var(--repair); }
+        
+        .line-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .line-title { font-weight: bold; font-size: 1.1em; }
+        .timer-badge { font-size: 0.85em; font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 4px; }
+        
+        .heater-status { font-size: 0.8em; color: var(--text-muted); background: #f8f9fa; padding: 5px; border-radius: 4px;}
+        .status-badge { align-self: flex-start; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-top: 8px; }
+        
+        .bg-run { background-color: var(--run); color: white; }
+        .bg-stby { background-color: var(--stby); color: white; }
+        .bg-off { background-color: var(--off); color: #333; }
+        .bg-repair { background-color: var(--repair); color: white; }
+
+        /* 컨트롤 패널 */
+        .control-panel { background-color: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .control-panel select, .control-panel button { width: 100%; padding: 12px; margin: 5px 0 15px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; box-sizing: border-box; }
+        .control-panel button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .control-panel button:active { background-color: #1f618d; }
+        
+        /* 로그 테이블 & 페이지네이션 */
+        .log-list { list-style: none; padding: 0; margin: 0; }
+        .log-item { background-color: var(--card-bg); padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9em; margin-bottom: 5px; border-radius: 5px; }
+        .log-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .log-time { color: var(--text-muted); font-size: 0.85em; }
+        .log-duration { color: #d35400; font-size: 0.85em; font-weight: bold; background: #fdf2e9; padding: 2px 5px; border-radius: 3px; }
+        
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .page-btn { padding: 6px 12px; border: 1px solid #ccc; background-color: var(--card-bg); border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .page-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>Wave Solder 통합 관리</div>
+    <div class="time-shift" id="current-time-shift">로딩중...</div>
+</header>
+
+<div class="container">
+    
+    <h2>🏭 공장 라인 맵 (좌 ◀ ▶ 우)</h2>
+    <div class="factory-map" id="factory-map">
+        </div>
+
+    <div class="control-panel">
+        <label>라인 선택</label>
+        <select id="line-select">
+            <option value="1">Line 1 (우측 끝)</option>
+            <option value="2">Line 2</option>
+            <option value="3">Line 3</option>
+            <option value="4">Line 4</option>
+            <option value="5">Line 5</option>
+            <option value="6">Line 6</option>
+            <option value="7">Line 7 (좌측 끝)</option>
+        </select>
+
+        <label>상태 변경</label>
+        <select id="status-select">
+            <option value="RUN">가동 시작 (MAIN 260℃ / SUB 180℃)</option>
+            <option value="STBY">스탠바이 전환 (MAIN 180℃ / SUB OFF)</option>
+            <option value="OFF">전원 끄기 (MAIN OFF / SUB OFF)</option>
+            <option value="REPAIR">수리 중 (MAIN OFF / SUB OFF)</option>
+        </select>
+
+        <button onclick="recordStatus()">상태 적용 및 시간 기록</button>
+    </div>
+
+    <h2>실시간 라인 현황</h2>
+    <div class="dashboard" id="dashboard">
+        </div>
+
+    <h2>상태 변경 및 유지 시간 기록</h2>
+    <ul class="log-list" id="log-list">
+        </ul>
+    
+    <div class="pagination" id="pagination">
+        </div>
+</div>
+
+<script>
+    const initTime = new Date();
+    
+    let lines = Array.from({length: 7}, (_, i) => ({
+        id: i + 1,
+        status: 'OFF', 
+        lastChanged: initTime 
+    }));
+
+    let logs = [];
+    let currentShift = "";
+    
+    // 페이지네이션 관련 변수
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    function formatDuration(ms) {
+        let totalSec = Math.floor(ms / 1000);
+        let h = Math.floor(totalSec / 3600);
+        let m = Math.floor((totalSec % 3600) / 60);
+        let s = totalSec % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function updateTimeAndTimers() {
+        const now = new Date();
+        const hours = now.getHours();
+        
+        currentShift = (hours >= 8 && hours < 20) ? "Day Shift" : "Night Shift";
+
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const timeStr = `${String(hours).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        document.getElementById('current-time-shift').innerText = `${dateStr} ${timeStr} | ${currentShift}`;
+
+        lines.forEach(line => {
+            const elapsedMs = now - line.lastChanged;
+            const timerElement = document.getElementById(`timer-${line.id}`);
+            if (timerElement) {
+                timerElement.innerText = `⏱ ${formatDuration(elapsedMs)}`;
+            }
+        });
+    }
+
+    function renderUI() {
+        const mapContainer = document.getElementById('factory-map');
+        const dashboard = document.getElementById('dashboard');
+        
+        mapContainer.innerHTML = '';
+        dashboard.innerHTML = '';
+
+        // 1. 공장맵 렌더링 (좌측 7번 -> 우측 1번 순서)
+        const physicalOrder = [7, 6, 5, 4, 3, 2, 1];
+        physicalOrder.forEach(lineId => {
+            const line = lines[lineId - 1]; 
+            let badgeClass = '';
+            if (line.status === 'RUN') badgeClass = 'bg-run';
+            else if (line.status === 'STBY') badgeClass = 'bg-stby';
+            else if (line.status === 'REPAIR') badgeClass = 'bg-repair';
+            else badgeClass = 'bg-off';
+
+            const nodeWrapper = document.createElement('div');
+            nodeWrapper.innerHTML = `
+                <div class="map-node ${badgeClass}">L${line.id}</div>
+            `;
+            mapContainer.appendChild(nodeWrapper);
+        });
+
+        // 2. 상세 현황판 렌더링 (Line 1 -> 7 정순서)
+        lines.forEach(line => {
+            let badgeClass = '';
+            let statusText = '';
+            let heaterText = '';
+
+            if(line.status === 'RUN') {
+                badgeClass = 'bg-run'; statusText = '가동중';
+                heaterText = 'M: 260℃<br>S: 180℃';
+            } else if (line.status === 'STBY') {
+                badgeClass = 'bg-stby'; statusText = '스탠바이';
+                heaterText = 'M: 180℃<br>S: OFF';
+            } else if (line.status === 'REPAIR') {
+                badgeClass = 'bg-repair'; statusText = '수리 중';
+                heaterText = 'M: OFF<br>S: OFF';
+            } else {
+                badgeClass = 'bg-off'; statusText = '꺼짐';
+                heaterText = 'M: OFF<br>S: OFF';
+            }
+
+            const card = document.createElement('div');
+            card.className = `line-card status-${line.status.toLowerCase()}`;
+            card.innerHTML = `
+                <div class="line-header">
+                    <span class="line-title">Line ${line.id}</span>
+                    <span class="timer-badge" id="timer-${line.id}">⏱ 00:00:00</span>
+                </div>
+                <div class="heater-status">${heaterText}</div>
+                <div class="status-badge ${badgeClass}">${statusText}</div>
+            `;
+            dashboard.appendChild(card);
+        });
+    }
+
+    function renderLogs() {
+        const logList = document.getElementById('log-list');
+        const pagination = document.getElementById('pagination');
+        logList.innerHTML = '';
+        pagination.innerHTML = '';
+        
+        // 역순(최신순) 배열 생성
+        const reversedLogs = [...logs].reverse();
+        
+        // 총 페이지 수 계산 (로그가 0개라도 1페이지는 표시)
+        const totalPages = Math.ceil(reversedLogs.length / itemsPerPage) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        // 현재 페이지에 해당하는 로그 추출 (10개씩)
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const currentLogs = reversedLogs.slice(startIndex, endIndex);
+
+        // 로그 리스트 렌더링
+        currentLogs.forEach(log => {
+            const li = document.createElement('li');
+            li.className = 'log-item';
+            
+            let newStatusColor = log.newStatus === '수리 중' ? 'var(--repair)' : 'var(--primary)';
+            
+            li.innerHTML = `
+                <div class="log-header">
+                    <strong>Line ${log.lineId}</strong>
+                    <span class="log-time">${log.date} ${log.time} (${log.shift})</span>
+                </div>
+                <div>
+                    ${log.prevStatus} ➔ <b style="color:${newStatusColor}">${log.newStatus}</b>
+                </div>
+                <div style="margin-top:5px;">
+                    <span class="log-duration">[이전 ${log.prevStatus} 유지시간: ${log.durationStr}]</span>
+                </div>
+            `;
+            logList.appendChild(li);
+        });
+
+        // 페이지 버튼 렌더링
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+            btn.innerText = i;
+            btn.onclick = () => {
+                currentPage = i;
+                renderLogs();
+            };
+            pagination.appendChild(btn);
+        }
+    }
+
+    // 상태를 한글 명칭으로 변환해주는 헬퍼 함수
+    function getStatusName(status) {
+        if (status === 'RUN') return '가동';
+        if (status === 'STBY') return '스탠바이';
+        if (status === 'REPAIR') return '수리 중';
+        return '꺼짐';
+    }
+
+    function recordStatus() {
+        const lineId = parseInt(document.getElementById('line-select').value);
+        const newStatus = document.getElementById('status-select').value;
+        const now = new Date();
+        
+        const line = lines[lineId - 1];
+
+        if(line.status === newStatus) {
+            alert(`Line ${lineId}은(는) 이미 ${getStatusName(newStatus)} 상태입니다.`);
+            return;
+        }
+
+        const elapsedMs = now - line.lastChanged;
+        const durationStr = formatDuration(elapsedMs);
+        const prevStatus = line.status;
+
+        line.status = newStatus;
+        line.lastChanged = now;
+
+        logs.push({
+            lineId: lineId,
+            prevStatus: getStatusName(prevStatus),
+            newStatus: getStatusName(newStatus),
+            durationStr: durationStr,
+            date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+            time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+            shift: currentShift
+        });
+
+        // 새 로그가 추가되면 1페이지로 이동
+        currentPage = 1;
+
+        renderUI();
+        renderLogs();
+        updateTimeAndTimers(); 
+    }
+
+    setInterval(updateTimeAndTimers, 1000); 
+    renderUI();
+    updateTimeAndTimers();
+    renderLogs(); // 초기(빈 배열) 페이지네이션 버튼 1을 그리기 위해 호출
+
+</script>
+</body>
+</html>
