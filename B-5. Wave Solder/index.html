@@ -14,8 +14,24 @@
         .time-shift { font-size: 0.9em; color: #ecf0f1; margin-top: 5px; }
         .container { padding: 15px; }
         h2 { font-size: 1.1em; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 25px; }
-        .factory-map { display: flex; flex-direction: row; justify-content: space-between; background-color: var(--card-bg); padding: 15px 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .map-node { width: 40px; height: 75px; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.9em; font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        
+        /* 미니맵 스타일 업데이트: 클릭 가능, 테두리 효과 추가 */
+        .factory-map { display: flex; flex-direction: row; justify-content: space-between; background-color: var(--card-bg); padding: 20px 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .map-node { 
+            width: 40px; height: 75px; border-radius: 5px; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; font-size: 0.9em; font-weight: bold; 
+            color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            cursor: pointer; transition: all 0.2s ease;
+            border: 3px solid transparent; /* 기본 투명 테두리 */
+        }
+        .map-node:hover { transform: scale(1.05); }
+        .map-node.selected {
+            border-color: #3498db; /* 선택 시 파란 테두리 */
+            box-shadow: 0 0 12px rgba(52, 152, 219, 0.8);
+            transform: scale(1.15);
+            z-index: 10;
+        }
+
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .line-card { background-color: var(--card-bg); border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid var(--off); display: flex; flex-direction: column; justify-content: space-between; }
         .status-run { border-color: var(--run); } .status-stby { border-color: var(--stby); } .status-off { border-color: var(--off); } .status-repair { border-color: var(--repair); }
@@ -29,12 +45,9 @@
         .pc-open-card:active { background-color: #2c3e50; }
         .pc-open-icon { font-size: 2em; margin-bottom: 5px; }
         
-        /* 제어 패널 수정 */
         .control-panel { background-color: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .control-panel select { width: 100%; padding: 12px; margin: 5px 0 15px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; box-sizing: border-box; }
-        
-        /* 4버튼 그리드 */
-        .status-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .control-panel label { display: block; margin-bottom: 10px; font-weight: bold; }
+        .status-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-status { padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85em; line-height: 1.4; transition: opacity 0.2s; }
         .btn-status:active { opacity: 0.7; }
         .btn-status.run { background-color: var(--run); color: white; }
@@ -79,22 +92,11 @@
 </header>
 
 <div class="container" id="mobile-view">
-    <h2>🏭 แผนผังไลน์โรงงาน (ซ้าย ◀ ▶ ขวา)</h2>
+    <h2>🏭 แผนผังไลน์โรงงาน (กดเลือกไลน์ที่นี่)</h2>
     <div class="factory-map" id="factory-map"></div>
 
     <div class="control-panel">
-        <label>เลือกไลน์</label>
-        <select id="line-select">
-            <option value="1">Line 1 (ขวาสุด)</option>
-            <option value="2">Line 2</option>
-            <option value="3">Line 3</option>
-            <option value="4">Line 4</option>
-            <option value="5">Line 5</option>
-            <option value="6">Line 6</option>
-            <option value="7">Line 7 (ซ้ายสุด)</option>
-        </select>
-
-        <label>เปลี่ยนสถานะ</label>
+        <label>เปลี่ยนสถานะ - กำลังเลือก: <span id="display-selected-line" style="color:var(--primary); font-size:1.2em;">Line 1</span></label>
         <div class="status-button-group">
             <button class="btn-status run" onclick="recordStatus('RUN')">เริ่ม RUN<br>(260℃ / 160℃)</button>
             <button class="btn-status stby" onclick="recordStatus('STBY')">STBY<br>(180℃ / OFF)</button>
@@ -145,6 +147,9 @@
     let currentShift = "";
     let currentPage = 1;
     const itemsPerPage = 10;
+    
+    // 현재 선택된 라인 (기본값 1)
+    let selectedLineId = 1;
 
     onSnapshot(collection(db, "lines"), (snapshot) => {
         snapshot.forEach((doc) => {
@@ -165,7 +170,6 @@
         renderLogs();
     });
 
-    // 모바일/로그용 시간 포맷 (시:분:초)
     function formatDuration(ms) {
         if(ms < 0) ms = 0;
         let totalSec = Math.floor(ms / 1000);
@@ -175,7 +179,6 @@
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
-    // PC 대시보드 전용 시간 포맷 (시:분)
     function formatDurationPC(ms) {
         if(ms < 0) ms = 0;
         let totalSec = Math.floor(ms / 1000);
@@ -191,9 +194,15 @@
         return 'OFF (ปิด)';
     }
 
-    // 버튼에서 전달된 상태값(newStatus)을 바로 적용
+    // 지도에서 라인 박스 클릭 시 호출되는 함수
+    window.selectLine = function(id) {
+        selectedLineId = id;
+        document.getElementById('display-selected-line').innerText = `Line ${id}`;
+        renderUI(); // 맵 테두리 업데이트
+    }
+
     window.recordStatus = async function(newStatus) {
-        const lineId = document.getElementById('line-select').value;
+        const lineId = selectedLineId; // 선택된 라인 변수 사용
         const nowMs = new Date().getTime();
         
         const line = lines[lineId - 1];
@@ -243,11 +252,9 @@
         lines.forEach(line => {
             const elapsedMs = nowMs - line.lastChanged;
             
-            // 모바일 텍스트 갱신 (초 포함)
             const timerElement = document.getElementById(`timer-${line.id}`);
             if (timerElement) timerElement.innerText = `⏱ ${formatDuration(elapsedMs)}`;
 
-            // PC 텍스트 갱신 (분까지만)
             const pcTimerElement = document.getElementById(`pc-timer-${line.id}`);
             if (pcTimerElement) pcTimerElement.innerText = formatDurationPC(elapsedMs);
         });
@@ -260,9 +267,7 @@
         
         mapContainer.innerHTML = ''; dashboard.innerHTML = ''; pcGrid.innerHTML = '';
         
-        // 역순(공장 실제배치): 7부터 1까지 (좌에서 우로)
         const physicalOrder = [7, 6, 5, 4, 3, 2, 1]; 
-        // 정순(목록 보기용): 1부터 7까지
         const logicalOrder = [1, 2, 3, 4, 5, 6, 7];
 
         const getCardData = (line) => {
@@ -283,12 +288,14 @@
             return { badgeClass, pcClass, statusText, pcStatusText, heaterText, pcHeaterText };
         };
 
-        // 1. 미니맵 렌더링 (7 -> 1 유지)
+        // 1. 미니맵 렌더링 (클릭 이벤트 및 선택 테두리 추가)
         physicalOrder.forEach(lineId => {
             const line = lines[lineId - 1]; 
             const { badgeClass } = getCardData(line);
+            const isSelectedClass = (line.id === selectedLineId) ? 'selected' : '';
+
             const nodeWrapper = document.createElement('div');
-            nodeWrapper.innerHTML = `<div class="map-node ${badgeClass}">L${line.id}</div>`;
+            nodeWrapper.innerHTML = `<div class="map-node ${badgeClass} ${isSelectedClass}" onclick="selectLine(${line.id})">L${line.id}</div>`;
             mapContainer.appendChild(nodeWrapper);
         });
 
@@ -313,7 +320,7 @@
         pcBtnCard.innerHTML = `<div class="pc-open-icon">🖥️</div><div style="font-size: 0.9em; line-height: 1.4;">แดชบอร์ด PC<br>เปิดเต็มหน้าจอ</div>`;
         dashboard.appendChild(pcBtnCard);
 
-        // 4. PC 대시보드 렌더링 (7 -> 1 역배열: 가장 오른쪽이 1번)
+        // 4. PC 대시보드 렌더링 (7 -> 1 역배열)
         physicalOrder.forEach(lineId => {
             const line = lines[lineId - 1];
             const { pcClass, pcStatusText, pcHeaterText } = getCardData(line);
