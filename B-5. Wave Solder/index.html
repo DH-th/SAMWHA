@@ -28,10 +28,20 @@
         .pc-open-card { background-color: #34495e; color: #f1c40f; border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; text-align: center; font-weight: bold; border: 2px dashed #f1c40f; transition: background-color 0.2s; }
         .pc-open-card:active { background-color: #2c3e50; }
         .pc-open-icon { font-size: 2em; margin-bottom: 5px; }
+        
+        /* 제어 패널 수정 */
         .control-panel { background-color: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .control-panel select, .control-panel button { width: 100%; padding: 12px; margin: 5px 0 15px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; box-sizing: border-box; }
-        .control-panel button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .control-panel button:active { background-color: #1f618d; }
+        .control-panel select { width: 100%; padding: 12px; margin: 5px 0 15px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; box-sizing: border-box; }
+        
+        /* 4버튼 그리드 */
+        .status-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .btn-status { padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85em; line-height: 1.4; transition: opacity 0.2s; }
+        .btn-status:active { opacity: 0.7; }
+        .btn-status.run { background-color: var(--run); color: white; }
+        .btn-status.stby { background-color: var(--stby); color: white; }
+        .btn-status.off { background-color: var(--off); color: #333; }
+        .btn-status.repair { background-color: var(--repair); color: white; }
+        
         .log-list { list-style: none; padding: 0; margin: 0; }
         .log-item { background-color: var(--card-bg); padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9em; margin-bottom: 5px; border-radius: 5px; }
         .log-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
@@ -40,6 +50,7 @@
         .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .page-btn { padding: 6px 12px; border: 1px solid #ccc; background-color: var(--card-bg); border-radius: 4px; cursor: pointer; font-weight: bold; }
         .page-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+        
         #pc-view { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #121212; z-index: 2000; flex-direction: column; box-sizing: border-box; padding: 2vw; overflow: hidden; }
         .pc-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 1vw; margin-bottom: 2vw; }
         .pc-title { font-size: 3vw; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: 2px; }
@@ -52,7 +63,7 @@
         .pc-card-header { background-color: #2c2c2c; padding: 1.5vw 0; text-align: center; font-size: 2.5vw; font-weight: bold; color: white; letter-spacing: 1px; }
         .pc-card-status-box { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 3vw; font-weight: 900; color: #555; background-color: #1a1a1a; letter-spacing: 5px; text-align: center; }
         .pc-card-footer { background-color: #1a1a1a; padding: 1.5vw 1vw; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-top: 2px solid #2c2c2c; }
-        .pc-card-time { font-size: 2.5vw; font-family: monospace; font-weight: bold; color: #fff; margin-bottom: 0.8vw; text-align: center; width: 100%; }
+        .pc-card-time { font-size: 3.5vw; font-family: monospace; font-weight: bold; color: #fff; margin-bottom: 0.8vw; text-align: center; width: 100%; letter-spacing: 2px;}
         .pc-card-heater { font-size: 1.2vw; color: #888; font-weight: bold; text-align: center; width: 100%; }
         .pc-status-run { border-color: #00e676; } .pc-status-run .pc-card-status-box { background-color: #00e676; color: #000; } .pc-status-run .pc-card-time { color: #00e676; }
         .pc-status-stby { border-color: #ff9100; } .pc-status-stby .pc-card-status-box { background-color: #ff9100; color: #000; } .pc-status-stby .pc-card-time { color: #ff9100; }
@@ -84,14 +95,12 @@
         </select>
 
         <label>เปลี่ยนสถานะ</label>
-        <select id="status-select">
-            <option value="RUN">เริ่ม RUN (MAIN 260℃ / SUB 180℃)</option>
-            <option value="STBY">เปลี่ยนเป็น STBY (MAIN 180℃ / SUB OFF)</option>
-            <option value="OFF">ปิดเครื่อง OFF (MAIN OFF / SUB OFF)</option>
-            <option value="REPAIR">กำลังซ่อมแซม REPAIR (MAIN OFF / SUB OFF)</option>
-        </select>
-
-        <button onclick="recordStatus()">อัปเดตสถานะและบันทึกเวลา</button>
+        <div class="status-button-group">
+            <button class="btn-status run" onclick="recordStatus('RUN')">เริ่ม RUN<br>(260℃ / 160℃)</button>
+            <button class="btn-status stby" onclick="recordStatus('STBY')">STBY<br>(180℃ / OFF)</button>
+            <button class="btn-status repair" onclick="recordStatus('REPAIR')">ซ่อมแซม REPAIR<br>(OFF / OFF)</button>
+            <button class="btn-status off" onclick="recordStatus('OFF')">ปิดเครื่อง OFF<br>(OFF / OFF)</button>
+        </div>
     </div>
 
     <h2>สถานะไลน์แบบเรียลไทม์</h2>
@@ -156,6 +165,7 @@
         renderLogs();
     });
 
+    // 모바일/로그용 시간 포맷 (시:분:초)
     function formatDuration(ms) {
         if(ms < 0) ms = 0;
         let totalSec = Math.floor(ms / 1000);
@@ -165,6 +175,15 @@
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
+    // PC 대시보드 전용 시간 포맷 (시:분)
+    function formatDurationPC(ms) {
+        if(ms < 0) ms = 0;
+        let totalSec = Math.floor(ms / 1000);
+        let h = Math.floor(totalSec / 3600);
+        let m = Math.floor((totalSec % 3600) / 60);
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
+
     function getStatusName(status) {
         if (status === 'RUN') return 'RUN (กำลังเดินเครื่อง)';
         if (status === 'STBY') return 'STBY (สแตนด์บาย)';
@@ -172,9 +191,9 @@
         return 'OFF (ปิด)';
     }
 
-    window.recordStatus = async function() {
+    // 버튼에서 전달된 상태값(newStatus)을 바로 적용
+    window.recordStatus = async function(newStatus) {
         const lineId = document.getElementById('line-select').value;
-        const newStatus = document.getElementById('status-select').value;
         const nowMs = new Date().getTime();
         
         const line = lines[lineId - 1];
@@ -223,13 +242,14 @@
         const nowMs = now.getTime();
         lines.forEach(line => {
             const elapsedMs = nowMs - line.lastChanged;
-            const durationText = formatDuration(elapsedMs);
-
+            
+            // 모바일 텍스트 갱신 (초 포함)
             const timerElement = document.getElementById(`timer-${line.id}`);
-            if (timerElement) timerElement.innerText = `⏱ ${durationText}`;
+            if (timerElement) timerElement.innerText = `⏱ ${formatDuration(elapsedMs)}`;
 
+            // PC 텍스트 갱신 (분까지만)
             const pcTimerElement = document.getElementById(`pc-timer-${line.id}`);
-            if (pcTimerElement) pcTimerElement.innerText = durationText;
+            if (pcTimerElement) pcTimerElement.innerText = formatDurationPC(elapsedMs);
         });
     }
 
@@ -245,12 +265,11 @@
         // 정순(목록 보기용): 1부터 7까지
         const logicalOrder = [1, 2, 3, 4, 5, 6, 7];
 
-        // 상태값 가져오는 내부 헬퍼 함수
         const getCardData = (line) => {
             let badgeClass = '', pcClass = '', statusText = '', pcStatusText = '', heaterText = '', pcHeaterText = '';
             if(line.status === 'RUN') {
                 badgeClass = 'bg-run'; pcClass = 'pc-status-run'; pcStatusText = 'RUN';
-                statusText = 'RUN (กำลังเดินเครื่อง)'; heaterText = 'M: 260℃<br>S: 180℃'; pcHeaterText = 'MAIN: 260℃ | SUB: 180℃';
+                statusText = 'RUN (กำลังเดินเครื่อง)'; heaterText = 'M: 260℃<br>S: 160℃'; pcHeaterText = 'MAIN: 260℃ | SUB: 160℃';
             } else if (line.status === 'STBY') {
                 badgeClass = 'bg-stby'; pcClass = 'pc-status-stby'; pcStatusText = 'STBY';
                 statusText = 'STBY (สแตนด์บาย)'; heaterText = 'M: 180℃<br>S: OFF'; pcHeaterText = 'MAIN: 180℃ | SUB: OFF';
@@ -303,7 +322,7 @@
             pcCard.className = `pc-line-card ${pcClass}`;
             pcCard.innerHTML = `
                 <div class="pc-card-header">LINE ${line.id}</div><div class="pc-card-status-box">${pcStatusText}</div>
-                <div class="pc-card-footer"><div class="pc-card-time" id="pc-timer-${line.id}">00:00:00</div><div class="pc-card-heater">${pcHeaterText}</div></div>
+                <div class="pc-card-footer"><div class="pc-card-time" id="pc-timer-${line.id}">00:00</div><div class="pc-card-heater">${pcHeaterText}</div></div>
             `;
             pcGrid.appendChild(pcCard);
         });
