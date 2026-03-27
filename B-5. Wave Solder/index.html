@@ -119,7 +119,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    // 전달해주신 설정 적용
     const firebaseConfig = {
         apiKey: "AIzaSyCzsVVxKi2G0SP2sEqzcqfBcpZuxo9EeNo",
         authDomain: "wave-solder.firebaseapp.com",
@@ -138,7 +137,6 @@
     let currentPage = 1;
     const itemsPerPage = 10;
 
-    // Firebase 실시간 동기화 (lines)
     onSnapshot(collection(db, "lines"), (snapshot) => {
         snapshot.forEach((doc) => {
             const data = doc.data();
@@ -151,7 +149,6 @@
         renderUI();
     });
 
-    // Firebase 실시간 동기화 (logs)
     const q = query(collection(db, "logs"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         logs = [];
@@ -175,7 +172,6 @@
         return 'OFF (ปิด)';
     }
 
-    // 전역 함수로 등록하여 버튼에서 호출 가능하게 함
     window.recordStatus = async function() {
         const lineId = document.getElementById('line-select').value;
         const newStatus = document.getElementById('status-select').value;
@@ -192,13 +188,11 @@
         const durationStr = formatDuration(elapsedMs);
         const prevStatus = line.status;
 
-        // Firebase에 라인 상태 저장
         await setDoc(doc(db, "lines", lineId.toString()), {
             status: newStatus,
             lastChanged: nowMs
         });
 
-        // Firebase에 로그 저장
         const now = new Date();
         await addDoc(collection(db, "logs"), {
             lineId: lineId,
@@ -245,12 +239,15 @@
         const pcGrid = document.getElementById('pc-grid');
         
         mapContainer.innerHTML = ''; dashboard.innerHTML = ''; pcGrid.innerHTML = '';
+        
+        // 역순(공장 실제배치): 7부터 1까지 (좌에서 우로)
         const physicalOrder = [7, 6, 5, 4, 3, 2, 1]; 
+        // 정순(목록 보기용): 1부터 7까지
+        const logicalOrder = [1, 2, 3, 4, 5, 6, 7];
 
-        physicalOrder.forEach(lineId => {
-            const line = lines[lineId - 1]; 
+        // 상태값 가져오는 내부 헬퍼 함수
+        const getCardData = (line) => {
             let badgeClass = '', pcClass = '', statusText = '', pcStatusText = '', heaterText = '', pcHeaterText = '';
-
             if(line.status === 'RUN') {
                 badgeClass = 'bg-run'; pcClass = 'pc-status-run'; pcStatusText = 'RUN';
                 statusText = 'RUN (กำลังเดินเครื่อง)'; heaterText = 'M: 260℃<br>S: 180℃'; pcHeaterText = 'MAIN: 260℃ | SUB: 180℃';
@@ -264,10 +261,22 @@
                 badgeClass = 'bg-off'; pcClass = 'pc-status-off'; pcStatusText = 'OFF';
                 statusText = 'OFF (ปิด)'; heaterText = 'M: OFF<br>S: OFF'; pcHeaterText = 'HEATER OFF';
             }
+            return { badgeClass, pcClass, statusText, pcStatusText, heaterText, pcHeaterText };
+        };
 
+        // 1. 미니맵 렌더링 (7 -> 1 유지)
+        physicalOrder.forEach(lineId => {
+            const line = lines[lineId - 1]; 
+            const { badgeClass } = getCardData(line);
             const nodeWrapper = document.createElement('div');
             nodeWrapper.innerHTML = `<div class="map-node ${badgeClass}">L${line.id}</div>`;
             mapContainer.appendChild(nodeWrapper);
+        });
+
+        // 2. 모바일 대시보드 렌더링 (1 -> 7 정배열)
+        logicalOrder.forEach(lineId => {
+            const line = lines[lineId - 1]; 
+            const { badgeClass, statusText, heaterText } = getCardData(line);
 
             const card = document.createElement('div');
             card.className = `line-card status-${line.status.toLowerCase()}`;
@@ -276,6 +285,19 @@
                 <div class="heater-status">${heaterText}</div><div class="status-badge ${badgeClass}">${statusText}</div>
             `;
             dashboard.appendChild(card);
+        });
+
+        // 3. PC 모드 띄우기 버튼 (모바일 대시보드 마지막 칸에 고정)
+        const pcBtnCard = document.createElement('div');
+        pcBtnCard.className = 'pc-open-card';
+        pcBtnCard.onclick = window.openPCView;
+        pcBtnCard.innerHTML = `<div class="pc-open-icon">🖥️</div><div style="font-size: 0.9em; line-height: 1.4;">แดชบอร์ด PC<br>เปิดเต็มหน้าจอ</div>`;
+        dashboard.appendChild(pcBtnCard);
+
+        // 4. PC 대시보드 렌더링 (7 -> 1 역배열: 가장 오른쪽이 1번)
+        physicalOrder.forEach(lineId => {
+            const line = lines[lineId - 1];
+            const { pcClass, pcStatusText, pcHeaterText } = getCardData(line);
 
             const pcCard = document.createElement('div');
             pcCard.className = `pc-line-card ${pcClass}`;
@@ -285,12 +307,6 @@
             `;
             pcGrid.appendChild(pcCard);
         });
-
-        const pcBtnCard = document.createElement('div');
-        pcBtnCard.className = 'pc-open-card';
-        pcBtnCard.onclick = window.openPCView;
-        pcBtnCard.innerHTML = `<div class="pc-open-icon">🖥️</div><div style="font-size: 0.9em; line-height: 1.4;">แดชบอร์ด PC<br>เปิดเต็มหน้าจอ</div>`;
-        dashboard.appendChild(pcBtnCard);
     }
 
     function renderLogs() {
