@@ -15,23 +15,19 @@
         .container { padding: 15px; }
         h2 { font-size: 1.1em; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 25px; }
         
-        /* 미니맵 스타일 업데이트: 클릭 가능, 테두리 효과 추가 */
+        /* 미니맵 스타일 */
         .factory-map { display: flex; flex-direction: row; justify-content: space-between; background-color: var(--card-bg); padding: 20px 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .map-node { 
             width: 40px; height: 75px; border-radius: 5px; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; font-size: 0.9em; font-weight: bold; 
             color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
             cursor: pointer; transition: all 0.2s ease;
-            border: 3px solid transparent; /* 기본 투명 테두리 */
+            border: 3px solid transparent;
         }
         .map-node:hover { transform: scale(1.05); }
-        .map-node.selected {
-            border-color: #3498db; /* 선택 시 파란 테두리 */
-            box-shadow: 0 0 12px rgba(52, 152, 219, 0.8);
-            transform: scale(1.15);
-            z-index: 10;
-        }
+        .map-node.selected { border-color: #3498db; box-shadow: 0 0 12px rgba(52, 152, 219, 0.8); transform: scale(1.15); z-index: 10; }
 
+        /* 대시보드 및 컨트롤 패널 */
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .line-card { background-color: var(--card-bg); border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid var(--off); display: flex; flex-direction: column; justify-content: space-between; }
         .status-run { border-color: var(--run); } .status-stby { border-color: var(--stby); } .status-off { border-color: var(--off); } .status-repair { border-color: var(--repair); }
@@ -41,6 +37,8 @@
         .heater-status { font-size: 0.8em; color: var(--text-muted); background: #f8f9fa; padding: 5px; border-radius: 4px;}
         .status-badge { align-self: flex-start; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-top: 8px; }
         .bg-run { background-color: var(--run); color: white; } .bg-stby { background-color: var(--stby); color: white; } .bg-off { background-color: var(--off); color: #333; } .bg-repair { background-color: var(--repair); color: white; }
+        
+        /* PC 뷰 버튼 */
         .pc-open-card { background-color: #34495e; color: #f1c40f; border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; text-align: center; font-weight: bold; border: 2px dashed #f1c40f; transition: background-color 0.2s; }
         .pc-open-card:active { background-color: #2c3e50; }
         .pc-open-icon { font-size: 2em; margin-bottom: 5px; }
@@ -50,20 +48,30 @@
         .status-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-status { padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85em; line-height: 1.4; transition: opacity 0.2s; }
         .btn-status:active { opacity: 0.7; }
-        .btn-status.run { background-color: var(--run); color: white; }
-        .btn-status.stby { background-color: var(--stby); color: white; }
-        .btn-status.off { background-color: var(--off); color: #333; }
-        .btn-status.repair { background-color: var(--repair); color: white; }
+        .btn-status.run { background-color: var(--run); color: white; } .btn-status.stby { background-color: var(--stby); color: white; } .btn-status.off { background-color: var(--off); color: #333; } .btn-status.repair { background-color: var(--repair); color: white; }
         
+        /* 통계 테이블 스타일 (수정됨: 정렬 및 날짜 표시 공간 최적화) */
+        .stats-controls { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+        .stats-table { width: 100%; border-collapse: collapse; background: var(--card-bg); font-size: 0.85em; text-align: center; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 8px; }
+        .stats-table th { background-color: #34495e; color: white; font-weight: bold; }
+        .stats-run { background-color: #e8f5e9; color: #27ae60; font-weight: bold; }
+        .stats-stby { background-color: #fff8e1; color: #f39c12; font-weight: bold; }
+        .stats-repair { background-color: #ffebee; color: #e74c3c; font-weight: bold; }
+        .stats-off { background-color: #f8f9fa; color: #7f8c8d; }
+        #stat-date-display { font-weight: bold; color: var(--primary); font-size: 1.05em; margin-left: auto; padding-right: 5px; }
+
+        /* 로그 리스트 스타일 */
         .log-list { list-style: none; padding: 0; margin: 0; }
         .log-item { background-color: var(--card-bg); padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9em; margin-bottom: 5px; border-radius: 5px; }
         .log-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
         .log-time { color: var(--text-muted); font-size: 0.85em; }
         .log-duration { color: #d35400; font-size: 0.85em; font-weight: bold; background: #fdf2e9; padding: 2px 5px; border-radius: 3px; }
         .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
-        .page-btn { padding: 6px 12px; border: 1px solid #ccc; background-color: var(--card-bg); border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .page-btn { padding: 6px 12px; border: 1px solid #ccc; background-color: var(--card-bg); border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
         .page-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
         
+        /* PC 뷰 스타일 */
         #pc-view { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #121212; z-index: 2000; flex-direction: column; box-sizing: border-box; padding: 2vw; overflow: hidden; }
         .pc-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 1vw; margin-bottom: 2vw; }
         .pc-title { font-size: 3vw; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: 2px; }
@@ -108,6 +116,29 @@
     <h2>สถานะไลน์แบบเรียลไทม์</h2>
     <div class="dashboard" id="dashboard"></div>
 
+    <h2>📊 통계 현황 (สถิติการทำงาน)</h2>
+    <div class="stats-controls">
+        <button class="page-btn active" onclick="changeStatPeriod('day')" id="btn-stat-day">일간</button>
+        <button class="page-btn" onclick="changeStatPeriod('week')" id="btn-stat-week">주간</button>
+        <button class="page-btn" onclick="changeStatPeriod('month')" id="btn-stat-month">월간</button>
+        <span id="stat-date-display">0월 0일</span>
+    </div>
+    <div style="overflow-x: auto; margin-bottom: 20px;">
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Line</th>
+                    <th>RUN</th>
+                    <th>STBY</th>
+                    <th>REPAIR</th>
+                    <th>OFF</th>
+                </tr>
+            </thead>
+            <tbody id="stats-tbody">
+                </tbody>
+        </table>
+    </div>
+
     <h2>บันทึกการเปลี่ยนสถานะและระยะเวลา</h2>
     <ul class="log-list" id="log-list"></ul>
     
@@ -148,7 +179,6 @@
     let currentPage = 1;
     const itemsPerPage = 10;
     
-    // 현재 선택된 라인 (기본값 1)
     let selectedLineId = 1;
 
     onSnapshot(collection(db, "lines"), (snapshot) => {
@@ -168,6 +198,7 @@
         logs = [];
         snapshot.forEach((doc) => logs.push(doc.data()));
         renderLogs();
+        updateStats(); // 로그 업데이트 시 통계도 리렌더링
     });
 
     function formatDuration(ms) {
@@ -194,15 +225,14 @@
         return 'OFF (ปิด)';
     }
 
-    // 지도에서 라인 박스 클릭 시 호출되는 함수
     window.selectLine = function(id) {
         selectedLineId = id;
         document.getElementById('display-selected-line').innerText = `Line ${id}`;
-        renderUI(); // 맵 테두리 업데이트
+        renderUI();
     }
 
     window.recordStatus = async function(newStatus) {
-        const lineId = selectedLineId; // 선택된 라인 변수 사용
+        const lineId = selectedLineId;
         const nowMs = new Date().getTime();
         
         const line = lines[lineId - 1];
@@ -211,6 +241,20 @@
             alert(`Line ${lineId} อยู่ในสถานะ ${getStatusName(newStatus)} แล้ว`);
             return;
         }
+
+        // --- 태국어 확인 창 (Confirm Dialog) 로직 추가 ---
+        let statusLabel = "";
+        if(newStatus === 'RUN') statusLabel = 'เริ่ม RUN (260℃ / 160℃)';
+        else if(newStatus === 'STBY') statusLabel = 'STBY (180℃ / OFF)';
+        else if(newStatus === 'REPAIR') statusLabel = 'ซ่อมแซม REPAIR (OFF / OFF)';
+        else statusLabel = 'ปิดเครื่อง OFF (OFF / OFF)';
+
+        const confirmMsg = `ยืนยันการเปลี่ยนสถานะ Line ${lineId}\nเป็น "${statusLabel}" หรือไม่?`;
+        
+        if (!window.confirm(confirmMsg)) {
+            return; // 사용자가 취소(Cancel)를 누르면 함수 종료
+        }
+        // --------------------------------------------------
 
         const elapsedMs = nowMs - line.lastChanged;
         const durationStr = formatDuration(elapsedMs);
@@ -227,6 +271,7 @@
             prevStatus: getStatusName(prevStatus),
             newStatus: getStatusName(newStatus),
             durationStr: durationStr,
+            durationMs: elapsedMs,
             date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
             time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
             shift: currentShift,
@@ -235,6 +280,110 @@
 
         currentPage = 1;
     }
+
+    // --- 통계 날짜 표시 텍스트 업데이트 로직 ---
+    function updateStatDateDisplay() {
+        const now = new Date();
+        let displayStr = "";
+
+        if (currentStatPeriod === 'day') {
+            displayStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+        } else if (currentStatPeriod === 'week') {
+            const dayOfWeek = now.getDay() || 7; 
+            const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
+            const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 7);
+            displayStr = `${monday.getMonth() + 1}월 ${monday.getDate()}일 - ${sunday.getMonth() + 1}월 ${sunday.getDate()}일`;
+        } else if (currentStatPeriod === 'month') {
+            displayStr = `${now.getMonth() + 1}월`;
+        }
+
+        document.getElementById('stat-date-display').innerText = displayStr;
+    }
+
+    // --- 통계 관련 로직 ---
+    let currentStatPeriod = 'day';
+
+    window.changeStatPeriod = function(period) {
+        currentStatPeriod = period;
+        document.getElementById('btn-stat-day').classList.remove('active');
+        document.getElementById('btn-stat-week').classList.remove('active');
+        document.getElementById('btn-stat-month').classList.remove('active');
+        document.getElementById(`btn-stat-${period}`).classList.add('active');
+        
+        updateStatDateDisplay(); // 버튼 누를 때마다 날짜 텍스트 갱신
+        updateStats(); 
+    }
+
+    function updateStats() {
+        const tbody = document.getElementById('stats-tbody');
+        if(!tbody) return;
+
+        const now = new Date();
+        let startTime = 0;
+
+        if (currentStatPeriod === 'day') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        } else if (currentStatPeriod === 'week') {
+            const day = now.getDay() || 7; 
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1).getTime(); 
+        } else if (currentStatPeriod === 'month') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        }
+
+        let stats = {};
+        for(let i=1; i<=7; i++) {
+            stats[i] = { 'RUN': 0, 'STBY': 0, 'REPAIR': 0, 'OFF': 0 };
+        }
+
+        const currentMs = Date.now();
+
+        logs.forEach(log => {
+            let ms = log.durationMs || 0;
+            if (!ms && log.durationStr) {
+                let parts = log.durationStr.split(':');
+                if(parts.length === 3) ms = (+parts[0] * 3600 + +parts[1] * 60 + +parts[2]) * 1000;
+            }
+            
+            let logEnd = log.createdAt;
+            let logStart = logEnd - ms;
+            
+            let overlapMs = Math.max(0, logEnd - Math.max(startTime, logStart));
+
+            if (overlapMs > 0) {
+                let key = 'OFF';
+                if(log.prevStatus.includes('RUN')) key = 'RUN';
+                else if(log.prevStatus.includes('STBY')) key = 'STBY';
+                else if(log.prevStatus.includes('REPAIR')) key = 'REPAIR';
+
+                if(stats[log.lineId]) stats[log.lineId][key] += overlapMs;
+            }
+        });
+
+        lines.forEach(line => {
+            let currentStart = line.lastChanged;
+            let overlapMs = Math.max(0, currentMs - Math.max(startTime, currentStart));
+            
+            if (overlapMs > 0 && stats[line.id]) {
+                let key = line.status; 
+                stats[line.id][key] += overlapMs;
+            }
+        });
+
+        let html = '';
+        for(let i=1; i<=7; i++) {
+            html += `<tr>
+                <td><strong>L${i}</strong></td>
+                <td class="stats-run">${formatDuration(stats[i]['RUN'])}</td>
+                <td class="stats-stby">${formatDuration(stats[i]['STBY'])}</td>
+                <td class="stats-repair">${formatDuration(stats[i]['REPAIR'])}</td>
+                <td class="stats-off">${formatDuration(stats[i]['OFF'])}</td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+    }
+
+    // 기존 1초마다 시계 갱신 및 날짜 범위 검사
+    let lastDateChecked = new Date().getDate();
 
     function updateTimeAndTimers() {
         const now = new Date();
@@ -258,6 +407,14 @@
             const pcTimerElement = document.getElementById(`pc-timer-${line.id}`);
             if (pcTimerElement) pcTimerElement.innerText = formatDurationPC(elapsedMs);
         });
+
+        // 자정이 넘어 날짜가 바뀌었을 경우 날짜 텍스트 자동으로 새로고침
+        if (now.getDate() !== lastDateChecked) {
+            lastDateChecked = now.getDate();
+            updateStatDateDisplay();
+        }
+
+        updateStats();
     }
 
     function renderUI() {
@@ -288,7 +445,6 @@
             return { badgeClass, pcClass, statusText, pcStatusText, heaterText, pcHeaterText };
         };
 
-        // 1. 미니맵 렌더링 (클릭 이벤트 및 선택 테두리 추가)
         physicalOrder.forEach(lineId => {
             const line = lines[lineId - 1]; 
             const { badgeClass } = getCardData(line);
@@ -299,7 +455,6 @@
             mapContainer.appendChild(nodeWrapper);
         });
 
-        // 2. 모바일 대시보드 렌더링 (1 -> 7 정배열)
         logicalOrder.forEach(lineId => {
             const line = lines[lineId - 1]; 
             const { badgeClass, statusText, heaterText } = getCardData(line);
@@ -313,14 +468,12 @@
             dashboard.appendChild(card);
         });
 
-        // 3. PC 모드 띄우기 버튼 (모바일 대시보드 마지막 칸에 고정)
         const pcBtnCard = document.createElement('div');
         pcBtnCard.className = 'pc-open-card';
         pcBtnCard.onclick = window.openPCView;
         pcBtnCard.innerHTML = `<div class="pc-open-icon">🖥️</div><div style="font-size: 0.9em; line-height: 1.4;">แดชบอร์ด PC<br>เปิดเต็มหน้าจอ</div>`;
         dashboard.appendChild(pcBtnCard);
 
-        // 4. PC 대시보드 렌더링 (7 -> 1 역배열)
         physicalOrder.forEach(lineId => {
             const line = lines[lineId - 1];
             const { pcClass, pcStatusText, pcHeaterText } = getCardData(line);
@@ -377,6 +530,8 @@
         if (document.fullscreenElement) document.exitFullscreen();
     }
 
+    // 초기 로딩 시 한 번 호출하여 날짜 텍스트 설정
+    updateStatDateDisplay();
     setInterval(updateTimeAndTimers, 1000); 
     renderUI(); 
 </script>
