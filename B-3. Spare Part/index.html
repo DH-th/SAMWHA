@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MI Spare Part</title>
+    <style>
+        /* CSS Styles */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; box-sizing: border-box; }
+        
+        /* =========================================
+           상단 헤더 영역
+        ========================================= */
+        .app-header {
+            background: linear-gradient(135deg, #003366, #0056b3);
+            margin: -15px -15px 25px -15px;
+            padding: 25px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-bottom: 4px solid #ffc107;
+        }
+        .header-icon {
+            font-size: 40px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .header-title {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 26px;
+            color: white;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .header-title span {
+            font-size: 13px;
+            color: #cce5ff;
+            margin-top: 5px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* 컨트롤 영역 */
+        .top-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
+        .dept-tabs { display: flex; justify-content: center; gap: 8px; }
+        .dept-tabs button { flex: 1; max-width: 150px; padding: 10px; border: none; border-radius: 5px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #e0e0e0; transition: 0.3s; color: #555;}
+        .dept-tabs button.active { background-color: #0056b3; color: white; box-shadow: 0 2px 4px rgba(0,86,179,0.3);}
+        
+        .action-bar { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .action-buttons { display: flex; gap: 8px; }
+        select, input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background-color: white;}
+        #machineFilter { flex: 1; min-width: 120px; }
+        .btn-add { padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s;}
+        .btn-stats { padding: 8px 15px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s;}
+        .btn-add:hover { background-color: #218838; }
+        .btn-stats:hover { background-color: #138496; }
+
+        .parts-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: 0 auto; }
+        .part-item { 
+            background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); 
+            cursor: pointer; display: flex; align-items: center; gap: 15px; border-left: 6px solid #0056b3; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .part-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+        
+        .part-image { 
+            width: 60px; height: 60px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #eaeaea;
+            display: flex; align-items: center; justify-content: center; font-size: 11px; color: #adb5bd; flex-shrink: 0; overflow: hidden; 
+        }
+        .part-image img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .part-info-container { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 15px; min-width: 0; }
+        .part-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+        .part-text h3 { margin: 0; font-size: 17px; color: #2c3e50; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .part-text p { margin: 0; font-size: 13px; color: #6c757d; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        
+        .stock-badge { 
+            padding: 6px 14px; background-color: #e8f4fd; color: #0056b3; border: 1px solid #cce5ff; border-radius: 20px; 
+            font-size: 14px; font-weight: 800; white-space: nowrap; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-edit-main {
+            display: block; width: 100%; max-width: 800px; margin: 30px auto 10px auto; padding: 12px;
+            background-color: #ffc107; color: #212529; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-edit-main:hover { background-color: #e0a800; }
+
+        .btn-delete-main {
+            display: block; width: 100%; max-width: 800px; margin: 0 auto 10px auto; padding: 12px;
+            background-color: #dc3545; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-delete-main:hover { background-color: #c82333; }
+
+        /* 하단 카피라이트 문구 */
+        .copyright {
+            display: block; width: 100%; max-width: 800px; margin: 40px auto 20px auto;
+            text-align: center; font-size: 12px; color: #7f8c8d; font-weight: 500;
+        }
+
+        .checkbox-group {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px;
+            background: white; padding: 12px; border: 1px solid #ccc; border-radius: 4px;
+            max-height: 180px; overflow-y: auto;
+        }
+        .checkbox-group label {
+            display: flex; align-items: center; font-weight: 500 !important; font-size: 13px !important; margin-bottom: 0 !important; cursor: pointer; color: #444;
+        }
+        .checkbox-group input { width: auto; margin-right: 6px; cursor: pointer; }
+
+        @media (max-width: 500px) {
+            .app-header { flex-direction: column; text-align: center; gap: 10px; padding: 20px 15px;}
+            .header-title { align-items: center; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .action-buttons { width: 100%; justify-content: space-between; }
+            .btn-add, .btn-stats { flex: 1; text-align: center; }
+            .part-item { padding: 12px 15px; gap: 12px; border-left: 5px solid #0056b3;}
+            .part-image { width: 50px; height: 50px; }
+            .part-text h3 { font-size: 15px; }
+            .part-text p { font-size: 12px; }
+            .stock-badge { font-size: 13px; padding: 5px 12px; }
+        }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; z-index: 100;}
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative;}
+        .modal-content.large { max-width: 800px; }
+        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 28px; cursor: pointer; color: #aaa; border: none; background: none;}
+        .close-btn:hover { color: #333; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; font-weight: bold; color: #333;}
+        .form-group input[type="text"], .form-group input[type="number"], .form-group select { width: 100%; box-sizing: border-box; }
+        .form-group input[type="file"] { width: 100%; padding: 5px 0; }
+        
+        .btn-submit { width: 100%; padding: 12px; background-color: #0056b3; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;}
+        .btn-submit:hover { background-color: #004494; }
+        .btn-submit:disabled { background-color: #aaa; cursor: not-allowed; }
+
+        .btn-delete-modal { width: 100%; padding: 12px; background-color: #dc3545; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;}
+        .btn-delete-modal:hover { background-color: #c82333; }
+
+        .transaction-area { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #e9ecef;}
+        .transaction-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;}
+        .transaction-row input, .transaction-row select { flex: 1; min-width: 100px; }
+        .btn-in { background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 10px 15px; cursor: pointer; font-weight: bold;}
+        .btn-out { background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 10px 15px; cursor: pointer; font-weight: bold;}
+
+        .table-container { overflow-x: auto; margin-top: 15px; border-radius: 6px; border: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px;}
+        th, td { border-bottom: 1px solid #ddd; padding: 12px 10px; text-align: center; font-size: 13px;}
+        th { background-color: #f1f3f5; color: #333; font-weight: 700;}
+        .in-text { color: #28a745; font-weight: bold; }
+        .out-text { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">
+        <div class="header-icon">🛠️</div>
+        <div class="header-title">
+            <h1>MI Spare Part System</h1>
+            <span>Inventory & Maintenance Management</span>
+        </div>
+    </div>
+
+    <div class="top-controls">
+        <div class="dept-tabs">
+            <button class="active" id="tab-MI" onclick="setDepartment('MI')">MI</button>
+            <button id="tab-REPAIR" onclick="setDepartment('REPAIR')">REPAIR</button>
+        </div>
+        <div class="action-bar">
+            <select id="machineFilter" onchange="renderParts()"></select>
+            <div class="action-buttons">
+                <button class="btn-stats" onclick="openStatsModal()">📊 Monthly Stats</button>
+                <button class="btn-add" onclick="openAddPartModal()">+ Add Part</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="parts-list" id="partsContainer">
+        <p style="text-align:center; padding:40px; color:#888;">Loading Database...</p>
+    </div>
+
+    <button class="btn-edit-main" onclick="openEditModal()">✏️ Edit Part</button>
+    <button class="btn-delete-main" onclick="openDeleteModal()">🗑️ Delete Part</button>
+
+    <div class="copyright">Smart Factory System of SAMHWA</div>
+
+    <div class="modal-overlay" id="addPartModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('addPartModal')">&times;</button>
+            <h2 style="margin-top:0; color:#333;">Register New Part</h2>
+            <div class="form-group">
+                <label>Department</label>
+                <select id="newDept">
+                    <option value="MI">MI</option>
+                    <option value="REPAIR">REPAIR</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Machine (Multi-select)</label>
+                <div class="checkbox-group" id="newMachineGroup">
+                    <label><input type="checkbox" value="Flux Machine"> Flux Machine</label>
+                    <label><input type="checkbox" value="Wave Solder"> Wave Solder</label>
+                    <label><input type="checkbox" value="Conveyor"> Conveyor</label>
+                    <label><input type="checkbox" value="I-COP"> I-COP</label>
+                    <label><input type="checkbox" value="ICT"> ICT</label>
+                    <label><input type="checkbox" value="FPT"> FPT</label>
+                    <label><input type="checkbox" value="DPT"> DPT</label>
+                    <label><input type="checkbox" value="FT"> FT</label>
+                    <label><input type="checkbox" value="ETC"> ETC</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Part No.</label>
+                <input type="text" id="newPartNo" placeholder="ex: WS-001">
+            </div>
+            <div class="form-group">
+                <label>Part Name</label>
+                <input type="text" id="newPartName" placeholder="ex: Flux Nozzle">
+            </div>
+            <div class="form-group">
+                <label>Part Image (Auto Compressed)</label>
+                <input type="file" id="newPartImage" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label>Initial Stock (Auto-recorded as 'Initial IN')</label>
+                <input type="number" id="newStock" value="0" min="0">
+            </div>
+            <button class="btn-submit" id="btnRegisterSubmit" onclick="registerNewPart()">Register</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
+            <h2 style="margin-top:0; color:#333;">✏️ Edit Part</h2>
+            <p style="color:#666; font-size:14px; margin-top:-5px;">Select a part to edit its details.</p>
+            <div class="form-group">
+                <label>Select Part</label>
+                <select id="editPartSelect" onchange="loadPartForEdit()"></select>
+            </div>
+            <div id="editFields" style="display:none; padding-top:10px; border-top:1px dashed #ccc; margin-top:15px;">
+                <div class="form-group">
+                    <label>Department</label>
+                    <select id="editDept"><option value="MI">MI</option><option value="REPAIR">REPAIR</option></select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Machine (Multi-select)</label>
+                    <div class="checkbox-group" id="editMachineGroup">
+                        <label><input type="checkbox" value="Flux Machine"> Flux Machine</label>
+                        <label><input type="checkbox" value="Wave Solder"> Wave Solder</label>
+                        <label><input type="checkbox" value="Conveyor"> Conveyor</label>
+                        <label><input type="checkbox" value="I-COP"> I-COP</label>
+                        <label><input type="checkbox" value="ICT"> ICT</label>
+                        <label><input type="checkbox" value="FPT"> FPT</label>
+                        <label><input type="checkbox" value="DPT"> DPT</label>
+                        <label><input type="checkbox" value="FT"> FT</label>
+                        <label><input type="checkbox" value="ETC"> ETC</label>
+                    </div>
+                </div>
+
+                <div class="form-group"><label>Part No.</label><input type="text" id="editPartNo"></div>
+                <div class="form-group"><label>Part Name</label><input type="text" id="editPartName"></div>
+                <button class="btn-submit" onclick="executeEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('deleteModal')">&times;</button>
+            <h2 style="margin-top:0; color:#dc3545;">🗑️ Delete Part</h2>
+            <p style="color:#666; font-size:14px; margin-top:-5px;">Select a part from the current department to delete.</p>
+            <div class="form-group">
+                <label>Select Part</label>
+                <select id="deletePartSelect"></select>
+            </div>
+            <button class="btn-delete-modal" onclick="executeDelete()">Delete Selected Part</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('detailModal')">&times;</button>
+            <h2 id="modalPartName" style="margin-top:0; margin-bottom:5px;">Part Name</h2>
+            
+            <p id="modalMachineInfo" style="color:#666; margin-top:0; font-size:14px; line-height:1.5;">Machine: - <br> P/N: -</p>
+            
+            <h3 style="color:#0056b3; margin-top:10px;">Current Stock: <span id="modalCurrentStock">0</span> EA</h3>
+            
+            <div class="transaction-area">
+                <div class="transaction-row">
+                    <span style="font-size: 13px; color: #666; width: 100%;">[IN] Auto-assigns current month</span>
+                    <input type="number" id="inQty" placeholder="Qty">
+                    <button class="btn-in" onclick="processTransaction('IN')">IN (+)</button>
+                </div>
+                <div class="transaction-row" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                    <span style="font-size: 13px; color: #666; width: 100%;">[OUT] Select Line & Enter Reason</span>
+                    <select id="outLine">
+                        <option value="L.1">L.1</option><option value="L.2">L.2</option><option value="L.3">L.3</option>
+                        <option value="L.4">L.4</option><option value="L.5">L.5</option><option value="L.6">L.6</option>
+                        <option value="L.7">L.7</option><option value="L.8">L.8</option><option value="L.9">L.9</option>
+                        <option value="L.10">L.10</option><option value="ETC">ETC</option>
+                    </select>
+                    <input type="number" id="outQty" placeholder="Qty">
+                    <input type="text" id="outDesc" placeholder="Reason/Description">
+                    <button class="btn-out" onclick="processTransaction('OUT')">OUT (-)</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Month</th><th>Type</th><th>Line</th><th>Qty</th><th>Description</th></tr>
+                    </thead>
+                    <tbody id="modalHistoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-content large">
+            <button class="close-btn" onclick="closeModal('statsModal')">&times;</button>
+            <h2 id="statsTitle" style="margin-top:0;">📊 Monthly Stats</h2>
+            <div class="form-group" style="max-width: 250px;">
+                <label>Select Month</label>
+                <select id="statsMonthSelect" onchange="renderStatsTable()">
+                    <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                    <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                    <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                    <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Dept</th><th>Machine</th><th>Part No.</th><th>Part Name</th><th class="in-text">IN (+)</th><th class="out-text">OUT (-)</th><th>Current Stock</th></tr>
+                    </thead>
+                    <tbody id="statsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDM08SjtKYVOiVWcY4dOmad7emlMkLcxRA",
+            authDomain: "spare-part-d9c69.firebaseapp.com",
+            databaseURL: "https://spare-part-d9c69-default-rtdb.firebaseio.com",
+            projectId: "spare-part-d9c69",
+            storageBucket: "spare-part-d9c69.firebasestorage.app",
+            messagingSenderId: "695900175727",
+            appId: "1:695900175727:web:43a578b15766eb33307c9a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let partsData = [];
+        let currentDept = 'MI';
+        let selectedPartId = null;
+
+        onValue(ref(db, 'parts'), (snapshot) => {
+            const data = snapshot.val();
+            partsData = [];
+            if(data) {
+                for (let key in data) {
+                    partsData.push({ id: key, ...data[key] });
+                }
+            }
+            window.updateMachineDropdown();
+            window.renderParts();
+        });
+
+        function compressImage(file, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        resolve(compressedDataUrl);
+                    };
+                    img.onerror = (error) => reject(error);
+                };
+                reader.onerror = (error) => reject(error);
+            });
+        }
+
+        window.setDepartment = function(dept) {
+            currentDept = dept;
+            document.getElementById('tab-MI').classList.remove('active');
+            document.getElementById('tab-REPAIR').classList.remove('active');
+            document.getElementById('tab-' + dept).classList.add('active');
+            window.updateMachineDropdown();
+            window.renderParts();
+        };
+
+        window.updateMachineDropdown = function() {
+            const filterSelect = document.getElementById('machineFilter');
+            filterSelect.innerHTML = '<option value="ALL">All Machines</option>';
+            const machines = ["Flux Machine", "Wave Solder", "Conveyor", "I-COP", "ICT", "FPT", "DPT", "FT", "ETC"];
+            machines.forEach(m => filterSelect.innerHTML += `<option value="${m}">${m}</option>`);
+        };
+
+        window.renderParts = function() {
+            const container = document.getElementById('partsContainer');
+            container.innerHTML = ''; 
+            const selectedMachine = document.getElementById('machineFilter').value;
+
+            let filtered = partsData.filter(p => p.dept === currentDept);
+            
+            if (selectedMachine !== 'ALL') {
+                filtered = filtered.filter(p => {
+                    const mArray = Array.isArray(p.machine) ? p.machine : [p.machine];
+                    return mArray.includes(selectedMachine);
+                });
+            }
+
+            if(filtered.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 40px 20px; color:#888; background:white; border-radius:8px;">No parts registered.</p>';
+                return;
+            }
+
+            filtered.forEach(part => {
+                const item = document.createElement('div');
+                item.className = 'part-item';
+                item.onclick = () => window.openDetailModal(part.id); 
+                
+                const imageContent = part.imageUrl ? `<img src="${part.imageUrl}" alt="${part.name}">` : 'No Img';
+                const machineDisplay = Array.isArray(part.machine) ? part.machine.join(', ') : part.machine;
+
+                // 메인 리스트 줄바꿈 적용 부분
+                item.innerHTML = `
+                    <div class="part-image">${imageContent}</div>
+                    <div class="part-info-container">
+                        <div class="part-text">
+                            <h3>${part.name}</h3>
+                            <p style="margin-bottom: 3px;">Machine: ${machineDisplay}</p>
+                            <p>P/N: ${part.partNo}</p>
+                        </div>
+                        <div class="stock-badge">Stock: ${part.stock}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        };
+
+        window.openAddPartModal = function() {
+            document.querySelectorAll('#newMachineGroup input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('newPartNo').value = '';
+            document.getElementById('newPartName').value = '';
+            document.getElementById('newStock').value = '0';
+            document.getElementById('newPartImage').value = '';
+            document.getElementById('addPartModal').style.display = 'flex';
+        };
+
+        window.registerNewPart = async function() {
+            const btnSubmit = document.getElementById('btnRegisterSubmit');
+            const partNo = document.getElementById('newPartNo').value.trim();
+            const name = document.getElementById('newPartName').value.trim();
+            const stock = parseInt(document.getElementById('newStock').value) || 0;
+            const fileInput = document.getElementById('newPartImage');
+
+            const checkedMachines = document.querySelectorAll('#newMachineGroup input[type="checkbox"]:checked');
+            const machineArray = Array.from(checkedMachines).map(cb => cb.value);
+
+            if(machineArray.length === 0) { alert("Please select at least one Machine."); return; }
+            if(!partNo || !name) { alert("Please enter Part No. and Name."); return; }
+
+            btnSubmit.innerText = "Uploading... Wait";
+            btnSubmit.disabled = true;
+
+            let finalImageUrl = null;
+            const file = fileInput.files[0];
+
+            try {
+                if (file) {
+                    const compressedBase64 = await compressImage(file, 800, 0.7);
+                    const imageFileName = 'parts/' + Date.now() + '.jpg';
+                    const sRef = storageRef(storage, imageFileName);
+                    await uploadString(sRef, compressedBase64, 'data_url');
+                    finalImageUrl = await getDownloadURL(sRef);
+                }
+
+                const newPartData = {
+                    dept: document.getElementById('newDept').value,
+                    machine: machineArray, 
+                    partNo: partNo,
+                    name: name,
+                    stock: stock,
+                    imageUrl: finalImageUrl, 
+                    history: []
+                };
+
+                if(stock > 0) {
+                    const currentMonth = monthNames[new Date().getMonth()];
+                    newPartData.history = [{ date: currentMonth, type: 'IN', line: '-', qty: stock, desc: 'Initial IN' }];
+                }
+
+                const newPartRef = push(ref(db, 'parts'));
+                await set(newPartRef, newPartData);
+
+                window.closeModal('addPartModal');
+                window.setDepartment(newPartData.dept); 
+                alert("Successfully registered.");
+
+            } catch (error) {
+                console.error("Upload Error: ", error);
+                alert("Error saving part: " + error.message);
+            } finally {
+                btnSubmit.innerText = "Register";
+                btnSubmit.disabled = false;
+            }
+        };
+
+        window.openDetailModal = function(id) {
+            selectedPartId = id;
+            const part = partsData.find(p => p.id === id);
+            if(!part) return;
+
+            const machineDisplay = Array.isArray(part.machine) ? part.machine.join(', ') : part.machine;
+
+            document.getElementById('modalPartName').innerText = part.name;
+            
+            document.getElementById('modalMachineInfo').innerHTML = `Machine: ${machineDisplay} <br> P/N: ${part.partNo}`;
+            
+            document.getElementById('modalCurrentStock').innerText = part.stock;
+            window.renderHistoryTable(part);
+            document.getElementById('detailModal').style.display = 'flex';
+        };
+
+        window.renderHistoryTable = function(part) {
+            const body = document.getElementById('modalHistoryBody');
+            body.innerHTML = '';
+            
+            if(!part.history || part.history.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" style="padding:20px;">No history available.</td></tr>';
+                return;
+            }
+
+            [...part.history].reverse().forEach(h => {
+                const typeLabel = h.type === 'IN' ? 'IN' : 'OUT';
+                body.innerHTML += `
+                    <tr>
+                        <td>${h.date}</td>
+                        <td class="${h.type === 'IN' ? 'in-text' : 'out-text'}">${typeLabel}</td>
+                        <td>${h.line}</td>
+                        <td style="font-weight:bold;">${h.type === 'IN' ? '+' : '-'}${h.qty}</td>
+                        <td style="text-align:left;">${h.desc}</td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.processTransaction = async function(type) {
+            const part = partsData.find(p => p.id === selectedPartId);
+            if(!part) return;
+
+            const currentMonth = monthNames[new Date().getMonth()];
+            let newQty = 0;
+            let newHistoryObj = {};
+
+            if (type === 'IN') {
+                newQty = parseInt(document.getElementById('inQty').value);
+                if(!newQty || newQty <= 0) return;
+                
+                newHistoryObj = { date: currentMonth, type: 'IN', line: '-', qty: newQty, desc: '-' };
+                part.stock += newQty;
+                document.getElementById('inQty').value = '';
+            } else {
+                newQty = parseInt(document.getElementById('outQty').value);
+                const line = document.getElementById('outLine').value;
+                const desc = document.getElementById('outDesc').value.trim();
+                
+                if(!newQty || !desc) { alert("Please enter Qty and Reason."); return; }
+                if(part.stock < newQty) { alert("Not enough stock!"); return; }
+                
+                newHistoryObj = { date: currentMonth, type: 'OUT', line: line, qty: newQty, desc: desc };
+                part.stock -= newQty;
+                document.getElementById('outQty').value = '';
+                document.getElementById('outDesc').value = '';
+            }
+
+            if(!part.history) part.history = [];
+            part.history.push(newHistoryObj);
+
+            const partRef = ref(db, 'parts/' + part.id);
+            await update(partRef, { stock: part.stock, history: part.history });
+
+            document.getElementById('modalCurrentStock').innerText = part.stock;
+            window.renderHistoryTable(part);
+        };
+
+        window.openEditModal = function() {
+            const select = document.getElementById('editPartSelect');
+            select.innerHTML = '<option value="">-- Select a part to edit --</option>';
+
+            const currentDeptParts = partsData.filter(p => p.dept === currentDept);
+            
+            if(currentDeptParts.length === 0) {
+                select.innerHTML = '<option value="">No parts available</option>';
+            } else {
+                currentDeptParts.forEach(part => {
+                    const mDisplay = Array.isArray(part.machine) ? part.machine[0] + (part.machine.length>1?'...':'') : part.machine;
+                    select.innerHTML += `<option value="${part.id}">[${mDisplay}] ${part.name} (P/N: ${part.partNo})</option>`;
+                });
+            }
+
+            document.getElementById('editFields').style.display = 'none'; 
+            document.getElementById('editModal').style.display = 'flex';
+        };
+
+        window.loadPartForEdit = function() {
+            const partId = document.getElementById('editPartSelect').value;
+            if(!partId) {
+                document.getElementById('editFields').style.display = 'none';
+                return;
+            }
+            
+            const part = partsData.find(p => p.id === partId);
+            if(part) {
+                document.getElementById('editDept').value = part.dept;
+                document.getElementById('editPartNo').value = part.partNo;
+                document.getElementById('editPartName').value = part.name;
+                
+                const machineArray = Array.isArray(part.machine) ? part.machine : [part.machine];
+                document.querySelectorAll('#editMachineGroup input[type="checkbox"]').forEach(cb => {
+                    cb.checked = machineArray.includes(cb.value);
+                });
+
+                document.getElementById('editFields').style.display = 'block'; 
+            }
+        };
+
+        window.executeEdit = async function() {
+            const partId = document.getElementById('editPartSelect').value;
+            if(!partId) return;
+
+            const newDept = document.getElementById('editDept').value;
+            const newPartNo = document.getElementById('editPartNo').value.trim();
+            const newPartName = document.getElementById('editPartName').value.trim();
+
+            const checkedMachines = document.querySelectorAll('#editMachineGroup input[type="checkbox"]:checked');
+            const newMachineArray = Array.from(checkedMachines).map(cb => cb.value);
+
+            if(newMachineArray.length === 0) { alert("Please select at least one Machine."); return; }
+            if(!newPartNo || !newPartName) { alert("Please enter Part No. and Name."); return; }
+
+            const partRef = ref(db, 'parts/' + partId);
+            await update(partRef, {
+                dept: newDept,
+                machine: newMachineArray,
+                partNo: newPartNo,
+                name: newPartName
+            });
+
+            window.closeModal('editModal');
+            
+            if(newDept !== currentDept) {
+                window.setDepartment(newDept);
+            }
+            alert("Part successfully updated.");
+        };
+
+        window.openDeleteModal = function() {
+            const select = document.getElementById('deletePartSelect');
+            select.innerHTML = '<option value="">-- Select a part to delete --</option>';
+
+            const currentDeptParts = partsData.filter(p => p.dept === currentDept);
+            
+            if(currentDeptParts.length === 0) {
+                select.innerHTML = '<option value="">No parts available</option>';
+            } else {
+                currentDeptParts.forEach(part => {
+                    const mDisplay = Array.isArray(part.machine) ? part.machine[0] + (part.machine.length>1?'...':'') : part.machine;
+                    select.innerHTML += `<option value="${part.id}">[${mDisplay}] ${part.name} (P/N: ${part.partNo})</option>`;
+                });
+            }
+
+            document.getElementById('deleteModal').style.display = 'flex';
+        };
+
+        window.executeDelete = async function() {
+            const select = document.getElementById('deletePartSelect');
+            const partId = select.value;
+
+            if(!partId) { alert("Please select a part to delete."); return; }
+
+            const confirmDelete = confirm("Are you sure you want to delete this part?\nThis action cannot be undone.");
+            
+            if (confirmDelete) {
+                const partRef = ref(db, 'parts/' + partId);
+                await remove(partRef);
+                window.closeModal('deleteModal');
+                alert("Part successfully deleted.");
+            }
+        };
+
+        window.openStatsModal = function() {
+            const currentMonth = monthNames[new Date().getMonth()];
+            document.getElementById('statsMonthSelect').value = currentMonth;
+            window.renderStatsTable();
+            document.getElementById('statsModal').style.display = 'flex';
+        };
+
+        window.renderStatsTable = function() {
+            const selectedMonth = document.getElementById('statsMonthSelect').value;
+            const selectedMachine = document.getElementById('machineFilter').value; 
+            const tbody = document.getElementById('statsTableBody');
+            tbody.innerHTML = '';
+
+            const statsTitle = document.getElementById('statsTitle');
+            const machineText = selectedMachine === 'ALL' ? 'All Machines' : selectedMachine;
+            statsTitle.innerText = `📊 Monthly Stats (${currentDept} - ${machineText})`;
+
+            let hasData = false;
+            let filteredParts = partsData.filter(p => p.dept === currentDept);
+            
+            if (selectedMachine !== 'ALL') {
+                filteredParts = filteredParts.filter(p => {
+                    const mArray = Array.isArray(p.machine) ? p.machine : [p.machine];
+                    return mArray.includes(selectedMachine);
+                });
+            }
+
+            filteredParts.forEach(part => {
+                let inSum = 0;
+                let outSum = 0;
+
+                if(part.history) {
+                    part.history.forEach(h => {
+                        if (h.date === selectedMonth) {
+                            if (h.type === 'IN') inSum += h.qty;
+                            if (h.type === 'OUT') outSum += h.qty;
+                        }
+                    });
+                }
+
+                if (inSum > 0 || outSum > 0) {
+                    hasData = true;
+                    const machineDisplay = Array.isArray(part.machine) ? part.machine.join(', ') : part.machine;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${part.dept}</td>
+                            <td>${machineDisplay}</td>
+                            <td>${part.partNo}</td>
+                            <td style="text-align:left; font-weight:bold;">${part.name}</td>
+                            <td class="in-text">${inSum > 0 ? '+' + inSum : '0'}</td>
+                            <td class="out-text">${outSum > 0 ? '-' + outSum : '0'}</td>
+                            <td><strong>${part.stock}</strong></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (!hasData) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color:#888; padding:30px;">No IN/OUT history for ${selectedMonth}.</td></tr>`;
+            }
+        };
+
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+
+        window.updateMachineDropdown();
+    </script>
+</body>
+</html>
