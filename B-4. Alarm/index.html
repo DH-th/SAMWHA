@@ -297,7 +297,7 @@
         statusMsg.innerText = "🚨 กำลังเรียก... (코드: " + code + ")";
         statusMsg.style.color = "#d90000";
 
-        fetch('http://10.0.0.49:5000/api/call', {
+        fetch('http:/134.236.40.131:5000/api/call', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code: code })
