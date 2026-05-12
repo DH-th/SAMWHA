@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SAMWHA ALARM</title>
+    <style>
+        /* 기본 설정 */
+        body { 
+            font-family: 'Tahoma', sans-serif; 
+            margin: 0; 
+            padding: 0;
+            background-color: #f0f2f5; 
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 상단 헤더 */
+        .header {
+            background-color: #003366; 
+            color: #ffffff;
+            padding: 15px 0;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* --- 1. 설정 화면 (버튼식 디자인) --- */
+        #setup-screen {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0 10px 0;
+            text-align: left;
+        }
+
+        /* 라인 선택 그리드 (5개씩 2줄) */
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* 설비 선택 그리드 (3개씩 여러줄) */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* 선택 버튼 스타일 */
+        .select-btn {
+            background-color: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 12px 5px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Tahoma', sans-serif;
+        }
+        
+        .select-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 버튼이 선택되었을 때의 스타일 */
+        .select-btn.active {
+            background-color: #003366;
+            color: white;
+            border-color: #003366;
+            box-shadow: 0 2px 5px rgba(0, 51, 102, 0.3);
+        }
+
+        /* 저장 버튼 */
+        .save-btn {
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        /* --- 2. 호출 화면 (메인 화면) --- */
+        #call-screen {
+            display: none; 
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .location-info {
+            font-size: 22px;
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 30px;
+            background: #fff;
+            padding: 12px 25px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .giant-btn {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(145deg, #ff4b4b, #d90000);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 36px;
+            font-weight: 900;
+            box-shadow: 0 10px 20px rgba(217, 0, 0, 0.4), inset 0 -5px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .giant-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 10px rgba(217, 0, 0, 0.4);
+        }
+        .giant-btn span {
+            font-size: 16px;
+            font-weight: normal;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        /* 하단 수정 버튼 */
+        .edit-wrapper {
+            margin-top: auto;
+            padding: 20px;
+        }
+        .edit-btn {
+            background: none;
+            border: none;
+            color: #666;
+            text-decoration: underline;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        #status-msg {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #003366;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">SAMWHA ALARM</div>
+
+    <div class="container">
+        
+        <!-- 1. 부서 설정 화면 -->
+        <div id="setup-screen">
+            <h3 style="margin-top: 0; color: #003366;">ตั้งค่าตำแหน่งพื้นที่ทำงาน</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">(설정을 완료해주세요)</p>
+            
+            <!-- 중분류: 라인 선택 (5개씩 2줄) -->
+            <div class="section-title">📍 เลือกไลน์ (라인)</div>
+            <div class="grid-5">
+                <button class="select-btn line-btn" onclick="selectLine(this, '1', 'ไลน์ 1')">L.1</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '2', 'ไลน์ 2')">L.2</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '3', 'ไลน์ 3')">L.3</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '4', 'ไลน์ 4')">L.4</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '5', 'ไลน์ 5')">L.5</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '6', 'ไลน์ 6')">L.6</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '7', 'ไลน์ 7')">L.7</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '8', 'ไลน์ 8')">L.8</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '9', 'ไลน์ 9')">L.9</button>
+                <button class="select-btn line-btn" onclick="selectLine(this, '0', 'ไลน์ 10')">L.10</button>
+            </div>
+
+            <!-- 소분류: 설비 선택 -->
+            <div class="section-title">🔧 เลือกกระบวนการ (설비)</div>
+            <div class="grid-3">
+                <button class="select-btn eq-btn" onclick="selectEq(this, '1', 'ไอคอป')">I-COP</button>
+                <button class="select-btn eq-btn" onclick="selectEq(this, '2', 'เวฟโซลเดอร์')">Wave Solder</button>
+                <button class="select-btn eq-btn" onclick="selectEq(this, '3', 'ทัชอัพ')">Touchup</button>
+                <button class="select-btn eq-btn" onclick="selectEq(this, '4', 'ไอซีที')">ICT</button>
+                <button class="select-btn eq-btn" onclick="selectEq(this, '5', 'เอฟพีที')">FPT</button>
+                <button class="select-btn eq-btn" onclick="selectEq(this, '6', 'ดีพีที')">DPT</button>
+                <button class="select-btn eq-btn" onclick="selectEq(this, '7', 'สแกน')">Scan</button>
+            </div>
+
+            <!-- 설정 저장 버튼 -->
+            <button class="save-btn" onclick="saveLocation()">บันทึกการตั้งค่า</button>
+        </div>
+
+        <!-- 2. 엔지니어 호출 화면 -->
+        <div id="call-screen">
+            <div class="location-info" id="display-location"></div>
+            
+            <button class="giant-btn" onclick="callEngineer()">
+                เรียกช่าง
+                <span>ENGINEER CALL</span>
+            </button>
+
+            <div id="status-msg"></div>
+        </div>
+
+    </div>
+
+    <!-- 설정 수정 버튼 -->
+    <div class="edit-wrapper" id="edit-wrapper" style="display: none;">
+        <button class="edit-btn" onclick="showSetupScreen()">แก้ไขการตั้งค่า (설정 수정)</button>
+    </div>
+
+<script>
+    // 선택된 값을 저장할 변수
+    let selectedCat2 = "";
+    let selectedCat2Text = "";
+    let selectedCat3 = "";
+    let selectedCat3Text = "";
+
+    window.onload = function() {
+        const savedCode = localStorage.getItem("workerCode");
+        if (savedCode) { showCallScreen(); } 
+        else { showSetupScreen(); }
+    };
+
+    // 라인 버튼 클릭 시 색상 변경 및 값 저장
+    function selectLine(btn, val, text) {
+        document.querySelectorAll('.line-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedCat2 = val;
+        selectedCat2Text = text;
+    }
+
+    // 설비 버튼 클릭 시 색상 변경 및 값 저장
+    function selectEq(btn, val, text) {
+        document.querySelectorAll('.eq-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedCat3 = val;
+        selectedCat3Text = text;
+    }
+
+    function saveLocation() {
+        // 두 개 모두 선택했는지 확인
+        if (!selectedCat2 || !selectedCat3) {
+            alert("กรุณาเลือกไลน์และกระบวนการให้ครบถ้วน\n(라인과 설비를 모두 선택해주세요)");
+            return;
+        }
+
+        // 파이썬 오류 방지를 위해 대분류는 항상 'A'로 고정해서 전송
+        const code = "A" + selectedCat2 + selectedCat3;
+        
+        // 화면에 보여줄 텍스트 (예: ไลน์ 1 / เวฟโซลเดอร์)
+        const text = selectedCat2Text + " / " + selectedCat3Text;
+
+        localStorage.setItem("workerCode", code);
+        localStorage.setItem("workerText", text);
+
+        showCallScreen();
+    }
+
+    function callEngineer() {
+        const code = localStorage.getItem("workerCode");
+        const statusMsg = document.getElementById("status-msg");
+        
+        statusMsg.innerText = "🚨 กำลังเรียก... (코드: " + code + ")";
+        statusMsg.style.color = "#d90000";
+
+        fetch('http://10.0.0.49:5000/api/call', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        })
+        .then(response => {
+            if (response.ok) {
+                statusMsg.innerText = "✅ ส่งคำขอสำเร็จ!"; // 전송 성공
+                statusMsg.style.color = "#28a745";
+            } else {
+                statusMsg.innerText = "⚠️ ข้อผิดพลาดจากเซิร์ฟเวอร์"; // 서버 에러
+                statusMsg.style.color = "#d90000";
+            }
+            setTimeout(() => { statusMsg.innerText = ""; }, 3000);
+        })
+        .catch(error => {
+            console.error('Fetch 에러:', error);
+            statusMsg.innerText = "❌ ข้อผิดพลาดในการสื่อสาร (ตรวจสอบ Wi-Fi)"; // 통신 에러
+            statusMsg.style.color = "#d90000";
+        });
+    }
+
+    function showCallScreen() {
+        document.getElementById("setup-screen").style.display = "none";
+        document.getElementById("call-screen").style.display = "flex";
+        document.getElementById("edit-wrapper").style.display = "block";
+
+        const savedText = localStorage.getItem("workerText");
+        document.getElementById("display-location").innerText = savedText;
+    }
+
+    function showSetupScreen() {
+        document.getElementById("setup-screen").style.display = "block";
+        document.getElementById("call-screen").style.display = "none";
+        document.getElementById("edit-wrapper").style.display = "none";
+        document.getElementById("status-msg").innerText = "";
+    }
+</script>
+
+</body>
+</html>
