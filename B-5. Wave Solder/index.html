@@ -50,7 +50,7 @@
         .btn-status:active { opacity: 0.7; }
         .btn-status.run { background-color: var(--run); color: white; } .btn-status.stby { background-color: var(--stby); color: white; } .btn-status.off { background-color: var(--off); color: #333; } .btn-status.repair { background-color: var(--repair); color: white; }
         
-        /* 통계 테이블 스타일 (수정됨: 정렬 및 날짜 표시 공간 최적화) */
+        /* 통계 테이블 스타일 */
         .stats-controls { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
         .stats-table { width: 100%; border-collapse: collapse; background: var(--card-bg); font-size: 0.85em; text-align: center; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 8px; }
@@ -134,8 +134,7 @@
                     <th>OFF</th>
                 </tr>
             </thead>
-            <tbody id="stats-tbody">
-                </tbody>
+            <tbody id="stats-tbody"></tbody>
         </table>
     </div>
 
@@ -157,49 +156,49 @@
     <div class="pc-grid" id="pc-grid"></div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCzsVVxKi2G0SP2sEqzcqfBcpZuxo9EeNo",
-        authDomain: "wave-solder.firebaseapp.com",
-        projectId: "wave-solder",
-        storageBucket: "wave-solder.firebasestorage.app",
-        messagingSenderId: "918250367234",
-        appId: "1:918250367234:web:4b5693211883e1aac17a1b"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+<script>
+    // 🔌 Firebase 제거 및 고정 내부 IP 웹소켓(WebSocket) 통신 설정
+    const SERVER_IP = "10.0.0.48:8000";
+    const ws = new WebSocket(`ws://${SERVER_IP}/ws`);
 
     let lines = Array.from({length: 7}, (_, i) => ({ id: i + 1, status: 'OFF', lastChanged: new Date().getTime() }));
     let logs = [];
     let currentShift = "";
     let currentPage = 1;
     const itemsPerPage = 10;
-    
     let selectedLineId = 1;
+    let currentStatPeriod = 'day';
+    let lastDateChecked = new Date().getDate();
 
-    onSnapshot(collection(db, "lines"), (snapshot) => {
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const index = lines.findIndex(l => l.id === parseInt(doc.id));
-            if(index !== -1) {
-                lines[index].status = data.status;
-                lines[index].lastChanged = data.lastChanged || new Date().getTime();
+    // 🌐 웹소켓 데이터 실시간 수신 이벤트 처리
+    ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        
+        if (message.type === "INIT_STATUS") {
+            // 첫 접속 시 현재 파이썬 서버 메모리에 저장된 전체 상태 동기화
+            Object.keys(message.data).forEach(id => {
+                const index = lines.findIndex(l => l.id === parseInt(id));
+                if (index !== -1) {
+                    lines[index].status = message.data[id].status;
+                    lines[index].lastChanged = message.data[id].lastChanged;
+                }
+            });
+            renderUI();
+        } 
+        else if (message.type === "STATUS_CHANGED") {
+            // 다른 사용자가 상태를 변경하면 즉시 내 화면도 동기화
+            const index = lines.findIndex(l => l.id === parseInt(message.lineId));
+            if (index !== -1) {
+                lines[index].status = message.status;
+                lines[index].lastChanged = message.lastChanged;
             }
-        });
-        renderUI();
-    });
-
-    const q = query(collection(db, "logs"), orderBy("createdAt", "desc"));
-    onSnapshot(q, (snapshot) => {
-        logs = [];
-        snapshot.forEach((doc) => logs.push(doc.data()));
-        renderLogs();
-        updateStats(); // 로그 업데이트 시 통계도 리렌더링
-    });
+            logs.unshift(message.newLog); // 로그 목록 최상단에 추가
+            
+            renderUI();
+            renderLogs();
+            updateStats();
+        }
+    };
 
     function formatDuration(ms) {
         if(ms < 0) ms = 0;
@@ -231,10 +230,10 @@
         renderUI();
     }
 
-    window.recordStatus = async function(newStatus) {
+    // 📤 버튼 누를 시 웹소켓을 통해 파이썬 백엔드로 전송
+    window.recordStatus = function(newStatus) {
         const lineId = selectedLineId;
         const nowMs = new Date().getTime();
-        
         const line = lines[lineId - 1];
 
         if(line.status === newStatus) {
@@ -242,7 +241,6 @@
             return;
         }
 
-        // --- 태국어 확인 창 (Confirm Dialog) 로직 추가 ---
         let statusLabel = "";
         if(newStatus === 'RUN') statusLabel = 'เริ่ม RUN (260℃ / 160℃)';
         else if(newStatus === 'STBY') statusLabel = 'STBY (180℃ / OFF)';
@@ -251,41 +249,32 @@
 
         const confirmMsg = `ยืนยันการเปลี่ยนสถานะ Line ${lineId}\nเป็น "${statusLabel}" หรือไม่?`;
         
-        if (!window.confirm(confirmMsg)) {
-            return; // 사용자가 취소(Cancel)를 누르면 함수 종료
-        }
-        // --------------------------------------------------
+        if (!window.confirm(confirmMsg)) return;
 
         const elapsedMs = nowMs - line.lastChanged;
         const durationStr = formatDuration(elapsedMs);
         const prevStatus = line.status;
-
-        await setDoc(doc(db, "lines", lineId.toString()), {
-            status: newStatus,
-            lastChanged: nowMs
-        });
-
         const now = new Date();
-        await addDoc(collection(db, "logs"), {
+
+        // 파이썬 웹소켓 서버로 데이터 전송 (이후 파일 저장 및 브로드캐스트가 서버에서 진행됨)
+        ws.send(JSON.stringify({
+            type: "UPDATE_STATUS",
             lineId: lineId,
-            prevStatus: getStatusName(prevStatus),
-            newStatus: getStatusName(newStatus),
+            newStatus: newStatus,
             durationStr: durationStr,
             durationMs: elapsedMs,
             date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
             time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
             shift: currentShift,
             createdAt: nowMs
-        });
+        }));
 
         currentPage = 1;
     }
 
-    // --- 통계 날짜 표시 텍스트 업데이트 로직 ---
     function updateStatDateDisplay() {
         const now = new Date();
         let displayStr = "";
-
         if (currentStatPeriod === 'day') {
             displayStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
         } else if (currentStatPeriod === 'week') {
@@ -296,12 +285,8 @@
         } else if (currentStatPeriod === 'month') {
             displayStr = `${now.getMonth() + 1}월`;
         }
-
         document.getElementById('stat-date-display').innerText = displayStr;
     }
-
-    // --- 통계 관련 로직 ---
-    let currentStatPeriod = 'day';
 
     window.changeStatPeriod = function(period) {
         currentStatPeriod = period;
@@ -310,7 +295,7 @@
         document.getElementById('btn-stat-month').classList.remove('active');
         document.getElementById(`btn-stat-${period}`).classList.add('active');
         
-        updateStatDateDisplay(); // 버튼 누를 때마다 날짜 텍스트 갱신
+        updateStatDateDisplay();
         updateStats(); 
     }
 
@@ -339,14 +324,8 @@
 
         logs.forEach(log => {
             let ms = log.durationMs || 0;
-            if (!ms && log.durationStr) {
-                let parts = log.durationStr.split(':');
-                if(parts.length === 3) ms = (+parts[0] * 3600 + +parts[1] * 60 + +parts[2]) * 1000;
-            }
-            
             let logEnd = log.createdAt;
             let logStart = logEnd - ms;
-            
             let overlapMs = Math.max(0, logEnd - Math.max(startTime, logStart));
 
             if (overlapMs > 0) {
@@ -382,9 +361,6 @@
         tbody.innerHTML = html;
     }
 
-    // 기존 1초마다 시계 갱신 및 날짜 범위 검사
-    let lastDateChecked = new Date().getDate();
-
     function updateTimeAndTimers() {
         const now = new Date();
         const hours = now.getHours();
@@ -408,7 +384,6 @@
             if (pcTimerElement) pcTimerElement.innerText = formatDurationPC(elapsedMs);
         });
 
-        // 자정이 넘어 날짜가 바뀌었을 경우 날짜 텍스트 자동으로 새로고침
         if (now.getDate() !== lastDateChecked) {
             lastDateChecked = now.getDate();
             updateStatDateDisplay();
@@ -502,7 +477,7 @@
         currentLogs.forEach(log => {
             const li = document.createElement('li');
             li.className = 'log-item';
-            let newStatusColor = log.newStatus === 'REPAIR (กำลังซ่อมแซม)' ? 'var(--repair)' : 'var(--primary)';
+            let newStatusColor = log.newStatus.includes('REPAIR') ? 'var(--repair)' : 'var(--primary)';
             li.innerHTML = `
                 <div class="log-header"><strong>Line ${log.lineId}</strong><span class="log-time">${log.date} ${log.time} (${log.shift})</span></div>
                 <div>${log.prevStatus} ➔ <b style="color:${newStatusColor}">${log.newStatus}</b></div>
@@ -530,7 +505,6 @@
         if (document.fullscreenElement) document.exitFullscreen();
     }
 
-    // 초기 로딩 시 한 번 호출하여 날짜 텍스트 설정
     updateStatDateDisplay();
     setInterval(updateTimeAndTimers, 1000); 
     renderUI(); 
