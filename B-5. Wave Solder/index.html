@@ -157,9 +157,11 @@
 </div>
 
 <script>
-    // 🔌 Firebase 제거 및 고정 내부 IP 웹소켓(WebSocket) 통신 설정
-    const SERVER_IP = "10.0.0.48:8000";
-    const ws = new WebSocket(`ws://${SERVER_IP}/ws`);
+    // ─── 🛠️ [핵심 변경] 클라우드플레어 터널 환경 주소 설정 ───
+    // 도메인을 samhwa.cloud 로 쓰시기 때문에 주소 뒤에 하위 공정폴더 이름(구분자)만 지정해 주면 됩니다.
+    // 만약 이 파일이 SMD용 복사본이라면 끝부분을 /ws/smd 로 바꾸어 저장하시면 됩니다.
+    const TUNNEL_DOMAIN = "samhwa.cloud"; 
+    const ws = new WebSocket(`wss://${TUNNEL_DOMAIN}/ws/wave`); // 👈 외부 접속이므로 보안인 wss:// 로 통신합니다.
 
     let lines = Array.from({length: 7}, (_, i) => ({ id: i + 1, status: 'OFF', lastChanged: new Date().getTime() }));
     let logs = [];
@@ -170,12 +172,9 @@
     let currentStatPeriod = 'day';
     let lastDateChecked = new Date().getDate();
 
-    // 🌐 웹소켓 데이터 실시간 수신 이벤트 처리
     ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        
         if (message.type === "INIT_STATUS") {
-            // 첫 접속 시 현재 파이썬 서버 메모리에 저장된 전체 상태 동기화
             Object.keys(message.data).forEach(id => {
                 const index = lines.findIndex(l => l.id === parseInt(id));
                 if (index !== -1) {
@@ -186,14 +185,12 @@
             renderUI();
         } 
         else if (message.type === "STATUS_CHANGED") {
-            // 다른 사용자가 상태를 변경하면 즉시 내 화면도 동기화
             const index = lines.findIndex(l => l.id === parseInt(message.lineId));
             if (index !== -1) {
                 lines[index].status = message.status;
                 lines[index].lastChanged = message.lastChanged;
             }
-            logs.unshift(message.newLog); // 로그 목록 최상단에 추가
-            
+            logs.unshift(message.newLog);
             renderUI();
             renderLogs();
             updateStats();
@@ -230,7 +227,6 @@
         renderUI();
     }
 
-    // 📤 버튼 누를 시 웹소켓을 통해 파이썬 백엔드로 전송
     window.recordStatus = function(newStatus) {
         const lineId = selectedLineId;
         const nowMs = new Date().getTime();
@@ -248,7 +244,6 @@
         else statusLabel = 'ปิดเครื่อง OFF (OFF / OFF)';
 
         const confirmMsg = `ยืนยันการเปลี่ยนสถานะ Line ${lineId}\nเป็น "${statusLabel}" หรือไม่?`;
-        
         if (!window.confirm(confirmMsg)) return;
 
         const elapsedMs = nowMs - line.lastChanged;
@@ -256,7 +251,6 @@
         const prevStatus = line.status;
         const now = new Date();
 
-        // 파이썬 웹소켓 서버로 데이터 전송 (이후 파일 저장 및 브로드캐스트가 서버에서 진행됨)
         ws.send(JSON.stringify({
             type: "UPDATE_STATUS",
             lineId: lineId,
@@ -268,7 +262,6 @@
             shift: currentShift,
             createdAt: nowMs
         }));
-
         currentPage = 1;
     }
 
@@ -294,7 +287,6 @@
         document.getElementById('btn-stat-week').classList.remove('active');
         document.getElementById('btn-stat-month').classList.remove('active');
         document.getElementById(`btn-stat-${period}`).classList.add('active');
-        
         updateStatDateDisplay();
         updateStats(); 
     }
@@ -319,7 +311,6 @@
         for(let i=1; i<=7; i++) {
             stats[i] = { 'RUN': 0, 'STBY': 0, 'REPAIR': 0, 'OFF': 0 };
         }
-
         const currentMs = Date.now();
 
         logs.forEach(log => {
@@ -333,7 +324,6 @@
                 if(log.prevStatus.includes('RUN')) key = 'RUN';
                 else if(log.prevStatus.includes('STBY')) key = 'STBY';
                 else if(log.prevStatus.includes('REPAIR')) key = 'REPAIR';
-
                 if(stats[log.lineId]) stats[log.lineId][key] += overlapMs;
             }
         });
@@ -341,7 +331,6 @@
         lines.forEach(line => {
             let currentStart = line.lastChanged;
             let overlapMs = Math.max(0, currentMs - Math.max(startTime, currentStart));
-            
             if (overlapMs > 0 && stats[line.id]) {
                 let key = line.status; 
                 stats[line.id][key] += overlapMs;
@@ -376,10 +365,8 @@
         const nowMs = now.getTime();
         lines.forEach(line => {
             const elapsedMs = nowMs - line.lastChanged;
-            
             const timerElement = document.getElementById(`timer-${line.id}`);
             if (timerElement) timerElement.innerText = `⏱ ${formatDuration(elapsedMs)}`;
-
             const pcTimerElement = document.getElementById(`pc-timer-${line.id}`);
             if (pcTimerElement) pcTimerElement.innerText = formatDurationPC(elapsedMs);
         });
@@ -388,7 +375,6 @@
             lastDateChecked = now.getDate();
             updateStatDateDisplay();
         }
-
         updateStats();
     }
 
@@ -398,7 +384,6 @@
         const pcGrid = document.getElementById('pc-grid');
         
         mapContainer.innerHTML = ''; dashboard.innerHTML = ''; pcGrid.innerHTML = '';
-        
         const physicalOrder = [7, 6, 5, 4, 3, 2, 1]; 
         const logicalOrder = [1, 2, 3, 4, 5, 6, 7];
 
@@ -424,7 +409,6 @@
             const line = lines[lineId - 1]; 
             const { badgeClass } = getCardData(line);
             const isSelectedClass = (line.id === selectedLineId) ? 'selected' : '';
-
             const nodeWrapper = document.createElement('div');
             nodeWrapper.innerHTML = `<div class="map-node ${badgeClass} ${isSelectedClass}" onclick="selectLine(${line.id})">L${line.id}</div>`;
             mapContainer.appendChild(nodeWrapper);
@@ -433,7 +417,6 @@
         logicalOrder.forEach(lineId => {
             const line = lines[lineId - 1]; 
             const { badgeClass, statusText, heaterText } = getCardData(line);
-
             const card = document.createElement('div');
             card.className = `line-card status-${line.status.toLowerCase()}`;
             card.innerHTML = `
@@ -452,7 +435,6 @@
         physicalOrder.forEach(lineId => {
             const line = lines[lineId - 1];
             const { pcClass, pcStatusText, pcHeaterText } = getCardData(line);
-
             const pcCard = document.createElement('div');
             pcCard.className = `pc-line-card ${pcClass}`;
             pcCard.innerHTML = `
