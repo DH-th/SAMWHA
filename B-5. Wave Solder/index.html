@@ -160,7 +160,7 @@
     // ─── 🛠️ [핵심 변경] 클라우드플레어 터널 환경 주소 설정 ───
     // 도메인을 samhwa.cloud 로 쓰시기 때문에 주소 뒤에 하위 공정폴더 이름(구분자)만 지정해 주면 됩니다.
     // 만약 이 파일이 SMD용 복사본이라면 끝부분을 /ws/smd 로 바꾸어 저장하시면 됩니다.
-    const TUNNEL_DOMAIN = "samhwa.cloud"; 
+    const TUNNEL_DOMAIN = "server.samhwa.cloud"; 
     const ws = new WebSocket(`wss://${TUNNEL_DOMAIN}/ws/wave`); // 👈 외부 접속이므로 보안인 wss:// 로 통신합니다.
 
     let lines = Array.from({length: 7}, (_, i) => ({ id: i + 1, status: 'OFF', lastChanged: new Date().getTime() }));
