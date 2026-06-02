@@ -184,6 +184,13 @@
             });
             renderUI();
         } 
+        // 👇 이 부분이 새로 추가된 코드입니다. (서버에서 과거 기록을 받아옴)
+        else if (message.type === "INIT_LOGS") {
+            logs = message.logs; // 과거 통계용 로그 데이터를 배열에 채워넣음
+            renderLogs();
+            updateStats();
+        } 
+        // 👆 
         else if (message.type === "STATUS_CHANGED") {
             const index = lines.findIndex(l => l.id === parseInt(message.lineId));
             if (index !== -1) {
