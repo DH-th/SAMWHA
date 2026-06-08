@@ -343,26 +343,34 @@
     let donutChart = null;
     let isCurrentFormCompleted = false;
 
-    // === 웹소켓 연결 (5S_PM_PLAN 전용) ===
-    const ws = new WebSocket('ws://10.0.0.48:8000/ws/5S_PM_PLAN');
+// === 웹소켓 연결 (5S_PM_PLAN 전용) ===
+const ws = new WebSocket('ws://10.0.0.48:8000/ws/5S_PM_PLAN');
 
-    ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'INIT_SCHEDULES') {
-            schedules = msg.data;
-            initRender();
-        } else if (msg.type === 'SCHEDULE_UPDATED') {
-            const idx = schedules.findIndex(s => s.id === msg.schedule.id);
-            if (idx > -1) schedules[idx] = msg.schedule;
-            else schedules.push(msg.schedule);
-            initRender();
-        } else if (msg.type === 'SCHEDULE_DELETED') {
-            schedules = schedules.filter(s => s.id !== msg.id);
-            initRender();
-        }
-    };
+ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'INIT_SCHEDULES') {
+        schedules = msg.data;
+        initRender();
+    } else if (msg.type === 'SCHEDULE_UPDATED') {
+        const idx = schedules.findIndex(s => s.id === msg.schedule.id);
+        if (idx > -1) schedules[idx] = msg.schedule;
+        else schedules.push(msg.schedule);
+        initRender();
+    } else if (msg.type === 'SCHEDULE_DELETED') {
+        schedules = schedules.filter(s => s.id !== msg.id);
+        initRender();
+    }
+    // 🌟 [추가된 구간] 서버에서 실시간으로 보내주는 센서 값을 받아와 화면에 반영합니다.
+    else if (msg.type === 'SENSOR_UPDATED') {
+        const sensorData = msg.data;
+        document.getElementById('data-temp').innerText = sensorData.temp;
+        document.getElementById('data-humid').innerText = sensorData.humid;
+        document.getElementById('data-noise').innerText = sensorData.noise;
+        document.getElementById('data-air').innerText = sensorData.air;
+    }
+};
 
-    function fetchSchedules() {}
+function fetchSchedules() {}
 
     function getWeekNumber(date) {
         const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -704,21 +712,6 @@
     }
 
     function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
-
-    setInterval(async () => {
-        try {
-            const response = await fetch('http://10.0.0.48:8000/api/sensors');
-            if (response.ok) {
-                const data = await response.json();
-                document.getElementById('data-temp').innerText = data.temp;
-                document.getElementById('data-humid').innerText = data.humid;
-                document.getElementById('data-noise').innerText = data.noise;
-                document.getElementById('data-air').innerText = data.air;
-            }
-        } catch (error) {
-            console.error("센서 데이터를 불러오는 중 오류 발생:", error);
-        }
-    }, 10000);
 </script>
 </body>
 </html>
