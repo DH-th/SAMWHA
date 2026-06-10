@@ -247,7 +247,10 @@
                 <button id="btn-calendar-view" class="view-btn active" onclick="switchView('calendar')">표 보기 (캘린더)</button>
                 <button id="btn-list-view" class="view-btn" onclick="switchView('list')">리스트 보기</button>
             </div>
-            <button class="settings-btn" onclick="openSettingsModal()">⚙️ 항목 관리</button>
+            <div style="display:flex; gap:10px;">
+                <button class="settings-btn" style="background:#0f172a;" onclick="openSensorHistoryModal()">🌡️ 온습도 통계</button>
+                <button class="settings-btn" onclick="openSettingsModal()">⚙️ 항목 관리</button>
+            </div>
         </div>
 
         <div id="calendar-view" class="calendar-container">
@@ -331,8 +334,202 @@
     </div>
 </div>
 
+<div id="sensor-history-modal" class="modal">
+    <div class="modal-content" style="width: 820px; max-width: 95vw; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-title">🌡️ 온습도 통계</div>
+        <div class="form-group" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <label style="margin:0; white-space:nowrap;">날짜 선택:</label>
+            <select id="sensor-date-select" class="form-control" style="width:auto; flex:1;" onchange="loadSensorHistory()">
+                <option value="">-- 날짜를 선택하세요 --</option>
+            </select>
+            <span id="sensor-record-count" style="color:#64748b; font-size:13px; white-space:nowrap;"></span>
+        </div>
+        <!-- 통계 요약 카드 (온도 / 습도만) -->
+        <div id="sensor-summary-cards" style="display:none; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            <div style="background:#fff1f2; border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:12px; color:#64748b; font-weight:600;">온도 — 평균 / 최고 / 최저</div>
+                <div id="stat-temp" style="font-size:20px; font-weight:800; color:#ef4444; margin-top:6px; letter-spacing:1px;">- / - / -</div>
+            </div>
+            <div style="background:#eff6ff; border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:12px; color:#64748b; font-weight:600;">습도 — 평균 / 최고 / 최저</div>
+                <div id="stat-humid" style="font-size:20px; font-weight:800; color:#3b82f6; margin-top:6px; letter-spacing:1px;">- / - / -</div>
+            </div>
+        </div>
+        <!-- 차트 (크게) -->
+        <div style="background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:12px;">
+            <canvas id="sensor-chart" height="200"></canvas>
+        </div>
+        <!-- 로그 테이블 -->
+        <div style="overflow-x:auto; max-height:200px; overflow-y:auto;">
+            <table class="list-table" id="sensor-log-table">
+                <thead><tr><th>시각</th><th>온도(℃)</th><th>습도(%)</th><th>소음</th><th>공기질</th></tr></thead>
+                <tbody id="sensor-log-tbody"><tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">날짜를 선택하면 이력이 표시됩니다.</td></tr></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('sensor-history-modal')">닫기</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    let schedules = [];
+let sensorHistoryChart = null;
+
+async function openSensorHistoryModal() {
+    document.getElementById('sensor-history-modal').style.display = 'flex';
+    // 날짜 목록 로드
+    try {
+        const res = await fetch(`https://server.samhwa.cloud/api/sensor/dates`);
+        const data = await res.json();
+        const select = document.getElementById('sensor-date-select');
+        select.innerHTML = '<option value="">-- 날짜를 선택하세요 --</option>';
+        data.dates.reverse().forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d; opt.innerText = d;
+            select.appendChild(opt);
+        });
+        // 오늘 날짜 자동 선택
+        const today = new Date().toISOString().slice(0,10);
+        if (data.dates.includes(today)) { select.value = today; loadSensorHistory(); }
+    } catch(e) {
+        console.error("날짜 목록 로드 실패:", e);
+    }
+}
+
+async function loadSensorHistory() {
+    const date = document.getElementById('sensor-date-select').value;
+    if (!date) return;
+    try {
+        const res = await fetch(`https://server.samhwa.cloud/api/sensor/history?date=${date}`);
+        const data = await res.json();
+        const logs = data.logs;
+        document.getElementById('sensor-record-count').innerText = `총 ${logs.length}건`;
+
+        if (logs.length === 0) {
+            document.getElementById('sensor-log-tbody').innerHTML =
+                '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">해당 날짜 데이터 없음</td></tr>';
+            document.getElementById('sensor-summary-cards').style.display = 'none';
+            return;
+        }
+
+        // ── 숫자 포맷 헬퍼 (항상 소수점 1자리: 28 → 28.0) ──
+        const fmt = v => parseFloat(v).toFixed(1);
+
+        // ── 통계 계산 ──
+        const temps  = logs.map(l => parseFloat(l.temp));
+        const humids = logs.map(l => parseFloat(l.humid));
+        const avg = arr => (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1);
+
+        document.getElementById('stat-temp').innerText =
+            `${fmt(avg(temps))}℃  /  ${fmt(Math.max(...temps))}℃  /  ${fmt(Math.min(...temps))}℃`;
+        document.getElementById('stat-humid').innerText =
+            `${fmt(avg(humids))}%  /  ${fmt(Math.max(...humids))}%  /  ${fmt(Math.min(...humids))}%`;
+        document.getElementById('sensor-summary-cards').style.display = 'grid';
+
+        // ── 5분 단위 버킷 집계 ──
+        // 타임스탬프를 "HH:MM" (분을 5단위로 내림) 으로 묶어 평균냄
+        const buckets = {};
+        logs.forEach(l => {
+            if (!l.timestamp) return;
+            const hh  = l.timestamp.slice(11, 13);
+            const mm  = String(Math.floor(parseInt(l.timestamp.slice(14, 16)) / 5) * 5).padStart(2, '0');
+            const key = `${hh}:${mm}`;
+            if (!buckets[key]) buckets[key] = { temps: [], humids: [] };
+            buckets[key].temps.push(parseFloat(l.temp));
+            buckets[key].humids.push(parseFloat(l.humid));
+        });
+
+        // 최신 2시간치 = 24개 버킷만 추출
+        const sortedKeys = Object.keys(buckets).sort().slice(-24);
+        const labels     = sortedKeys;
+        const avgTemps   = sortedKeys.map(k => parseFloat((buckets[k].temps.reduce((a,b)=>a+b,0)/buckets[k].temps.length).toFixed(1)));
+        const avgHumids  = sortedKeys.map(k => parseFloat((buckets[k].humids.reduce((a,b)=>a+b,0)/buckets[k].humids.length).toFixed(1)));
+
+        // ── 차트 렌더링 ──
+        const ctx = document.getElementById('sensor-chart').getContext('2d');
+        if (sensorHistoryChart) sensorHistoryChart.destroy();
+        sensorHistoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '온도(℃)',
+                        data: avgTemps,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.07)',
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '습도(%)',
+                        data: avgHumids,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.07)',
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const v = ctx.parsed.y.toFixed(1);
+                                return ctx.dataset.label + ': ' + v + (ctx.datasetIndex === 0 ? '℃' : '%');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 24 }
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        title: { display: true, text: '온도(℃)', color: '#ef4444' },
+                        ticks: { callback: v => v.toFixed(1) }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: '습도(%)', color: '#3b82f6' },
+                        grid: { drawOnChartArea: false },
+                        ticks: { callback: v => v.toFixed(1) }
+                    }
+                }
+            }
+        });
+
+        // ── 테이블 렌더링 (최신순) ──
+        const tbody = document.getElementById('sensor-log-tbody');
+        tbody.innerHTML = [...logs].reverse().map(l => `
+            <tr>
+                <td>${l.timestamp ? l.timestamp.slice(0,19).replace('T',' ') : '-'}</td>
+                <td style="color:#ef4444; font-weight:700;">${fmt(l.temp)}℃</td>
+                <td style="color:#3b82f6; font-weight:700;">${fmt(l.humid)}%</td>
+                <td>${l.noise}</td>
+                <td>${l.air}</td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        console.error("센서 이력 로드 실패:", e);
+        alert("서버에서 이력 데이터를 불러오는 데 실패했습니다.");
+    }
+}
+
     let scheduleTypes = [
         { name: '5S', color: '#10b981' }, 
         { name: 'Wave', color: '#f97316' }
@@ -343,8 +540,9 @@
     let donutChart = null;
     let isCurrentFormCompleted = false;
 
-// === 웹소켓 연결 (5S_PM_PLAN 전용) ===
-const ws = new WebSocket('ws://10.0.0.48:8000/ws/5S_PM_PLAN');
+// === 웹소켓 연결 (5S_PM_PLAN 전용) — Cloudflare 터널 경유 ===
+const TUNNEL_DOMAIN = "server.samhwa.cloud";
+const ws = new WebSocket(`wss://${TUNNEL_DOMAIN}/ws/5S_PM_PLAN`);
 
 ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
@@ -363,8 +561,8 @@ ws.onmessage = (event) => {
     // 🌟 [추가된 구간] 서버에서 실시간으로 보내주는 센서 값을 받아와 화면에 반영합니다.
     else if (msg.type === 'SENSOR_UPDATED') {
         const sensorData = msg.data;
-        document.getElementById('data-temp').innerText = sensorData.temp;
-        document.getElementById('data-humid').innerText = sensorData.humid;
+        document.getElementById('data-temp').innerText  = parseFloat(sensorData.temp).toFixed(1);
+        document.getElementById('data-humid').innerText = parseFloat(sensorData.humid).toFixed(1);
         document.getElementById('data-noise').innerText = sensorData.noise;
         document.getElementById('data-air').innerText = sensorData.air;
     }
@@ -637,10 +835,10 @@ function fetchSchedules() {}
         document.getElementById('form-line').value = item.line;
         
         setCompleteBtnState(item.completed);
+        // ✅ 수정: 캘린더/리스트 어디서 열어도 삭제 버튼 항상 표시
         document.getElementById('btn-delete').style.display = 'block';
-
-        if (source === 'list') document.getElementById('complete-toggle-container').style.display = 'block';
-        else document.getElementById('complete-toggle-container').style.display = 'none';
+        // 완료 토글은 리스트 뷰에서만 표시 (캘린더에선 공간 부족)
+        document.getElementById('complete-toggle-container').style.display = source === 'list' ? 'block' : 'none';
 
         document.getElementById('schedule-modal').style.display = 'flex';
     }
@@ -665,6 +863,8 @@ function fetchSchedules() {}
 
     function deleteSchedule() {
         const id = document.getElementById('form-id').value;
+        const title = document.getElementById('form-title').value || '이 일정';
+        if (!confirm(`"${title}"을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'DELETE_SCHEDULE', id: id }));
         } else {
