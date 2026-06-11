@@ -124,27 +124,25 @@
         .cal-cell:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.05); border-color: #cbd5e1; }
         .cal-cell.empty { background: transparent; cursor: default; border: none; pointer-events: none; }
         
-        /* === 이번 주 전체 강조 스타일 === */
+        /* === 이번 주 전체: 배경색 제거, 빨간 테두리만 === */
         .current-week-cell {
-            background-color: #fff1f2 !important; /* 옅은 핑크/레드 배경 */
-            border-top: 2px solid #fda4af !important; /* 위아래 테두리 */
-            border-bottom: 2px solid #fda4af !important;
+            border-top: 2px solid #ef4444 !important;
+            border-bottom: 2px solid #ef4444 !important;
         }
-        .current-week-first {
-            border-left: 2px solid #fda4af !important;
-        }
-        .current-week-last {
-            border-right: 2px solid #fda4af !important;
-        }
+        .current-week-first { border-left: 2px solid #ef4444 !important; }
+        .current-week-last  { border-right: 2px solid #ef4444 !important; }
 
-        /* 오늘 날짜 셀 강조 (이번 주 강조보다 우선순위 높음) */
+        /* 오늘 날짜 셀 강조 */
         .cal-cell.today {
             border: 3px solid #ef4444 !important;
             background: #ffe4e6 !important;
         }
 
-        .date-num { font-size: 16px; font-weight: 800; color: #334155; position: relative; z-index: 2; margin-bottom: 5px; }
-        .cal-cell.today .date-num { color: #ef4444; }
+        /* 날짜 숫자 색상 */
+        .date-num         { font-size: 16px; font-weight: 600; color: #334155; position: relative; z-index: 2; margin-bottom: 5px; }
+        .date-num.sun     { color: #ef4444; }
+        .date-num.sat     { color: #3b82f6; }
+        .cal-cell.today .date-num { color: #ef4444 !important; font-weight: 900; }
 
         .color-bg-layer { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.15; z-index: 1; }
         .cell-events { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; }
@@ -198,6 +196,27 @@
         .type-del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 18px; }
         .type-add-row { display: flex; gap: 10px; }
         .type-add-row input[type="color"] { width: 40px; height: 40px; padding: 0; border: none; border-radius: 8px; cursor: pointer; }
+
+        /* 근무표 전용 스타일 */
+        .roster-shift-btn { padding: 8px 22px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; background: transparent; color: #64748b; transition: 0.2s; }
+        .roster-shift-btn.active { background: var(--primary-color); color: white; border-radius: 20px; }
+        #roster-table th { background: #1e293b; color: white; padding: 10px 6px; text-align: center; font-size: 11px; font-weight: 700; position: sticky; top: 0; z-index: 2; white-space: nowrap; }
+        #roster-table td { padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 12px; vertical-align: middle; }
+        #roster-table tr:nth-child(even) td { background: #f8fafc; }
+        #roster-table tbody tr:hover > td:first-child { background: #eff6ff; }
+        .roster-cell-reg  { background: #dcfce7 !important; color: #15803d; font-weight: 800; border-radius: 5px; cursor:pointer; }
+        .roster-cell-ot   { background: #ffedd5 !important; color: #c2410c; font-weight: 800; border-radius: 5px; cursor:pointer; }
+        .roster-cell-off  { background: #f1f5f9 !important; color: #cbd5e1; cursor:pointer; border-radius: 5px; }
+        .roster-today-col { border-left: 2px solid #ef4444 !important; border-right: 2px solid #ef4444 !important; }
+        .roster-today-head { background: #ef4444 !important; }
+        /* 근무표 툴팁 */
+        .roster-tooltip {
+            position: fixed; background: #1e293b; color: white; padding: 8px 12px;
+            border-radius: 8px; font-size: 12px; pointer-events: none; z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25); line-height:1.6; white-space:nowrap;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .roster-tooltip.visible { opacity: 1; }
     </style>
 </head>
 <body>
@@ -246,9 +265,11 @@
             <div class="view-btns">
                 <button id="btn-calendar-view" class="view-btn active" onclick="switchView('calendar')">표 보기 (캘린더)</button>
                 <button id="btn-list-view" class="view-btn" onclick="switchView('list')">리스트 보기</button>
+                <button id="btn-roster-view" class="view-btn" onclick="switchView('roster')">👷 근무표</button>
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="settings-btn" style="background:#0f172a;" onclick="openSensorHistoryModal()">🌡️ 온습도 통계</button>
+                <button class="settings-btn" style="background:#0369a1;" onclick="openPmModal()">🔧 PM 주기</button>
                 <button class="settings-btn" onclick="openSettingsModal()">⚙️ 항목 관리</button>
             </div>
         </div>
@@ -268,7 +289,57 @@
         </div>
 
         <div id="list-view" class="list-container"></div>
-    </div>
+
+        <!-- 근무표 뷰 -->
+        <div id="roster-view" class="list-container" style="display:none; padding:20px; position:relative;">
+            <!-- 헤더 -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="font-size:20px; font-weight:800; color:#0f172a;">👷 근무 및 OT 현황표</div>
+                    <!-- 수정 모드 버튼 -->
+                    <button id="roster-edit-mode-btn" class="settings-btn" style="background:#64748b; font-size:13px; padding:8px 16px;" onclick="toggleRosterEditMode()">✏️ 수정 모드</button>
+                    <span id="roster-edit-badge" style="display:none; background:#ef4444; color:white; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;">수정 모드 활성</span>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; background:#e2e8f0; border-radius:20px; overflow:hidden;">
+                        <button id="roster-btn-day"   class="roster-shift-btn active" onclick="switchRosterShift('day')">☀️ 주간</button>
+                        <button id="roster-btn-night" class="roster-shift-btn"        onclick="switchRosterShift('night')">🌙 야간</button>
+                    </div>
+                    <select id="roster-month-select" class="form-control" style="width:130px;" onchange="renderRoster()"></select>
+                </div>
+            </div>
+            <!-- 요약 카드 -->
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;">
+                <div style="background:#f0fdf4; border-radius:12px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; margin-bottom:4px;">정규 가동일수</div>
+                    <div id="roster-stat-reg" style="font-size:22px; font-weight:900; color:#10b981;">-</div>
+                </div>
+                <div style="background:#fff7ed; border-radius:12px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; margin-bottom:4px;">OT 발생일수</div>
+                    <div id="roster-stat-ot" style="font-size:22px; font-weight:900; color:#f97316;">-</div>
+                </div>
+                <div style="background:#eff6ff; border-radius:12px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; margin-bottom:4px;">평균 직원수</div>
+                    <div id="roster-stat-reg-total" style="font-size:22px; font-weight:900; color:#3b82f6;">-</div>
+                </div>
+                <div style="background:#fdf4ff; border-radius:12px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; margin-bottom:4px;">평균 OT 인원수</div>
+                    <div id="roster-stat-ot-total" style="font-size:22px; font-weight:900; color:#a855f7;">-</div>
+                </div>
+            </div>
+            <!-- 테이블 -->
+            <div style="overflow-x:auto; flex:1;">
+                <table id="roster-table" style="width:100%; border-collapse:collapse; font-size:12px; min-width:600px;">
+                    <thead id="roster-thead"></thead>
+                    <tbody id="roster-tbody"></tbody>
+                    <tfoot id="roster-tfoot"></tfoot>
+                </table>
+            </div>
+            <!-- 인건비 버튼 (우측 하단) -->
+            <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+                <button class="settings-btn" style="background:#7c3aed;" onclick="openCostPasswordModal()">💰 인건비 계산</button>
+            </div>
+        </div>
 
 <div id="schedule-modal" class="modal">
     <div class="modal-content">
@@ -292,7 +363,11 @@
         </div>
         <div class="form-group">
             <label>구분 (항목 선택)</label>
-            <select id="form-type" class="form-control"></select>
+            <select id="form-type" class="form-control" onchange="onTypeSelectChange()"></select>
+        </div>
+        <div class="form-group" id="custom-type-group" style="display:none;">
+            <label>구분 직접 입력 <span style="color:#ef4444; font-size:12px;">(1회성 — 저장 목록에 추가되지 않음)</span></label>
+            <input type="text" id="form-type-custom" class="form-control" placeholder="구분명을 직접 입력하세요">
         </div>
         <div class="form-group">
             <label>상세 내용</label>
@@ -330,6 +405,155 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('settings-modal'); initRender();">닫기 및 적용</button>
+        </div>
+    </div>
+</div>
+
+<!-- 근무표 셀 편집 모달 -->
+<div id="roster-edit-modal" class="modal">
+    <div class="modal-content" style="width:380px;">
+        <div class="modal-title" id="roster-edit-title">근무 인원 등록</div>
+        <input type="hidden" id="re-date">
+        <input type="hidden" id="re-line">
+        <input type="hidden" id="re-shift">
+        <div style="background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:16px;">
+            <div style="font-size:13px; color:#64748b; font-weight:600; margin-bottom:10px;">📋 <span id="re-info"></span></div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>정규 근무자 수 <span style="color:#10b981; font-weight:800;">(명)</span></label>
+                <input type="number" id="re-reg" class="form-control" min="0" value="0" placeholder="0" oninput="validateRosterInput()">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>OT 근무자 수 <span style="color:#f97316; font-weight:800;">(명)</span>
+                    <span style="color:#94a3b8; font-size:11px; font-weight:400; margin-left:4px;">※ 정규 인원 이하</span>
+                </label>
+                <input type="number" id="re-ot" class="form-control" min="0" value="0" placeholder="0" oninput="validateRosterInput()">
+            </div>
+            <div id="re-warn" style="color:#ef4444; font-size:12px; margin-top:6px; display:none;">⚠ OT 인원은 정규 인원을 초과할 수 없습니다.</div>
+        </div>
+        <!-- 미가동 버튼 -->
+        <button class="btn" style="width:100%; background:#e2e8f0; color:#475569; margin-bottom:10px;" onclick="setRosterCellOff()">🚫 미가동으로 설정 (인원 초기화)</button>
+        <div class="modal-footer" style="margin-top:0;">
+            <button class="btn btn-secondary" onclick="closeModal('roster-edit-modal')">취소</button>
+            <button class="btn btn-primary" onclick="saveRosterCell()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 인건비 비밀번호 모달 -->
+<div id="cost-pw-modal" class="modal">
+    <div class="modal-content" style="width:320px; text-align:center;">
+        <div class="modal-title">🔒 인건비 계산</div>
+        <div style="font-size:13px; color:#64748b; margin-bottom:16px;">비밀번호를 입력하세요</div>
+        <input type="password" id="cost-pw-input" class="form-control" placeholder="● ● ● ●"
+            style="text-align:center; font-size:20px; letter-spacing:8px;"
+            maxlength="4" oninput="if(this.value.length===4) checkCostPassword()"
+            onkeydown="if(event.key==='Enter') checkCostPassword()">
+        <div id="cost-pw-error" style="color:#ef4444; font-size:12px; margin-top:8px; display:none;">비밀번호가 틀렸습니다.</div>
+        <div class="modal-footer" style="margin-top:16px; justify-content:center; gap:10px;">
+            <button class="btn btn-secondary" onclick="closeModal('cost-pw-modal')">취소</button>
+            <button class="btn btn-primary" onclick="checkCostPassword()">확인</button>
+        </div>
+    </div>
+</div>
+
+<!-- 근무표 인건비 계산 모달 (전면 개편) -->
+<div id="roster-cost-modal" class="modal">
+    <div class="modal-content" style="width:720px; max-width:95vw; max-height:88vh; overflow-y:auto;">
+        <div class="modal-title">💰 인건비 계산</div>
+        <!-- 단가 안내 -->
+        <div style="background:#f1f5f9; border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:12px; color:#475569; line-height:1.8;">
+            <strong>단가 (1인 1일)</strong> &nbsp;
+            ☀️ 주간 정규 <strong style="color:#10b981;">440฿</strong> &nbsp;/&nbsp;
+            OT <strong style="color:#f97316;">680฿</strong> &nbsp;&nbsp;
+            🌙 야간 정규 <strong style="color:#3b82f6;">490฿</strong> &nbsp;/&nbsp;
+            OT <strong style="color:#a855f7;">730฿</strong>
+        </div>
+        <!-- 기간 선택 컨트롤 -->
+        <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
+            <div style="display:flex; background:#e2e8f0; border-radius:20px; overflow:hidden;">
+                <button id="cost-tab-daily"   class="roster-shift-btn active" onclick="switchCostTab('daily')">일간</button>
+                <button id="cost-tab-weekly"  class="roster-shift-btn"        onclick="switchCostTab('weekly')">주간</button>
+                <button id="cost-tab-monthly" class="roster-shift-btn"        onclick="switchCostTab('monthly')">월간</button>
+            </div>
+            <!-- 일간: 연/월 선택 -->
+            <div id="cost-ctrl-daily" style="display:flex; gap:6px;">
+                <select id="cost-daily-year"  class="form-control" style="width:90px;"  onchange="renderRosterCost()"></select>
+                <select id="cost-daily-month" class="form-control" style="width:90px;"  onchange="renderRosterCost()"></select>
+            </div>
+            <!-- 주간: 연도 선택 -->
+            <div id="cost-ctrl-weekly" style="display:none; gap:6px;">
+                <select id="cost-weekly-year" class="form-control" style="width:90px;"  onchange="renderRosterCost()"></select>
+            </div>
+            <!-- 월간: 연도 선택 -->
+            <div id="cost-ctrl-monthly" style="display:none; gap:6px;">
+                <select id="cost-monthly-year" class="form-control" style="width:90px;" onchange="renderRosterCost()"></select>
+            </div>
+            <span id="cost-total-badge" style="margin-left:auto; font-size:17px; font-weight:900; color:#7c3aed;"></span>
+        </div>
+        <!-- 테이블 -->
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;" id="cost-main-table">
+                <thead id="cost-thead"></thead>
+                <tbody id="cost-table-body"></tbody>
+                <tfoot id="cost-tfoot"></tfoot>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('roster-cost-modal')">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- PM 주기 관리 모달 -->
+<div id="pm-modal" class="modal">
+    <div class="modal-content" style="width:900px; max-width:95vw; max-height:88vh; overflow-y:auto;">
+        <div class="modal-title">🔧 PM 주기 관리</div>
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+            <div style="font-size:13px; color:#64748b; line-height:1.6;">
+                캘린더에 등록된 일정 중 <strong>항목 관리에 지정된 PM 항목</strong>의 라인별 최종 실시일로부터 경과일을 자동 계산합니다.
+            </div>
+            <button class="settings-btn" style="margin-left:auto; background:#0369a1; white-space:nowrap;" onclick="openPmCycleSettingsModal()">⚙️ PM 항목 지정</button>
+        </div>
+        <!-- 항목 탭 -->
+        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px;" id="pm-type-tabs"></div>
+        <!-- PM 테이블 -->
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="background:#0f172a; color:white;">
+                        <th style="padding:10px 14px; text-align:left; min-width:60px;">라인</th>
+                        <th style="padding:10px 8px; text-align:center; min-width:110px;">최종 실시일</th>
+                        <th style="padding:10px 8px; text-align:center; min-width:70px;">주기(일)</th>
+                        <th style="padding:10px 8px; text-align:center; min-width:75px;">경과일</th>
+                        <th style="padding:10px 8px; text-align:center; min-width:75px;">잔여일</th>
+                        <th style="padding:10px 8px; text-align:center; min-width:80px;">상태</th>
+                    </tr>
+                </thead>
+                <tbody id="pm-tbody"></tbody>
+            </table>
+        </div>
+        <div style="margin-top:10px; font-size:11px; color:#94a3b8;">
+            ※ 최종 실시일은 캘린더에서 해당 항목으로 등록된 가장 최근 일정 날짜입니다. 경과일은 실시 다음날부터 +1 카운팅.
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('pm-modal')">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- PM 항목 지정 모달 (어떤 구분을 PM 주기로 추적할지 설정) -->
+<div id="pm-cycle-settings-modal" class="modal">
+    <div class="modal-content" style="width:420px;">
+        <div class="modal-title">⚙️ PM 추적 항목 지정</div>
+        <div style="font-size:12px; color:#64748b; margin-bottom:12px;">항목 관리에 등록된 구분 중 PM 주기를 추적할 항목을 선택하세요.</div>
+        <div id="pm-type-checklist" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding:4px;"></div>
+        <div style="border-top:1px solid #e2e8f0; margin-top:14px; padding-top:14px;">
+            <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:8px;">기본 PM 주기 (일)</label>
+            <div id="pm-cycle-inputs" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('pm-cycle-settings-modal')">취소</button>
+            <button class="btn btn-primary" onclick="savePmCycleSettings()">저장</button>
         </div>
     </div>
 </div>
@@ -662,7 +886,9 @@ function fetchSchedules() {}
                     cell.appendChild(bgLayer);
                 }
 
-                let cellInner = `<span class="date-num">${currentDay}</span>`;
+                const dow = cellDate.getDay(); // 0=일, 6=토
+                const dowClass = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
+                let cellInner = `<span class="date-num ${dowClass}">${currentDay}</span>`;
                 if (daySchedules.length > 0) {
                     cellInner += `<div class="cell-events">`;
                     daySchedules.forEach(sch => {
@@ -692,46 +918,38 @@ function fetchSchedules() {}
         const container = document.getElementById('list-view');
         container.innerHTML = '';
         const thisMonthStr = `${currentYear}-${String(currentMonth+1).padStart(2, '0')}`;
-        const monthlyData = schedules.filter(s => s.date.startsWith(thisMonthStr));
+        const monthlyData = schedules
+            .filter(s => s.date.startsWith(thisMonthStr))
+            .sort((a, b) => a.date.localeCompare(b.date));  // 날짜순 정렬
 
-        const groups = {};
-        monthlyData.forEach(item => {
-            if (!groups[item.type]) groups[item.type] = [];
-            groups[item.type].push(item);
-        });
-
-        if (Object.keys(groups).length === 0) {
+        if (monthlyData.length === 0) {
             container.innerHTML = '<div style="text-align:center; color:#64748b; padding:40px; font-size: 16px; margin-top:50px;">이번 달에 계획된 일정이 없습니다.</div>';
             return;
         }
 
-        for (const [type, items] of Object.entries(groups)) {
-            const block = document.createElement('div');
-            block.className = 'category-block';
-            const typeColor = getColorForType(type);
-            
-            let tableRows = items.map(item => `
+        const block = document.createElement('div');
+        block.className = 'category-block';
+        let tableRows = monthlyData.map(item => {
+            const typeColor = getColorForType(item.type);
+            return `
                 <tr onclick="openEditModal('${item.id}', event, 'list')">
-                    <td style="font-weight: 800; color: #334155;">● ${item.line}</td>
-                    <td style="font-weight: 600;">${item.date}</td>
-                    <td style="${item.completed ? 'text-decoration:line-through; opacity:0.6;' : ''}">${item.title}</td>
-                    <td>
-                        <span class="event-badge" style="width:fit-content; font-size:13px; padding:6px 12px; border:none; background: ${item.completed ? '#10b981' : '#eab308'}; color: #fff;">
-                            ${item.completed ? '✔️ 완료됨' : '⏳ 진행중'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+                    <td><span class="event-badge" style="background:${typeColor};color:white;font-size:11px;padding:3px 8px;">${item.type}</span></td>
+                    <td style="font-weight:800;color:#334155;">● ${item.line}</td>
+                    <td style="font-weight:600;">${item.date}</td>
+                    <td style="${item.completed ? 'text-decoration:line-through;opacity:0.6;' : ''}">${item.title}</td>
+                    <td><span class="event-badge" style="width:fit-content;font-size:13px;padding:6px 12px;border:none;background:${item.completed ? '#10b981' : '#eab308'};color:#fff;">
+                        ${item.completed ? '✔️ 완료됨' : '⏳ 진행중'}
+                    </span></td>
+                </tr>`;
+        }).join('');
 
-            block.innerHTML = `
-                <div class="category-title" style="border-color: ${typeColor};">${type} 일정</div>
-                <table class="list-table">
-                    <thead><tr><th style="width: 15%">설비 라인</th><th style="width: 15%">예정 일자</th><th style="width: 55%">세부 계획 내용</th><th style="width: 15%">상태</th></tr></thead>
-                    <tbody>${tableRows}</tbody>
-                </table>
-            `;
-            container.appendChild(block);
-        }
+        block.innerHTML = `
+            <div class="category-title" style="border-color:#3b82f6;">📅 ${currentYear}년 ${currentMonth+1}월 일정 (날짜순)</div>
+            <table class="list-table">
+                <thead><tr><th style="width:12%">구분</th><th style="width:12%">설비 라인</th><th style="width:13%">예정 일자</th><th style="width:48%">세부 계획</th><th style="width:15%">상태</th></tr></thead>
+                <tbody>${tableRows}</tbody>
+            </table>`;
+        container.appendChild(block);
     }
 
     function updateDashboard() {
@@ -760,18 +978,533 @@ function fetchSchedules() {}
     }
 
     function switchView(viewType) {
-        if(viewType === 'calendar') {
+        const views = ['calendar', 'list', 'roster'];
+        views.forEach(v => {
+            document.getElementById(`${v}-view`).style.display = 'none';
+            const btn = document.getElementById(`btn-${v}-view`);
+            if (btn) btn.classList.remove('active');
+        });
+        if (viewType === 'calendar') {
             document.getElementById('calendar-view').style.display = 'flex';
-            document.getElementById('list-view').style.display = 'none';
             document.getElementById('btn-calendar-view').classList.add('active');
-            document.getElementById('btn-list-view').classList.remove('active');
-        } else {
-            document.getElementById('calendar-view').style.display = 'none';
+        } else if (viewType === 'list') {
             document.getElementById('list-view').style.display = 'block';
-            document.getElementById('btn-calendar-view').classList.remove('active');
             document.getElementById('btn-list-view').classList.add('active');
             renderListView();
+        } else if (viewType === 'roster') {
+            document.getElementById('roster-view').style.display = 'block';
+            document.getElementById('btn-roster-view').classList.add('active');
+            initRoster();
         }
+    }
+
+    // ═══════════════════════════════════════════
+    //  근무표 (Roster)
+    // ═══════════════════════════════════════════
+    let rosterShift   = 'day';
+    let rosterEditMode = false;
+    // rosterData[shift][line][dateStr] = { reg: 0, ot: 0 }
+    let rosterData = { day: {}, night: {} };
+    let rosterTooltipTimer = null;
+    const rosterTooltipEl = (() => {
+        const el = document.createElement('div');
+        el.className = 'roster-tooltip';
+        document.body.appendChild(el);
+        return el;
+    })();
+
+    // 고정 라인 순서 (L.9, IN, OUT은 L.7 아래)
+    const FIXED_LINES = ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9','IN','OUT'];
+
+    function toggleRosterEditMode() {
+        rosterEditMode = !rosterEditMode;
+        const btn   = document.getElementById('roster-edit-mode-btn');
+        const badge = document.getElementById('roster-edit-badge');
+        if (rosterEditMode) {
+            btn.style.background = '#ef4444';
+            btn.innerText = '✏️ 수정 모드 ON';
+            badge.style.display = 'inline-block';
+        } else {
+            btn.style.background = '#64748b';
+            btn.innerText = '✏️ 수정 모드';
+            badge.style.display = 'none';
+        }
+        renderRoster();
+    }
+
+    function switchRosterShift(shift) {
+        rosterShift = shift;
+        document.getElementById('roster-btn-day').classList.toggle('active', shift === 'day');
+        document.getElementById('roster-btn-night').classList.toggle('active', shift === 'night');
+        renderRoster();
+    }
+
+    function initRoster() {
+        const sel = document.getElementById('roster-month-select');
+        if (sel.options.length === 0) {
+            const now = new Date();
+            const y = now.getFullYear();
+            for (let m = 0; m < 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = `${y}-${String(m + 1).padStart(2, '0')}`;
+                opt.innerText = `${y}년 ${m + 1}월`;
+                sel.appendChild(opt);
+            }
+            sel.value = `${y}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+        renderRoster();
+    }
+
+    function getRosterCell(shift, line, dateStr) {
+        if (!rosterData[shift][line]) rosterData[shift][line] = {};
+        return rosterData[shift][line][dateStr] || null;
+    }
+
+    function setRosterCell(shift, line, dateStr, reg, ot) {
+        if (!rosterData[shift][line]) rosterData[shift][line] = {};
+        if (reg === 0 && ot === 0) {
+            delete rosterData[shift][line][dateStr];
+        } else {
+            rosterData[shift][line][dateStr] = { reg, ot };
+        }
+    }
+
+    function renderRoster() {
+        const monthStr = document.getElementById('roster-month-select').value;
+        if (!monthStr) return;
+        const [y, m] = monthStr.split('-').map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const extraLines = Object.keys(rosterData[rosterShift] || {}).filter(l => !FIXED_LINES.includes(l)).sort();
+        const allLines = [...FIXED_LINES, ...extraLines];
+        const dayNames = ['일','월','화','수','목','금','토'];
+
+        // ── 헤더 (우측 정규/OT 열 제거) ──
+        let headHtml = `<tr><th style="min-width:46px; text-align:left; padding-left:8px; background:#334155; color:white;">라인</th>`;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const ds  = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dow = new Date(y, m-1, d).getDay();
+            const isToday = ds === todayStr;
+            const color = dow === 0 ? '#fca5a5' : dow === 6 ? '#93c5fd' : '#94a3b8';
+            headHtml += `<th class="${isToday ? 'roster-today-head' : ''}" style="min-width:26px; color:${color}; background:#1e293b;">${d}<br><span style="font-size:9px;font-weight:400;">${dayNames[dow]}</span></th>`;
+        }
+        headHtml += `</tr>`;
+        document.getElementById('roster-thead').innerHTML = headHtml;
+
+        // ── 바디 ──
+        let bodyHtml = '';
+        const statRegSet = new Set(), statOtSet = new Set();
+        let totalRegByDay = new Array(daysInMonth).fill(0);
+        let allRegPeople = 0, allOtPeople = 0, regDayCount = 0, otDayCount = 0;
+
+        allLines.forEach((line, lineIdx) => {
+            const rowBg = lineIdx % 2 === 0 ? '#ffffff' : '#f8fafc';
+            let rowHtml = `<tr><td style="font-weight:700;color:#475569;text-align:left;padding-left:8px;white-space:nowrap;background:${rowBg};border-left:3px solid #e2e8f0;">${line}</td>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const ds   = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const cell = getRosterCell(rosterShift, line, ds);
+                const isToday = ds === todayStr;
+                const todayClass = isToday ? 'roster-today-col' : '';
+                let cellClass;
+                if (!cell || (cell.reg === 0 && cell.ot === 0)) {
+                    cellClass = `roster-cell-off ${todayClass}`;
+                } else if (cell.ot > 0) {
+                    cellClass = `roster-cell-ot ${todayClass}`;
+                    statRegSet.add(ds); statOtSet.add(ds);
+                } else {
+                    cellClass = `roster-cell-reg ${todayClass}`;
+                    statRegSet.add(ds);
+                }
+                if (cell) {
+                    totalRegByDay[d-1] += cell.reg || 0;
+                    allRegPeople += cell.reg || 0;
+                    allOtPeople  += cell.ot  || 0;
+                    if (cell.reg > 0) regDayCount++;
+                    if (cell.ot  > 0) otDayCount++;
+                }
+                const clickAttr = rosterEditMode ? `onclick="openRosterEditModal('${line}','${ds}','${rosterShift}')"` : '';
+                const cursor    = rosterEditMode ? 'cursor:pointer;' : 'cursor:default;';
+                rowHtml += `<td class="${cellClass}" style="${cursor}" data-line="${line}" data-date="${ds}" data-shift="${rosterShift}" data-reg="${cell ? cell.reg : 0}" data-ot="${cell ? cell.ot : 0}" ${clickAttr} onmouseenter="rosterCellHover(this,event)" onmouseleave="rosterCellLeave()"> </td>`;
+            }
+            rowHtml += `</tr>`;
+            bodyHtml += rowHtml;
+        });
+        document.getElementById('roster-tbody').innerHTML = bodyHtml;
+
+        // ── TOTAL 행 ──
+        let tfootHtml = `<tr style="background:#334155;"><td style="font-weight:900;padding:7px 8px;text-align:left;padding-left:8px;font-size:11px;color:#94a3b8;letter-spacing:0.5px;">TOTAL</td>`;
+        totalRegByDay.forEach((total, i) => {
+            const ds  = `${y}-${String(m).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`;
+            const isToday = ds === todayStr;
+            const dow = new Date(y, m-1, i+1).getDay();
+            const c = dow===0 ? '#fca5a5' : dow===6 ? '#93c5fd' : (total > 0 ? '#86efac' : '#475569');
+            tfootHtml += `<td style="text-align:center;font-weight:800;font-size:11px;padding:6px 2px;${isToday ? 'background:#ef4444;color:white;' : `color:${c};`}">${total > 0 ? total : '·'}</td>`;
+        });
+        tfootHtml += `</tr>`;
+        document.getElementById('roster-tfoot').innerHTML = tfootHtml;
+
+        // ── 요약 카드 ──
+        document.getElementById('roster-stat-reg').innerText = statRegSet.size;
+        document.getElementById('roster-stat-ot').innerText  = statOtSet.size;
+        const avgReg = regDayCount > 0 ? (allRegPeople / regDayCount).toFixed(1) : '-';
+        const avgOt  = otDayCount  > 0 ? (allOtPeople  / otDayCount).toFixed(1)  : '-';
+        document.getElementById('roster-stat-reg-total').innerText = avgReg;
+        document.getElementById('roster-stat-ot-total').innerText  = avgOt;
+    }
+
+
+    // 호버 툴팁 (1초 지연 — 기존보다 0.5초 빠르게)
+    function rosterCellHover(td, e) {
+        clearTimeout(rosterTooltipTimer);
+        rosterTooltipTimer = setTimeout(() => {
+            const reg   = parseInt(td.dataset.reg) || 0;
+            const ot    = parseInt(td.dataset.ot)  || 0;
+            const line  = td.dataset.line;
+            const date  = td.dataset.date;  // YYYY-MM-DD
+            const mmdd  = date.slice(5);    // MM-DD (연도 제외)
+            const shift = td.dataset.shift === 'day' ? '☀️ 주간' : '🌙 야간';
+
+            if (reg === 0 && ot === 0) {
+                rosterTooltipEl.innerHTML = `<span style="color:#94a3b8;">${line}  ${mmdd}<br>${shift} 미가동</span>`;
+            } else {
+                rosterTooltipEl.innerHTML =
+                    `<strong>${line}  ${mmdd}  ${shift}</strong><br>` +
+                    `<span style="color:#86efac;">정규: ${reg}명</span>` +
+                    (ot > 0 ? `<br><span style="color:#fdba74;">OT: ${ot}명</span>` : '');
+            }
+            const rect = td.getBoundingClientRect();
+            rosterTooltipEl.style.left      = `${rect.left + rect.width/2}px`;
+            rosterTooltipEl.style.top       = `${rect.top - 8}px`;
+            rosterTooltipEl.style.transform = 'translate(-50%, -100%)';
+            rosterTooltipEl.classList.add('visible');
+        }, 300);
+    }
+    function rosterCellLeave() {
+        clearTimeout(rosterTooltipTimer);
+        rosterTooltipEl.classList.remove('visible');
+    }
+
+    // 셀 클릭 → 편집 모달 (수정 모드일 때만 동작)
+    function openRosterEditModal(line, dateStr, shift) {
+        if (!rosterEditMode) return;
+        const cell = getRosterCell(shift, line, dateStr) || { reg: 0, ot: 0 };
+        document.getElementById('re-date').value  = dateStr;
+        document.getElementById('re-line').value  = line;
+        document.getElementById('re-shift').value = shift;
+        document.getElementById('re-reg').value   = cell.reg;
+        document.getElementById('re-ot').value    = cell.ot;
+        document.getElementById('re-warn').style.display = 'none';
+        const shiftLabel = shift === 'day' ? '☀️ 주간' : '🌙 야간';
+        document.getElementById('roster-edit-title').innerText = `근무 인원 등록 / 수정`;
+        document.getElementById('re-info').innerText = `${dateStr.slice(5)}  ${line}  ${shiftLabel}`;
+        document.getElementById('roster-edit-modal').style.display = 'flex';
+    }
+
+    function validateRosterInput() {
+        const reg  = parseInt(document.getElementById('re-reg').value) || 0;
+        const ot   = parseInt(document.getElementById('re-ot').value)  || 0;
+        const warn = document.getElementById('re-warn');
+        if (ot > reg) {
+            warn.style.display = 'block';
+            document.getElementById('re-ot').value = reg;
+        } else {
+            warn.style.display = 'none';
+        }
+    }
+
+    function setRosterCellOff() {
+        document.getElementById('re-reg').value = 0;
+        document.getElementById('re-ot').value  = 0;
+    }
+
+    function saveRosterCell() {
+        const dateStr = document.getElementById('re-date').value;
+        const line    = document.getElementById('re-line').value;
+        const shift   = document.getElementById('re-shift').value;
+        let reg = parseInt(document.getElementById('re-reg').value) || 0;
+        let ot  = parseInt(document.getElementById('re-ot').value)  || 0;
+        if (ot > reg) ot = reg;
+        setRosterCell(shift, line, dateStr, reg, ot);
+        closeModal('roster-edit-modal');
+        renderRoster();
+    }
+
+    // ── 비밀번호 모달 ──
+    function openCostPasswordModal() {
+        document.getElementById('cost-pw-input').value = '';
+        document.getElementById('cost-pw-error').style.display = 'none';
+        document.getElementById('cost-pw-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('cost-pw-input').focus(), 100);
+    }
+    function checkCostPassword() {
+        const pw = document.getElementById('cost-pw-input').value;
+        if (pw === '0000') {
+            closeModal('cost-pw-modal');
+            openRosterCostModal();
+        } else {
+            document.getElementById('cost-pw-error').style.display = 'block';
+            document.getElementById('cost-pw-input').value = '';
+            document.getElementById('cost-pw-input').focus();
+        }
+    }
+
+    // ── 인건비 계산 ──
+    const COST = { dayReg: 440, dayOt: 680, nightReg: 490, nightOt: 730 };
+    let costTab = 'daily';
+
+    function switchCostTab(tab) {
+        costTab = tab;
+        ['daily','weekly','monthly'].forEach(t => {
+            document.getElementById(`cost-tab-${t}`).classList.toggle('active', t === tab);
+            document.getElementById(`cost-ctrl-${t}`).style.display = t === tab ? 'flex' : 'none';
+        });
+        renderRosterCost();
+    }
+
+    function openRosterCostModal() {
+        const now = new Date();
+        const y   = now.getFullYear();
+
+        // 연도 셀렉트 공통 함수
+        function fillYearSelect(id) {
+            const sel = document.getElementById(id);
+            if (sel.options.length === 0) {
+                for (let yr = y-1; yr <= y+1; yr++) {
+                    const o = document.createElement('option');
+                    o.value = yr; o.innerText = `${yr}년`;
+                    sel.appendChild(o);
+                }
+                sel.value = y;
+            }
+        }
+        // 일간 연/월
+        const dyS = document.getElementById('cost-daily-year');
+        if (dyS.options.length === 0) {
+            for (let yr = y-1; yr <= y+1; yr++) {
+                const o = document.createElement('option');
+                o.value = yr; o.innerText = `${yr}년`; dyS.appendChild(o);
+            }
+            dyS.value = y;
+        }
+        const dmS = document.getElementById('cost-daily-month');
+        if (dmS.options.length === 0) {
+            for (let mo = 1; mo <= 12; mo++) {
+                const o = document.createElement('option');
+                o.value = mo; o.innerText = `${mo}월`; dmS.appendChild(o);
+            }
+            dmS.value = now.getMonth() + 1;
+        }
+        fillYearSelect('cost-weekly-year');
+        fillYearSelect('cost-monthly-year');
+        document.getElementById('roster-cost-modal').style.display = 'flex';
+        switchCostTab('daily');
+    }
+
+    function renderRosterCost() {
+        const now = new Date();
+        const allLines = [...new Set([...Object.keys(rosterData.day), ...Object.keys(rosterData.night), ...FIXED_LINES])];
+
+        function calcCost(ds) {
+            let dReg=0, dOt=0, nReg=0, nOt=0;
+            allLines.forEach(l => {
+                const dc = getRosterCell('day',   l, ds);
+                const nc = getRosterCell('night', l, ds);
+                if (dc) { dReg += dc.reg||0; dOt += dc.ot||0; }
+                if (nc) { nReg += nc.reg||0; nOt += nc.ot||0; }
+            });
+            const cost = (dReg-dOt)*COST.dayReg + dOt*COST.dayOt + (nReg-nOt)*COST.nightReg + nOt*COST.nightOt;
+            return { dReg, dOt, nReg, nOt, cost };
+        }
+
+        const dayNames = ['일','월','화','수','목','금','토'];
+
+        if (costTab === 'daily') {
+            const y = parseInt(document.getElementById('cost-daily-year').value);
+            const m = parseInt(document.getElementById('cost-daily-month').value);
+            const days = new Date(y, m, 0).getDate();
+            let rows='', total=0, sDR=0,sDO=0,sNR=0,sNO=0;
+            for (let d=1; d<=days; d++) {
+                const ds  = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const r   = calcCost(ds);
+                if (r.cost===0) continue;
+                const dow = new Date(ds).getDay();
+                const dc  = dow===0?'#fca5a5':dow===6?'#93c5fd':'#334155';
+                rows += `<tr><td style="padding:8px 12px;font-weight:600;color:${dc};">${m}/${d} (${dayNames[dow]})</td><td style="text-align:center;color:#15803d;">${r.dReg}</td><td style="text-align:center;color:#c2410c;">${r.dOt}</td><td style="text-align:center;color:#1d4ed8;">${r.nReg}</td><td style="text-align:center;color:#7e22ce;">${r.nOt}</td><td style="text-align:center;font-weight:800;color:#7c3aed;">${r.cost.toLocaleString()}฿</td></tr>`;
+                total+=r.cost; sDR+=r.dReg; sDO+=r.dOt; sNR+=r.nReg; sNO+=r.nOt;
+            }
+            setCostTable(['날짜','☀️주간정규','☀️주간OT','🌙야간정규','🌙야간OT','비용'], rows, [sDR,sDO,sNR,sNO,total+'฿'], total);
+
+        } else if (costTab === 'weekly') {
+            const y = parseInt(document.getElementById('cost-weekly-year').value);
+            const weeks = {};
+            for (let m=1; m<=12; m++) {
+                const days = new Date(y, m, 0).getDate();
+                for (let d=1; d<=days; d++) {
+                    const ds  = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const dt  = new Date(ds);
+                    const wk  = getWeekNumber(dt);
+                    const key = `${y}-W${String(wk).padStart(2,'0')}`;
+                    if (!weeks[key]) weeks[key] = 0;
+                    weeks[key] += calcCost(ds).cost;
+                }
+            }
+            let rows='', total=0;
+            Object.entries(weeks).sort().forEach(([wk, cost]) => {
+                if (cost===0) return;
+                rows += `<tr><td style="padding:8px 12px;font-weight:600;color:#334155;">${wk.replace('-W',' — ')}주차</td><td style="text-align:center;font-weight:800;color:#7c3aed;" colspan="5">${cost.toLocaleString()}฿</td></tr>`;
+                total += cost;
+            });
+            setCostTable(['주차','합계비용','','','',''], rows, ['','','','','',total+'฿'], total);
+
+        } else { // monthly
+            const y = parseInt(document.getElementById('cost-monthly-year').value);
+            let rows='', total=0;
+            for (let mo=1; mo<=12; mo++) {
+                const days = new Date(y, mo, 0).getDate();
+                let moCost = 0;
+                for (let d=1; d<=days; d++) {
+                    const ds = `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    moCost += calcCost(ds).cost;
+                }
+                if (moCost===0) continue;
+                rows += `<tr><td style="padding:8px 12px;font-weight:600;color:#334155;">${y}년 ${mo}월</td><td style="text-align:center;font-weight:800;color:#7c3aed;" colspan="5">${moCost.toLocaleString()}฿</td></tr>`;
+                total += moCost;
+            }
+            setCostTable(['월','합계비용','','','',''], rows, ['','','','','',total+'฿'], total);
+        }
+    }
+
+    function setCostTable(headers, rows, footVals, total) {
+        document.getElementById('cost-thead').innerHTML =
+            `<tr style="background:#1e293b;color:white;">${headers.map(h=>`<th style="padding:10px 8px;">${h}</th>`).join('')}</tr>`;
+        document.getElementById('cost-table-body').innerHTML = rows ||
+            `<tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8;">데이터 없음</td></tr>`;
+        document.getElementById('cost-tfoot').innerHTML =
+            `<tr style="background:#f8fafc;font-weight:900;"><td style="padding:10px 12px;color:#0f172a;">합계</td>${footVals.map(v=>`<td style="padding:10px 8px;text-align:center;color:#7c3aed;">${v}</td>`).join('')}</tr>`;
+        document.getElementById('cost-total-badge').innerText = total > 0 ? `총 ${total.toLocaleString()}฿` : '';
+    }
+
+    // ─────────────────────────────────────────
+    //  PM 주기 관리
+    // ─────────────────────────────────────────
+    const PM_LINES = ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9'];
+    let pmData = [];        // [{id, line, name, date, cycle}]
+    let pmCurrentLine = PM_LINES[0];
+
+    function openPmModal() {
+        renderPmLineTabs();
+        renderPmTable();
+        document.getElementById('pm-modal').style.display = 'flex';
+    }
+
+    function renderPmLineTabs() {
+        const container = document.getElementById('pm-line-tabs');
+        container.innerHTML = PM_LINES.map(l => `
+            <button onclick="switchPmLine('${l}')" style="
+                padding:7px 16px; border:none; border-radius:20px; font-size:13px; font-weight:700;
+                cursor:pointer; transition:0.2s;
+                background:${l === pmCurrentLine ? 'var(--primary-color)' : '#e2e8f0'};
+                color:${l === pmCurrentLine ? 'white' : '#475569'};">${l}</button>
+        `).join('');
+    }
+
+    function switchPmLine(line) {
+        pmCurrentLine = line;
+        renderPmLineTabs();
+        renderPmTable();
+    }
+
+    function renderPmTable() {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const items = pmData.filter(p => p.line === pmCurrentLine);
+        const tbody = document.getElementById('pm-tbody');
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">등록된 PM 항목이 없습니다. '+ 항목 추가'를 눌러 등록하세요.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = items.map(p => {
+            const last  = new Date(p.date);
+            const diff  = Math.floor((today - last) / 86400000);  // 경과일 (당일=0)
+            const remain = p.cycle - diff;
+            let statusHtml, rowStyle = '';
+            if (remain < 0) {
+                statusHtml = `<span style="background:#fee2e2;color:#dc2626;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;">초과 ${Math.abs(remain)}일</span>`;
+                rowStyle = 'background:#fff5f5;';
+            } else if (remain <= 3) {
+                statusHtml = `<span style="background:#ffedd5;color:#c2410c;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;">임박 D-${remain}</span>`;
+                rowStyle = 'background:#fffbeb;';
+            } else {
+                statusHtml = `<span style="background:#f0fdf4;color:#15803d;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;">정상 D-${remain}</span>`;
+            }
+            return `<tr style="${rowStyle}">
+                <td style="padding:10px 14px;font-weight:600;color:#334155;">${p.name}</td>
+                <td style="text-align:center;color:#64748b;">${p.date}</td>
+                <td style="text-align:center;color:#64748b;">${p.cycle}일</td>
+                <td style="text-align:center;font-weight:800;color:#475569;">D+${diff}</td>
+                <td style="text-align:center;font-weight:800;color:${remain < 0 ? '#dc2626' : remain <= 3 ? '#c2410c' : '#15803d'};">${remain < 0 ? '-' : `D-${remain}`}</td>
+                <td style="text-align:center;">${statusHtml}</td>
+                <td style="text-align:center;">
+                    <button onclick="openPmEditModal('${p.id}')" style="background:#3b82f6;color:white;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;">수정</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function openPmAddModal() {
+        document.getElementById('pm-edit-id').value = '';
+        document.getElementById('pm-edit-title').innerText = 'PM 항목 등록';
+        document.getElementById('pm-edit-line').value = pmCurrentLine;
+        document.getElementById('pm-edit-name').value = '';
+        document.getElementById('pm-edit-date').value = new Date().toISOString().slice(0,10);
+        document.getElementById('pm-edit-cycle').value = 30;
+        document.getElementById('pm-del-btn').style.display = 'none';
+        document.getElementById('pm-edit-modal').style.display = 'flex';
+    }
+
+    function openPmEditModal(id) {
+        const p = pmData.find(x => x.id === id);
+        if (!p) return;
+        document.getElementById('pm-edit-id').value    = p.id;
+        document.getElementById('pm-edit-title').innerText = 'PM 항목 수정';
+        document.getElementById('pm-edit-line').value  = p.line;
+        document.getElementById('pm-edit-name').value  = p.name;
+        document.getElementById('pm-edit-date').value  = p.date;
+        document.getElementById('pm-edit-cycle').value = p.cycle;
+        document.getElementById('pm-del-btn').style.display = 'inline-block';
+        document.getElementById('pm-edit-modal').style.display = 'flex';
+    }
+
+    function savePmItem() {
+        const id    = document.getElementById('pm-edit-id').value;
+        const item  = {
+            id:    id || Date.now().toString(),
+            line:  document.getElementById('pm-edit-line').value,
+            name:  document.getElementById('pm-edit-name').value.trim(),
+            date:  document.getElementById('pm-edit-date').value,
+            cycle: parseInt(document.getElementById('pm-edit-cycle').value) || 30,
+        };
+        if (!item.name) { alert('PM 항목명을 입력해주세요.'); return; }
+        if (!item.date) { alert('최종 실시일을 입력해주세요.'); return; }
+        if (id) {
+            const idx = pmData.findIndex(x => x.id === id);
+            if (idx > -1) pmData[idx] = item;
+        } else {
+            pmData.push(item);
+        }
+        pmCurrentLine = item.line;
+        closeModal('pm-edit-modal');
+        renderPmLineTabs();
+        renderPmTable();
+    }
+
+    function deletePmItem() {
+        const id = document.getElementById('pm-edit-id').value;
+        if (!confirm('이 PM 항목을 삭제하시겠습니까?')) return;
+        pmData = pmData.filter(x => x.id !== id);
+        closeModal('pm-edit-modal');
+        renderPmTable();
     }
 
     function changeMonth(direction) {
@@ -784,6 +1517,16 @@ function fetchSchedules() {}
     function updateTypeSelectBox() {
         const select = document.getElementById('form-type');
         select.innerHTML = scheduleTypes.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+        // 직접 입력 옵션 추가 (항상 마지막)
+        select.innerHTML += `<option value="__CUSTOM__">✏️ 직접 입력...</option>`;
+    }
+
+    function onTypeSelectChange() {
+        const isCustom = document.getElementById('form-type').value === '__CUSTOM__';
+        document.getElementById('custom-type-group').style.display = isCustom ? 'block' : 'none';
+        if (isCustom) {
+            document.getElementById('form-type-custom').focus();
+        }
     }
 
     function setCompleteBtnState(isCompleted) {
@@ -844,10 +1587,15 @@ function fetchSchedules() {}
     }
 
     function saveSchedule() {
+        let typeVal = document.getElementById('form-type').value;
+        if (typeVal === '__CUSTOM__') {
+            typeVal = document.getElementById('form-type-custom').value.trim();
+            if (!typeVal) { alert('직접 입력 구분명을 입력해주세요.'); return; }
+        }
         const item = {
             id: document.getElementById('form-id').value,
             date: document.getElementById('form-date').value,
-            type: document.getElementById('form-type').value,
+            type: typeVal,
             line: document.getElementById('form-line').value,
             title: document.getElementById('form-title').value.trim() || '세부계획 없음',
             completed: isCurrentFormCompleted
@@ -911,7 +1659,13 @@ function fetchSchedules() {}
         }
     }
 
-    function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+        if (modalId === 'schedule-modal') {
+            document.getElementById('custom-type-group').style.display = 'none';
+            document.getElementById('form-type-custom').value = '';
+        }
+    }
 </script>
 </body>
 </html>
