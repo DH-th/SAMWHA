@@ -103,18 +103,19 @@
         
         #calendar-cells-grid { 
             flex: 1; display: grid; grid-template-columns: 60px repeat(7, 1fr); 
-            grid-auto-rows: minmax(80px, 1fr); gap: 10px; 
+            grid-auto-rows: minmax(100px, 1fr); gap: 8px; 
             overflow-y: auto; overflow-x: hidden; padding-right: 5px; 
-            padding-bottom: 5px; /* 테두리 잘림 방지 */
+            padding-bottom: 5px;
         }
         #calendar-cells-grid::-webkit-scrollbar { width: 6px; }
         #calendar-cells-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
         .week-cell {
             background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            font-weight: 900; color: #475569; font-size: 16px; border: 1px dashed #cbd5e1;
-            transition: all 0.2s;
+            font-weight: 900; color: #475569; font-size: 15px; border: 1px dashed #cbd5e1;
+            transition: all 0.2s; cursor: pointer; user-select: none;
         }
+        .week-cell:hover { background: #e0e7ff; color: #4338ca; border-color: #6366f1; transform: scale(1.05); }
 
         .cal-cell {
             background: #f8fafc; border-radius: 12px; padding: 10px; position: relative; cursor: pointer;
@@ -159,16 +160,24 @@
         .date-num.sat     { color: #3b82f6; }
         .cal-cell.today .date-num { color: #ef4444 !important; font-weight: 900; }
 
-        .color-bg-layer { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.15; z-index: 1; }
-        .cell-events { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; }
+        .color-bg-layer { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.10; z-index: 1; }
+        .cell-events { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; flex: 1; }
         .cell-events::-webkit-scrollbar { display: none; }
         
         .event-badge {
-            font-size: 12px; padding: 5px 6px; border-radius: 4px; color: #0f172a; font-weight: 700;
-            border: 1px solid rgba(0,0,0,0.08); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            font-size: 11px; padding: 4px 7px; border-radius: 6px; font-weight: 700;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            background: white; border: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+            display: flex; align-items: center; gap: 5px; cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
         }
-        .event-badge.completed { text-decoration: line-through; opacity: 0.5; background: #e2e8f0; }
+        .event-badge:hover { transform: scale(1.02); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .event-badge .badge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .event-badge .badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e293b; }
+        .event-badge .badge-line { font-size: 10px; color: #64748b; font-weight: 600; flex-shrink: 0; }
+        .event-badge.completed { opacity: 0.45; }
+        .event-badge.completed .badge-text { text-decoration: line-through; }
 
         .tooltip { position: absolute; display: none; background: #1e293b; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 13px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); pointer-events: none; line-height: 1.4; white-space: nowrap; }
         .cal-cell:hover .tooltip { display: block; bottom: 105%; left: 50%; transform: translateX(-50%); }
@@ -212,7 +221,60 @@
         .type-add-row { display: flex; gap: 10px; }
         .type-add-row input[type="color"] { width: 40px; height: 40px; padding: 0; border: none; border-radius: 8px; cursor: pointer; }
 
-        /* 근무표 전용 스타일 */
+        /* 주차 상세보기 모달 */
+        .wk-day-col { border-right: 1px solid #e2e8f0; padding: 16px 12px; display: flex; flex-direction: column; gap: 10px; min-height: 460px; }
+        .wk-day-col:last-child { border-right: none; }
+        .wk-day-col.wk-today { background: #fff8f8; }
+        .wk-day-header { text-align: center; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; margin-bottom: 4px; }
+        .wk-day-num { font-size: 28px; font-weight: 900; color: #334155; line-height: 1; }
+        .wk-day-num.sun { color: #ef4444; }
+        .wk-day-num.sat { color: #3b82f6; }
+        .wk-day-num.today-num { color: #ef4444; }
+        .wk-day-name { font-size: 13px; font-weight: 700; color: #94a3b8; margin-top: 4px; }
+        .wk-empty { color: #cbd5e1; font-size: 14px; text-align: center; margin-top: 24px; }
+        .wk-event-card {
+            border-radius: 10px; padding: 12px 13px; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border-left: 5px solid transparent;
+            background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .wk-event-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.13); }
+        .wk-event-card.done { opacity: 0.5; }
+        .wk-event-card.done .wk-card-title { text-decoration: line-through; }
+        .wk-card-top { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+        .wk-card-type { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; color: white; }
+        .wk-card-line { font-size: 13px; font-weight: 800; color: #475569; margin-left: auto; }
+        .wk-card-title { font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.5; word-break: keep-all; }
+        .wk-card-status { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
+        .wk-add-btn { border: 2px dashed #e2e8f0; border-radius: 10px; padding: 10px; text-align: center; color: #94a3b8; font-size: 14px; cursor: pointer; transition: 0.2s; margin-top: auto; }
+        .wk-add-btn:hover { border-color: #94a3b8; color: #475569; background: #f8fafc; }
+        /* ── 슬라이드 뷰 ── */
+        .sv-col { border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; }
+        .sv-col:last-child { border-right: none; }
+        .sv-col.sv-today { background: #fff1f2; }
+        .sv-col.sv-nextweek { background: #f8faff; }
+        .sv-day-header { text-align: center; padding: 14px 8px 12px; border-bottom: 3px solid #e2e8f0; background: white; flex-shrink: 0; }
+        .sv-col.sv-today .sv-day-header { background: #fff1f2; border-bottom-color: #ef4444; }
+        .sv-col.sv-nextweek .sv-day-header { background: #eff6ff; border-bottom-color: #3b82f6; }
+        .sv-day-num { font-size: 36px; font-weight: 900; color: #334155; line-height: 1; }
+        .sv-day-num.sv-sun { color: #ef4444; }
+        .sv-day-num.sv-sat { color: #3b82f6; }
+        .sv-day-num.sv-todaynum { color: #ef4444; }
+        .sv-day-name { font-size: 15px; font-weight: 800; color: #94a3b8; margin-top: 4px; }
+        .sv-cards { flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 8px; }
+        .sv-cards::-webkit-scrollbar { display: none; }
+        .sv-card { border-radius: 12px; padding: 14px; border-left: 6px solid transparent; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .sv-card.sv-done { opacity: 0.45; }
+        .sv-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+        .sv-card-type { font-size: 13px; font-weight: 900; padding: 4px 10px; border-radius: 20px; color: white; display: inline-block; }
+        .sv-card-line { font-size: 16px; font-weight: 900; color: #475569; }
+        .sv-card-title { font-size: 18px; font-weight: 800; color: #1e293b; line-height: 1.5; word-break: keep-all; }
+        .sv-card-title.sv-done-title { text-decoration: line-through; }
+        .sv-card-status { display: inline-block; margin-top: 9px; font-size: 13px; font-weight: 800; padding: 4px 12px; border-radius: 20px; }
+        .sv-empty { color: #d1d5db; font-size: 15px; text-align: center; padding-top: 30px; }
+        @keyframes slideBtn { 0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0.4)} 50%{box-shadow:0 0 0 8px rgba(124,58,237,0)} }
+        #btn-slide-view.active { animation: slideBtn 1.5s infinite; }
+
         .roster-shift-btn { padding: 8px 22px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; background: transparent; color: #64748b; transition: 0.2s; }
         .roster-shift-btn.active { background: var(--primary-color); color: white; border-radius: 20px; }
         #roster-table { border-radius: 10px; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
@@ -287,6 +349,7 @@
                 <button id="btn-calendar-view" class="view-btn active" onclick="switchView('calendar')">표 보기 (캘린더)</button>
                 <button id="btn-list-view" class="view-btn" onclick="switchView('list')">리스트 보기</button>
                 <button id="btn-roster-view" class="view-btn" onclick="switchView('roster')">👷 근무표</button>
+                <button id="btn-slide-view" class="view-btn" onclick="toggleSlideMode()" style="background:#7c3aed; color:white; border-color:#7c3aed;">📺 슬라이드</button>
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="settings-btn" style="background:#0f172a;" onclick="openSensorHistoryModal()">🌡️ 온습도 통계</button>
@@ -310,6 +373,30 @@
         </div>
 
         <div id="list-view" class="list-container"></div>
+
+        <!-- 주차 슬라이드 뷰 (자동 전환용) -->
+        <div id="week-slide-view" style="display:none; flex-direction:column; flex:1; overflow:hidden; background:#f8fafc;">
+            <!-- 슬라이드 헤더 -->
+            <div id="ws-header" style="display:flex; align-items:center; justify-content:space-between; padding:18px 28px 14px; background:white; border-bottom:2px solid #e2e8f0; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <div id="ws-title" style="font-size:28px; font-weight:900; color:#0f172a;"></div>
+                    <div id="ws-range" style="font-size:16px; color:#64748b; font-weight:600;"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div id="ws-stats" style="display:flex; gap:8px;"></div>
+                    <!-- 슬라이드 진행바 -->
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                        <div id="ws-countdown" style="font-size:12px; color:#94a3b8; font-weight:600;"></div>
+                        <div style="width:120px; height:5px; background:#e2e8f0; border-radius:10px; overflow:hidden;">
+                            <div id="ws-progress-bar" style="height:100%; background:#7c3aed; border-radius:10px; transition:width 1s linear; width:100%;"></div>
+                        </div>
+                    </div>
+                    <button onclick="toggleSlideMode()" style="background:#ef4444; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:14px; font-weight:700; cursor:pointer;">⏹ 종료</button>
+                </div>
+            </div>
+            <!-- 날짜 그리드 -->
+            <div id="ws-body" style="display:grid; grid-template-columns:repeat(7,1fr); flex:1; overflow:hidden;"></div>
+        </div>
 
         <!-- 근무표 뷰 -->
         <div id="roster-view" class="list-container" style="display:none; padding:20px; position:relative;">
@@ -362,6 +449,28 @@
             </div>
         </div>
 
+<!-- 주차 상세보기 모달 -->
+<div id="week-detail-modal" class="modal" onclick="if(event.target===this)closeModal('week-detail-modal')">
+    <div class="modal-content" style="width:1100px; max-width:98vw; max-height:94vh; overflow-y:auto; padding:0;">
+
+        <!-- 헤더 -->
+        <div id="week-detail-header" style="padding:20px 28px 16px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div>
+                <div id="week-detail-title" style="font-size:28px; font-weight:900; color:#0f172a;"></div>
+                <div id="week-detail-range" style="font-size:15px; color:#64748b; margin-top:4px;"></div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <div id="week-detail-stats" style="display:flex; gap:8px;"></div>
+                <button onclick="closeModal('week-detail-modal')" style="background:#f1f5f9; border:none; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:18px; color:#475569;">✕</button>
+            </div>
+        </div>
+
+        <!-- 날짜별 카드 그리드 -->
+        <div id="week-detail-body" style="display:grid; grid-template-columns:repeat(7,1fr); gap:0; min-height:400px;"></div>
+
+    </div>
+</div>
+
 <div id="schedule-modal" class="modal">
     <div class="modal-content" style="max-width:520px; width:95vw;">
         <div class="modal-title" id="modal-title-text">일정 등록/수정</div>
@@ -396,8 +505,13 @@
             <select id="form-type" class="form-control" onchange="onTypeSelectChange()"></select>
         </div>
         <div class="form-group" id="custom-type-group" style="display:none;">
-            <label>구분 직접 입력 <span style="color:#ef4444; font-size:12px;">(1회성 — 저장 목록에 추가되지 않음)</span></label>
-            <input type="text" id="form-type-custom" class="form-control" placeholder="구분명을 직접 입력하세요">
+            <label>구분 직접 입력 <span style="color:#ef4444; font-size:12px;">(1회성)</span></label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input type="text" id="form-type-custom" class="form-control" placeholder="구분명을 직접 입력하세요" style="flex:1;">
+                <input type="color" id="form-type-custom-color" value="#6366f1"
+                    style="width:44px; height:44px; border:2px solid #e2e8f0; border-radius:8px; cursor:pointer; padding:2px;">
+            </div>
+            <div style="font-size:11px; color:#94a3b8; margin-top:4px;">오른쪽 색상 버튼으로 배지 색을 지정할 수 있습니다.</div>
         </div>
         <div class="form-group">
             <label>상세 내용</label>
@@ -832,7 +946,9 @@ function fetchSchedules() {}
         return Math.floor(diffDays / 7) + 1;
     }
 
-    function getColorForType(typeName) {
+    function getColorForType(typeName, schedule) {
+        // 직접 입력 일정에 저장된 커스텀 색상 우선
+        if (schedule && schedule.customColor) return schedule.customColor;
         const t = scheduleTypes.find(x => x.name === typeName);
         return t ? t.color : '#94a3b8'; 
     }
@@ -872,7 +988,15 @@ function fetchSchedules() {}
 
             const weekCell = document.createElement('div');
             weekCell.className = 'week-cell';
-            weekCell.innerText = `W${wNum}`;
+            weekCell.innerHTML = `W${wNum}`;
+            weekCell.style.cursor = 'pointer';
+            weekCell.title = `W${wNum} 주차 상세보기`;
+            // ✅ 클로저 버그 수정: 루프 시점의 값을 즉시 상수로 캡처
+            const _wNum = wNum;
+            const _sy = rowStartDate.getFullYear();
+            const _sm = rowStartDate.getMonth();
+            const _sd = rowStartDate.getDate();
+            weekCell.onclick = () => openWeekDetailModal(_wNum, _sy, _sm, _sd);
             grid.appendChild(weekCell);
             rowElements.push(weekCell);
 
@@ -922,11 +1046,19 @@ function fetchSchedules() {}
                 if (daySchedules.length > 0) {
                     cellInner += `<div class="cell-events">`;
                     daySchedules.forEach(sch => {
-                        cellInner += `<span class="event-badge ${sch.completed ? 'completed' : ''}" onclick="openEditModal('${sch.id}', event, 'calendar')">[${sch.line}] ${sch.type}</span>`;
+                        const typeColor = getColorForType(sch.type, sch);
+                        const bgAlpha = sch.completed ? 'rgba(226,232,240,0.5)' : `${typeColor}18`;
+                        cellInner += `<span class="event-badge ${sch.completed ? 'completed' : ''}"
+                            style="background:${bgAlpha};"
+                            onclick="openEditModal('${sch.id}', event, 'calendar')">
+                            <span class="badge-dot" style="background:${typeColor};"></span>
+                            <span class="badge-line">${sch.line}</span>
+                            <span class="badge-text">${sch.type}</span>
+                        </span>`;
                     });
                     cellInner += `</div>`;
                     const tooltipContent = daySchedules.map(s => `[${s.line}] ${s.type}: ${s.title} (${s.completed ? '완료' : '진행중'})`).join('<br>');
-                    cellInner += `<div class="tooltip">${currentMonth + 1}월 ${currentDay}일 일지<br>${tooltipContent}</div>`;
+                    cellInner += `<div class="tooltip">${currentMonth + 1}월 ${currentDay}일<br>${tooltipContent}</div>`;
                 }
 
                 cell.innerHTML += cellInner;
@@ -1010,6 +1142,176 @@ function fetchSchedules() {}
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: total > 0 } }, cutout: '75%' }
         });
+    }
+
+    // ═══════════════════════════════════════════
+    //  슬라이드 모드 (월간 ↔ 이번주+다음주 10분 순환)
+    // ═══════════════════════════════════════════
+    let slideActive     = false;
+    let slidePhase      = 0;       // 0=월간, 1=주차상세
+    let slideTimer      = null;    // 10분 전환 타이머
+    let slideCountdown  = null;    // 1초 카운트다운
+    let slideSecondsLeft = 600;    // 10분 = 600초
+    const SLIDE_DURATION = 600;    // 초 단위
+
+    function toggleSlideMode() {
+        if (slideActive) {
+            stopSlide();
+        } else {
+            startSlide();
+        }
+    }
+
+    function startSlide() {
+        slideActive = true;
+        document.getElementById('btn-slide-view').classList.add('active');
+        document.getElementById('btn-slide-view').innerText = '⏸ 슬라이드 중';
+        slidePhase = 0;
+        showSlidePhase();
+    }
+
+    function stopSlide() {
+        slideActive = false;
+        clearTimeout(slideTimer);
+        clearInterval(slideCountdown);
+        document.getElementById('btn-slide-view').classList.remove('active');
+        document.getElementById('btn-slide-view').innerText = '📺 슬라이드';
+        // 캘린더 뷰로 복귀
+        document.getElementById('week-slide-view').style.display = 'none';
+        switchView('calendar');
+    }
+
+    function showSlidePhase() {
+        if (!slideActive) return;
+        clearTimeout(slideTimer);
+        clearInterval(slideCountdown);
+
+        if (slidePhase === 0) {
+            // ── 월간 캘린더 뷰 ──
+            document.getElementById('week-slide-view').style.display = 'none';
+            switchView('calendar');
+        } else {
+            // ── 이번주 + 다음주 상세 뷰 ──
+            document.getElementById('calendar-view').style.display  = 'none';
+            document.getElementById('list-view').style.display      = 'none';
+            document.getElementById('roster-view').style.display    = 'none';
+            document.getElementById('week-slide-view').style.display = 'flex';
+            ['calendar','list','roster'].forEach(v => {
+                const b = document.getElementById(`btn-${v}-view`);
+                if (b) b.classList.remove('active');
+            });
+            renderWeekSlide();
+        }
+
+        // 카운트다운
+        slideSecondsLeft = SLIDE_DURATION;
+        updateSlideProgress();
+        slideCountdown = setInterval(() => {
+            slideSecondsLeft--;
+            updateSlideProgress();
+            if (slideSecondsLeft <= 0) clearInterval(slideCountdown);
+        }, 1000);
+
+        // 10분 후 전환
+        slideTimer = setTimeout(() => {
+            slidePhase = slidePhase === 0 ? 1 : 0;
+            showSlidePhase();
+        }, SLIDE_DURATION * 1000);
+    }
+
+    function updateSlideProgress() {
+        const pct = (slideSecondsLeft / SLIDE_DURATION) * 100;
+        const bar = document.getElementById('ws-progress-bar');
+        if (bar) bar.style.width = pct + '%';
+        const m = Math.floor(slideSecondsLeft / 60);
+        const s = String(slideSecondsLeft % 60).padStart(2, '0');
+        const cd = document.getElementById('ws-countdown');
+        if (cd) cd.innerText = `전환까지 ${m}:${s}`;
+    }
+
+    function renderWeekSlide() {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const DAY_NAMES = ['일','월','화','수','목','금','토'];
+
+        // 이번주 일요일 계산
+        const thisWeekSun = new Date(today);
+        thisWeekSun.setDate(today.getDate() - today.getDay());
+
+        // 다음주 일요일
+        const nextWeekSun = new Date(thisWeekSun);
+        nextWeekSun.setDate(thisWeekSun.getDate() + 7);
+
+        const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+        // 이번주 7일 + 다음주 7일
+        const thisWeek = Array.from({length:7}, (_, i) => {
+            const d = new Date(thisWeekSun); d.setDate(thisWeekSun.getDate() + i); return d;
+        });
+        const nextWeek = Array.from({length:7}, (_, i) => {
+            const d = new Date(nextWeekSun); d.setDate(nextWeekSun.getDate() + i); return d;
+        });
+
+        const thisWNum = getWeekNumber(thisWeekSun);
+        const nextWNum = getWeekNumber(nextWeekSun);
+
+        // 헤더
+        const thisRange = `${thisWeek[0].getMonth()+1}/${thisWeek[0].getDate()} ~ ${thisWeek[6].getMonth()+1}/${thisWeek[6].getDate()}`;
+        document.getElementById('ws-title').innerText = `W${thisWNum} · W${nextWNum}  이번주 & 다음주`;
+        document.getElementById('ws-range').innerText = thisRange;
+
+        // 통계
+        const allDays = [...thisWeek, ...nextWeek];
+        const allItems = allDays.flatMap(d => schedules.filter(s => s.date === fmt(d)));
+        const done = allItems.filter(s => s.completed).length;
+        document.getElementById('ws-stats').innerHTML = `
+            <span style="background:#f0fdf4;color:#15803d;font-size:15px;font-weight:800;padding:8px 18px;border-radius:20px;">✔ 완료 ${done}</span>
+            <span style="background:#fef9c3;color:#854d0e;font-size:15px;font-weight:800;padding:8px 18px;border-radius:20px;">⏳ 진행 ${allItems.length - done}</span>`;
+
+        // 날짜 카드 렌더링 함수
+        function dayColHtml(d, isNext) {
+            const ds      = fmt(d);
+            const dow     = d.getDay();
+            const isToday = d.getTime() === today.getTime();
+            const items   = schedules.filter(s => s.date === ds);
+
+            const numCls  = isToday ? 'sv-todaynum' : dow===0 ? 'sv-sun' : dow===6 ? 'sv-sat' : '';
+            const colCls  = isToday ? 'sv-today' : isNext ? 'sv-nextweek' : '';
+
+            const cards = items.length > 0
+                ? items.map(s => {
+                    const color = getColorForType(s.type, s);
+                    const sbg   = s.completed ? '#dcfce7' : '#fef9c3';
+                    const sc    = s.completed ? '#15803d' : '#854d0e';
+                    return `<div class="sv-card ${s.completed?'sv-done':''}" style="border-left-color:${color};">
+                        <div class="sv-card-top">
+                            <span class="sv-card-type" style="background:${color};">${s.type}</span>
+                            <span class="sv-card-line">${s.line}</span>
+                        </div>
+                        <div class="sv-card-title ${s.completed?'sv-done-title':''}">${s.title}</div>
+                        <span class="sv-card-status" style="background:${sbg};color:${sc};">${s.completed?'✔ 완료':'⏳ 진행중'}</span>
+                    </div>`;
+                }).join('')
+                : `<div class="sv-empty">일정 없음</div>`;
+
+            return `<div class="sv-col ${colCls}">
+                <div class="sv-day-header">
+                    <div class="sv-day-num ${numCls}">${d.getDate()}</div>
+                    <div class="sv-day-name">${DAY_NAMES[dow]}</div>
+                    ${isNext ? `<div style="font-size:11px;color:#93c5fd;font-weight:700;margin-top:3px;">다음주</div>` : ''}
+                </div>
+                <div class="sv-cards">${cards}</div>
+            </div>`;
+        }
+
+        // 이번주 7열 + 다음주 7열을 모두 표시 (14열 → 두 행으로 나눔)
+        const body = document.getElementById('ws-body');
+        body.style.gridTemplateColumns = 'repeat(7, 1fr)';
+        body.style.gridTemplateRows    = '1fr 1fr';
+
+        body.innerHTML =
+            thisWeek.map(d => dayColHtml(d, false)).join('') +
+            nextWeek.map(d => dayColHtml(d, true)).join('');
     }
 
     function switchView(viewType) {
@@ -1421,7 +1723,83 @@ function fetchSchedules() {}
     }
 
     // ─────────────────────────────────────────
-    //  PM 주기 관리 (schedules 자동 연동)
+    //  주차 상세보기
+    // ─────────────────────────────────────────
+    function openWeekDetailModal(wNum, startY, startM, startD) {
+        const DAY_NAMES = ['일','월','화','수','목','금','토'];
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        // 날짜 배열 — 연/월/일 정수로 직접 생성해 시간대 문제 원천 차단
+        const days = Array.from({length:7}, (_, i) => new Date(startY, startM, startD + i));
+
+        const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const dispDate = d => `${d.getMonth()+1}/${d.getDate()}`;
+
+        const rangeStr =
+            `${days[0].getFullYear()}년 ${dispDate(days[0])}(${DAY_NAMES[days[0].getDay()]})` +
+            ` ~ ${dispDate(days[6])}(${DAY_NAMES[days[6].getDay()]})`;
+
+        document.getElementById('week-detail-title').innerText = `W${wNum}`;
+        document.getElementById('week-detail-range').innerText = rangeStr;
+
+        const allItems = days.flatMap(d => schedules.filter(s => s.date === fmt(d)));
+        const done  = allItems.filter(s => s.completed).length;
+        const total = allItems.length;
+
+        document.getElementById('week-detail-stats').innerHTML = `
+            <span style="background:#f0fdf4;color:#15803d;font-size:14px;font-weight:800;padding:7px 16px;border-radius:20px;">✔ 완료 ${done}</span>
+            <span style="background:#fef9c3;color:#854d0e;font-size:14px;font-weight:800;padding:7px 16px;border-radius:20px;">⏳ 진행 ${total-done}</span>
+            <span style="background:#eff6ff;color:#1d4ed8;font-size:14px;font-weight:800;padding:7px 16px;border-radius:20px;">전체 ${total}건</span>`;
+
+        const body = document.getElementById('week-detail-body');
+        body.innerHTML = days.map(d => {
+            const ds      = fmt(d);
+            const dow     = d.getDay();
+            const isToday = d.getTime() === today.getTime();
+            const isOtherM = d.getMonth() !== currentMonth;
+            const dayItems = schedules.filter(s => s.date === ds);
+
+            const numClass = isToday ? 'today-num' : dow===0 ? 'sun' : dow===6 ? 'sat' : '';
+            const colCls   = isToday ? 'wk-today' : '';
+            const dimStyle = isOtherM ? 'opacity:0.3;' : '';
+
+            const cards = dayItems.length > 0
+                ? dayItems.map(s => {
+                    const color = getColorForType(s.type, s);
+                    const sbg   = s.completed ? '#dcfce7' : '#fef9c3';
+                    const sc    = s.completed ? '#15803d' : '#854d0e';
+                    return `<div class="wk-event-card ${s.completed?'done':''}"
+                        style="border-left-color:${color};"
+                        onclick="openEditModal('${s.id}',event,'calendar')">
+                        <div class="wk-card-top">
+                            <span class="wk-card-type" style="background:${color};">${s.type}</span>
+                            <span class="wk-card-line">${s.line}</span>
+                        </div>
+                        <div class="wk-card-title">${s.title}</div>
+                        <span class="wk-card-status" style="background:${sbg};color:${sc};">
+                            ${s.completed?'✔ 완료':'⏳ 진행중'}
+                        </span>
+                    </div>`;
+                }).join('')
+                : `<div class="wk-empty">—</div>`;
+
+            const addBtn = !isOtherM
+                ? `<div class="wk-add-btn" onclick="closeModal('week-detail-modal');openAddModal('${ds}')">＋ 추가</div>`
+                : '';
+
+            return `<div class="wk-day-col ${colCls}" style="${dimStyle}">
+                <div class="wk-day-header">
+                    <div class="wk-day-num ${numClass}">${d.getDate()}</div>
+                    <div class="wk-day-name">${DAY_NAMES[dow]}</div>
+                </div>
+                ${cards}
+                ${addBtn}
+            </div>`;
+        }).join('');
+
+        document.getElementById('week-detail-modal').style.display = 'flex';
+    }
     // ─────────────────────────────────────────
     //  구조:
     //    - pmTrackedTypes : { typeName: cycle }  — 추적할 구분명 + 주기(일)
@@ -1740,14 +2118,17 @@ function fetchSchedules() {}
 
     function saveSchedule() {
         let typeVal = document.getElementById('form-type').value;
+        let customColor = null;
         if (typeVal === '__CUSTOM__') {
             typeVal = document.getElementById('form-type-custom').value.trim();
+            customColor = document.getElementById('form-type-custom-color').value;
             if (!typeVal) { alert('직접 입력 구분명을 입력해주세요.'); return; }
         }
         const item = {
             id: document.getElementById('form-id').value,
             date: document.getElementById('form-date').value,
             type: typeVal,
+            customColor: customColor,   // 직접 입력 시 색상 저장
             line: document.getElementById('form-line').value,
             title: document.getElementById('form-title').value.trim() || '세부계획 없음',
             completed: isCurrentFormCompleted
