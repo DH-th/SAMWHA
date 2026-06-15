@@ -248,6 +248,11 @@
         .wk-card-status { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
         .wk-add-btn { border: 2px dashed #e2e8f0; border-radius: 10px; padding: 10px; text-align: center; color: #94a3b8; font-size: 14px; cursor: pointer; transition: 0.2s; margin-top: auto; }
         .wk-add-btn:hover { border-color: #94a3b8; color: #475569; background: #f8fafc; }
+        /* 언어 전환 버튼 */
+        .lang-btn { border:2px solid #e2e8f0; background:white; border-radius:8px; padding:5px 8px; font-size:18px; cursor:pointer; transition:0.2s; line-height:1; }
+        .lang-btn:hover { border-color:#94a3b8; transform:scale(1.1); }
+        .lang-btn.active { border-color:#3b82f6; box-shadow:0 0 0 2px #bfdbfe; }
+
         /* ── 슬라이드 뷰 ── */
         .sv-col { border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; }
         .sv-col:last-child { border-right: none; }
@@ -350,11 +355,17 @@
                 <button id="btn-list-view" class="view-btn" onclick="switchView('list')">리스트 보기</button>
                 <button id="btn-roster-view" class="view-btn" onclick="switchView('roster')">👷 근무표</button>
                 <button id="btn-slide-view" class="view-btn" onclick="toggleSlideMode()" style="background:#7c3aed; color:white; border-color:#7c3aed;">📺 슬라이드</button>
+                <!-- 언어 전환 -->
+                <div style="display:flex; gap:4px; margin-left:8px;">
+                    <button onclick="setLang('ko')" id="lang-ko" class="lang-btn active" title="한국어">🇰🇷</button>
+                    <button onclick="setLang('en')" id="lang-en" class="lang-btn" title="English">🇬🇧</button>
+                    <button onclick="setLang('th')" id="lang-th" class="lang-btn" title="ภาษาไทย">🇹🇭</button>
+                </div>
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="settings-btn" style="background:#0f172a;" onclick="openSensorHistoryModal()">🌡️ 온습도 통계</button>
-                <button class="settings-btn" style="background:#0369a1;" onclick="openPmModal()">🔧 PM 주기</button>
-                <button class="settings-btn" onclick="openSettingsModal()">⚙️ 항목 관리</button>
+                <button class="settings-btn" style="background:#0f172a;" onclick="openSensorHistoryModal()" data-i18n="btnTemp">🌡️ 온습도 통계</button>
+                <button class="settings-btn" style="background:#0369a1;" onclick="openPmModal()" data-i18n="btnPM">🔧 PM 주기</button>
+                <button class="settings-btn" onclick="openSettingsModal()" data-i18n="btnSettings">⚙️ 항목 관리</button>
             </div>
         </div>
 
@@ -1181,15 +1192,26 @@ function fetchSchedules() {}
         switchView('calendar');
     }
 
+    function _showCalendarOnly() {
+        // 슬라이드 내부 전환용 — stopSlide 호출 없이 뷰만 전환
+        const sv = document.getElementById('week-slide-view');
+        if (sv) sv.style.display = 'none';
+        ['list','roster'].forEach(v => document.getElementById(`${v}-view`).style.display = 'none');
+        document.getElementById('calendar-view').style.display = 'flex';
+        ['calendar','list','roster'].forEach(v => {
+            const b = document.getElementById(`btn-${v}-view`);
+            if (b) b.classList.toggle('active', v === 'calendar');
+        });
+    }
+
     function showSlidePhase() {
         if (!slideActive) return;
         clearTimeout(slideTimer);
         clearInterval(slideCountdown);
 
         if (slidePhase === 0) {
-            // ── 월간 캘린더 뷰 ──
-            document.getElementById('week-slide-view').style.display = 'none';
-            switchView('calendar');
+            // ── 월간 캘린더 뷰 (내부 전환 — stopSlide 호출 안 함) ──
+            _showCalendarOnly();
         } else {
             // ── 이번주 + 다음주 상세 뷰 ──
             document.getElementById('calendar-view').style.display  = 'none';
@@ -1232,19 +1254,17 @@ function fetchSchedules() {}
     function renderWeekSlide() {
         const today = new Date();
         today.setHours(0,0,0,0);
-        const DAY_NAMES = ['일','월','화','수','목','금','토'];
+        const DAY_NAMES = (typeof T !== 'undefined') ? T('days') : ['일','월','화','수','목','금','토'];
 
         // 이번주 일요일 계산
         const thisWeekSun = new Date(today);
         thisWeekSun.setDate(today.getDate() - today.getDay());
-
-        // 다음주 일요일
         const nextWeekSun = new Date(thisWeekSun);
         nextWeekSun.setDate(thisWeekSun.getDate() + 7);
 
-        const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const fmt = d =>
+            `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-        // 이번주 7일 + 다음주 7일
         const thisWeek = Array.from({length:7}, (_, i) => {
             const d = new Date(thisWeekSun); d.setDate(thisWeekSun.getDate() + i); return d;
         });
@@ -1255,26 +1275,25 @@ function fetchSchedules() {}
         const thisWNum = getWeekNumber(thisWeekSun);
         const nextWNum = getWeekNumber(nextWeekSun);
 
-        // 헤더
-        const thisRange = `${thisWeek[0].getMonth()+1}/${thisWeek[0].getDate()} ~ ${thisWeek[6].getMonth()+1}/${thisWeek[6].getDate()}`;
-        document.getElementById('ws-title').innerText = `W${thisWNum} · W${nextWNum}  이번주 & 다음주`;
-        document.getElementById('ws-range').innerText = thisRange;
+        // 헤더 날짜 범위
+        const fmtDisp = d => `${d.getMonth()+1}/${d.getDate()}`;
+        document.getElementById('ws-title').innerText = `W${thisWNum} · W${nextWNum}`;
+        document.getElementById('ws-range').innerText =
+            `이번주 ${fmtDisp(thisWeek[0])}(${DAY_NAMES[thisWeek[0].getDay()]})~${fmtDisp(thisWeek[6])}(${DAY_NAMES[thisWeek[6].getDay()]})` +
+            `　　다음주 ${fmtDisp(nextWeek[0])}(${DAY_NAMES[nextWeek[0].getDay()]})~${fmtDisp(nextWeek[6])}(${DAY_NAMES[nextWeek[6].getDay()]})`;
 
         // 통계
-        const allDays = [...thisWeek, ...nextWeek];
-        const allItems = allDays.flatMap(d => schedules.filter(s => s.date === fmt(d)));
+        const allItems = [...thisWeek, ...nextWeek].flatMap(d => schedules.filter(s => s.date === fmt(d)));
         const done = allItems.filter(s => s.completed).length;
         document.getElementById('ws-stats').innerHTML = `
             <span style="background:#f0fdf4;color:#15803d;font-size:15px;font-weight:800;padding:8px 18px;border-radius:20px;">✔ 완료 ${done}</span>
             <span style="background:#fef9c3;color:#854d0e;font-size:15px;font-weight:800;padding:8px 18px;border-radius:20px;">⏳ 진행 ${allItems.length - done}</span>`;
 
-        // 날짜 카드 렌더링 함수
         function dayColHtml(d, isNext) {
             const ds      = fmt(d);
             const dow     = d.getDay();
             const isToday = d.getTime() === today.getTime();
             const items   = schedules.filter(s => s.date === ds);
-
             const numCls  = isToday ? 'sv-todaynum' : dow===0 ? 'sv-sun' : dow===6 ? 'sv-sat' : '';
             const colCls  = isToday ? 'sv-today' : isNext ? 'sv-nextweek' : '';
 
@@ -1292,35 +1311,48 @@ function fetchSchedules() {}
                         <span class="sv-card-status" style="background:${sbg};color:${sc};">${s.completed?'✔ 완료':'⏳ 진행중'}</span>
                     </div>`;
                 }).join('')
-                : `<div class="sv-empty">일정 없음</div>`;
+                : `<div class="sv-empty">—</div>`;
 
             return `<div class="sv-col ${colCls}">
                 <div class="sv-day-header">
                     <div class="sv-day-num ${numCls}">${d.getDate()}</div>
                     <div class="sv-day-name">${DAY_NAMES[dow]}</div>
-                    ${isNext ? `<div style="font-size:11px;color:#93c5fd;font-weight:700;margin-top:3px;">다음주</div>` : ''}
                 </div>
                 <div class="sv-cards">${cards}</div>
             </div>`;
         }
 
-        // 이번주 7열 + 다음주 7열을 모두 표시 (14열 → 두 행으로 나눔)
         const body = document.getElementById('ws-body');
-        body.style.gridTemplateColumns = 'repeat(7, 1fr)';
+        // 두 행: 이번주 레이블 행 + 이번주 7열 / 다음주 레이블 행 + 다음주 7열
+        // grid: 8열 (레이블 1 + 날짜 7) × 2행
+        body.style.gridTemplateColumns = '56px repeat(7, 1fr)';
         body.style.gridTemplateRows    = '1fr 1fr';
+        body.style.borderTop           = '1px solid #e2e8f0';
+
+        const wLabel = (wNum, color) =>
+            `<div style="display:flex;align-items:center;justify-content:center;background:${color};writing-mode:vertical-rl;text-orientation:mixed;font-size:14px;font-weight:900;color:white;letter-spacing:2px;border-right:2px solid rgba(255,255,255,0.3);">W${wNum}</div>`;
 
         body.innerHTML =
+            wLabel(thisWNum, '#475569') +
             thisWeek.map(d => dayColHtml(d, false)).join('') +
+            wLabel(nextWNum, '#3b82f6') +
             nextWeek.map(d => dayColHtml(d, true)).join('');
     }
 
     function switchView(viewType) {
+        // 슬라이드 모드 중에 다른 탭 누르면 슬라이드 중단
+        if (slideActive) stopSlide();
+
         const views = ['calendar', 'list', 'roster'];
         views.forEach(v => {
             document.getElementById(`${v}-view`).style.display = 'none';
             const btn = document.getElementById(`btn-${v}-view`);
             if (btn) btn.classList.remove('active');
         });
+        // 슬라이드 뷰도 숨김
+        const sv = document.getElementById('week-slide-view');
+        if (sv) sv.style.display = 'none';
+
         if (viewType === 'calendar') {
             document.getElementById('calendar-view').style.display = 'flex';
             document.getElementById('btn-calendar-view').classList.add('active');
@@ -1415,7 +1447,7 @@ function fetchSchedules() {}
         const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
         const extraLines = Object.keys(rosterData[rosterShift] || {}).filter(l => !FIXED_LINES.includes(l)).sort();
         const allLines = [...FIXED_LINES, ...extraLines];
-        const dayNames = ['일','월','화','수','목','금','토'];
+        const dayNames = (typeof T !== 'undefined') ? T('days') : ['일','월','화','수','목','금','토'];
 
         // ── 헤더 (우측 정규/OT 열 제거) ──
         let headHtml = `<tr><th style="min-width:46px; text-align:left; padding-left:8px;">라인</th>`;
@@ -1654,7 +1686,7 @@ function fetchSchedules() {}
             return { dReg, dOt, nReg, nOt, cost };
         }
 
-        const dayNames = ['일','월','화','수','목','금','토'];
+        const dayNames = (typeof T !== 'undefined') ? T('days') : ['일','월','화','수','목','금','토'];
 
         if (costTab === 'daily') {
             const y = parseInt(document.getElementById('cost-daily-year').value);
@@ -1726,7 +1758,7 @@ function fetchSchedules() {}
     //  주차 상세보기
     // ─────────────────────────────────────────
     function openWeekDetailModal(wNum, startY, startM, startD) {
-        const DAY_NAMES = ['일','월','화','수','목','금','토'];
+        const DAY_NAMES = (typeof T !== 'undefined') ? T('days') : ['일','월','화','수','목','금','토'];
         const today = new Date();
         today.setHours(0,0,0,0);
 
@@ -2199,6 +2231,402 @@ function fetchSchedules() {}
             document.getElementById('form-type-custom').value = '';
         }
     }
+
+// ═══════════════════════════════════════════
+//  다국어 (한국어 / English / ภาษาไทย)
+// ═══════════════════════════════════════════
+let currentLang = 'ko';
+
+const LANG = {
+    ko: {
+        // 탭 버튼
+        tabCalendar:  '표 보기 (캘린더)',
+        tabList:      '리스트 보기',
+        tabRoster:    '👷 근무표',
+        tabSlide:     '📺 슬라이드',
+        tabSlideOn:   '⏸ 슬라이드 중',
+        // 상단 버튼
+        btnTemp:      '🌡️ 온습도 통계',
+        btnPM:        '🔧 PM 주기',
+        btnSettings:  '⚙️ 항목 관리',
+        // 센서
+        sensorTemp:   '현장 온도',
+        sensorHumid:  '현장 습도',
+        sensorNoise:  '실시간 소음 상태',
+        sensorAir:    '공기질 (미세먼지)',
+        // 캘린더 헤더
+        days:         ['일','월','화','수','목','금','토'],
+        // 일정 모달
+        modalAdd:     '신규 일정 추가',
+        modalEdit:    '일정 세부사항 변경',
+        labelDate:    '날짜',
+        labelLine:    '라인 선택',
+        labelType:    '구분 (항목 선택)',
+        labelCustom:  '구분 직접 입력',
+        labelDetail:  '상세 내용',
+        phDetail:     '일정 세부 내용 입력',
+        phCustom:     '구분명을 직접 입력하세요',
+        btnSave:      '저장',
+        btnCancel:    '취소',
+        btnDelete:    '삭제',
+        btnClose:     '닫기',
+        stateDoing:   '상태: 진행중',
+        stateDone:    '상태: 완료됨',
+        // 기존 항목
+        dayItems:     '이 날의 등록된 일정',
+        // 리스트
+        listTitle:    (y,m) => `📅 ${y}년 ${m}월 일정 (날짜순)`,
+        colType:      '구분',
+        colLine:      '설비 라인',
+        colDate:      '예정 일자',
+        colDetail:    '세부 계획',
+        colStatus:    '상태',
+        statusDone:   '✔️ 완료됨',
+        statusDoing:  '⏳ 진행중',
+        noSchedule:   '이번 달에 계획된 일정이 없습니다.',
+        // 설정
+        settingsTitle:'일정 항목(구분) 관리',
+        currentItems: '현재 등록된 항목',
+        addItem:      '새 항목 추가',
+        phNewType:    '새로운 구분명 입력',
+        btnAdd:       '추가',
+        btnApply:     '닫기 및 적용',
+        // 근무표
+        rosterTitle:  '👷 근무 및 OT 현황표',
+        rosterEdit:   '✏️ 수정 모드',
+        rosterEditOn: '✏️ 수정 모드 ON',
+        rosterEditBadge: '수정 모드 활성',
+        shiftDay:     '☀️ 주간',
+        shiftNight:   '🌙 야간',
+        statRegDays:  '정규 가동일수',
+        statOtDays:   'OT 발생일수',
+        statAvgReg:   '평균 직원수',
+        statAvgOt:    '평균 OT 인원수',
+        rosterLine:   '라인',
+        rosterTotal:  'TOTAL',
+        btnCost:      '💰 인건비 계산',
+        // 인건비
+        costPwTitle:  '🔒 인건비 계산',
+        costPwHint:   '비밀번호를 입력하세요',
+        costPwErr:    '비밀번호가 틀렸습니다.',
+        costTitle:    '💰 인건비 계산',
+        costTabDay:   '일간',
+        costTabWeek:  '주간',
+        costTabMonth: '월간',
+        // 슬라이드
+        slideStop:    '⏹ 종료',
+        slideNext:    (m,s) => `전환까지 ${m}:${s}`,
+        thisNext:     '이번주 & 다음주',
+        nextWeekLbl:  '다음주',
+        statDone:     (n) => `✔ 완료 ${n}`,
+        statDoing:    (n) => `⏳ 진행 ${n}`,
+        // 주차 상세
+        wkEmpty:      '—',
+        wkAdd:        '＋ 추가',
+        wkDone:       '✔ 완료',
+        wkDoing:      '⏳ 진행중',
+        // PM
+        pmTitle:      '🔧 PM 주기 관리',
+        pmSettings:   '⚙️ PM 항목 지정',
+        pmNoData:     '기록 없음',
+        pmNoItem:     '미실시',
+        pmOver:       '초과',
+        pmImminent:   '임박',
+        pmNormal:     '정상',
+        pmToday:      '오늘 실시 필요',
+        pmNotice:     '※ 최종 실시일은 캘린더에서 해당 항목으로 등록된 가장 최근 완료 일정 날짜입니다.',
+        colLastDate:  '최종 실시일',
+        colCycle:     '주기(일)',
+        colElapsed:   '경과일',
+        colRemain:    '잔여일',
+        colStatus2:   '상태',
+        // 온습도
+        tempTitle:    '🌡️ 온습도 통계',
+        selectDate:   '-- 날짜를 선택하세요 --',
+        tempAvg:      '온도 — 평균 / 최고 / 최저',
+        humidAvg:     '습도 — 평균 / 최고 / 최저',
+        totalRec:     (n) => `총 ${n}건`,
+        noData:       '해당 날짜 데이터 없음',
+        colTime:      '시각',
+        colTemp:      '온도(℃)',
+        colHumid:     '습도(%)',
+        colNoise:     '소음',
+        colAir:       '공기질',
+    },
+    en: {
+        tabCalendar:  'Calendar',
+        tabList:      'List View',
+        tabRoster:    '👷 Roster',
+        tabSlide:     '📺 Slide',
+        tabSlideOn:   '⏸ Sliding',
+        btnTemp:      '🌡️ Temp & Humidity',
+        btnPM:        '🔧 PM Schedule',
+        btnSettings:  '⚙️ Manage Types',
+        sensorTemp:   'Temperature',
+        sensorHumid:  'Humidity',
+        sensorNoise:  'Noise Level',
+        sensorAir:    'Air Quality',
+        days:         ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+        modalAdd:     'Add Schedule',
+        modalEdit:    'Edit Schedule',
+        labelDate:    'Date',
+        labelLine:    'Line',
+        labelType:    'Type',
+        labelCustom:  'Custom Type',
+        labelDetail:  'Detail',
+        phDetail:     'Enter schedule details',
+        phCustom:     'Enter custom type name',
+        btnSave:      'Save',
+        btnCancel:    'Cancel',
+        btnDelete:    'Delete',
+        btnClose:     'Close',
+        stateDoing:   'Status: In Progress',
+        stateDone:    'Status: Completed',
+        dayItems:     "This day's schedules",
+        listTitle:    (y,m) => `📅 ${y} / ${m} Schedules`,
+        colType:      'Type',
+        colLine:      'Line',
+        colDate:      'Date',
+        colDetail:    'Detail',
+        colStatus:    'Status',
+        statusDone:   '✔️ Done',
+        statusDoing:  '⏳ In Progress',
+        noSchedule:   'No schedules this month.',
+        settingsTitle:'Manage Schedule Types',
+        currentItems: 'Registered Types',
+        addItem:      'Add New Type',
+        phNewType:    'Enter new type name',
+        btnAdd:       'Add',
+        btnApply:     'Close & Apply',
+        rosterTitle:  '👷 Work & OT Roster',
+        rosterEdit:   '✏️ Edit Mode',
+        rosterEditOn: '✏️ Edit Mode ON',
+        rosterEditBadge: 'Edit Active',
+        shiftDay:     '☀️ Day',
+        shiftNight:   '🌙 Night',
+        statRegDays:  'Regular Days',
+        statOtDays:   'OT Days',
+        statAvgReg:   'Avg. Headcount',
+        statAvgOt:    'Avg. OT Count',
+        rosterLine:   'Line',
+        rosterTotal:  'TOTAL',
+        btnCost:      '💰 Labor Cost',
+        costPwTitle:  '🔒 Labor Cost',
+        costPwHint:   'Enter password',
+        costPwErr:    'Incorrect password.',
+        costTitle:    '💰 Labor Cost Calculation',
+        costTabDay:   'Daily',
+        costTabWeek:  'Weekly',
+        costTabMonth: 'Monthly',
+        slideStop:    '⏹ Stop',
+        slideNext:    (m,s) => `Next in ${m}:${s}`,
+        thisNext:     'This Week & Next Week',
+        nextWeekLbl:  'Next Week',
+        statDone:     (n) => `✔ Done ${n}`,
+        statDoing:    (n) => `⏳ In Progress ${n}`,
+        wkEmpty:      '—',
+        wkAdd:        '＋ Add',
+        wkDone:       '✔ Done',
+        wkDoing:      '⏳ In Progress',
+        pmTitle:      '🔧 PM Schedule',
+        pmSettings:   '⚙️ Set PM Types',
+        pmNoData:     'No Record',
+        pmNoItem:     'Not Done',
+        pmOver:       'Overdue',
+        pmImminent:   'Imminent',
+        pmNormal:     'Normal',
+        pmToday:      'Due Today',
+        pmNotice:     '※ Last date is the most recent completed schedule for this type.',
+        colLastDate:  'Last Date',
+        colCycle:     'Cycle(days)',
+        colElapsed:   'Elapsed',
+        colRemain:    'Remaining',
+        colStatus2:   'Status',
+        tempTitle:    '🌡️ Temp & Humidity Stats',
+        selectDate:   '-- Select Date --',
+        tempAvg:      'Temp — Avg / High / Low',
+        humidAvg:     'Humid — Avg / High / Low',
+        totalRec:     (n) => `${n} records`,
+        noData:       'No data for this date',
+        colTime:      'Time',
+        colTemp:      'Temp(℃)',
+        colHumid:     'Humid(%)',
+        colNoise:     'Noise',
+        colAir:       'Air Quality',
+    },
+    th: {
+        tabCalendar:  'ปฏิทิน',
+        tabList:      'รายการ',
+        tabRoster:    '👷 ตารางงาน',
+        tabSlide:     '📺 สไลด์',
+        tabSlideOn:   '⏸ กำลังสไลด์',
+        btnTemp:      '🌡️ อุณหภูมิ',
+        btnPM:        '🔧 PM',
+        btnSettings:  '⚙️ จัดการประเภท',
+        sensorTemp:   'อุณหภูมิ',
+        sensorHumid:  'ความชื้น',
+        sensorNoise:  'เสียงรบกวน',
+        sensorAir:    'คุณภาพอากาศ',
+        days:         ['อา','จ','อ','พ','พฤ','ศ','ส'],
+        modalAdd:     'เพิ่มกำหนดการ',
+        modalEdit:    'แก้ไขกำหนดการ',
+        labelDate:    'วันที่',
+        labelLine:    'ไลน์',
+        labelType:    'ประเภท',
+        labelCustom:  'กรอกประเภทเอง',
+        labelDetail:  'รายละเอียด',
+        phDetail:     'กรอกรายละเอียด',
+        phCustom:     'กรอกชื่อประเภท',
+        btnSave:      'บันทึก',
+        btnCancel:    'ยกเลิก',
+        btnDelete:    'ลบ',
+        btnClose:     'ปิด',
+        stateDoing:   'สถานะ: กำลังดำเนินการ',
+        stateDone:    'สถานะ: เสร็จสิ้น',
+        dayItems:     'กำหนดการวันนี้',
+        listTitle:    (y,m) => `📅 กำหนดการ ${y}/${m}`,
+        colType:      'ประเภท',
+        colLine:      'ไลน์',
+        colDate:      'วันที่',
+        colDetail:    'รายละเอียด',
+        colStatus:    'สถานะ',
+        statusDone:   '✔️ เสร็จ',
+        statusDoing:  '⏳ ดำเนินการ',
+        noSchedule:   'ไม่มีกำหนดการเดือนนี้',
+        settingsTitle:'จัดการประเภทกำหนดการ',
+        currentItems: 'ประเภทที่ลงทะเบียน',
+        addItem:      'เพิ่มประเภทใหม่',
+        phNewType:    'กรอกชื่อประเภทใหม่',
+        btnAdd:       'เพิ่ม',
+        btnApply:     'ปิดและใช้งาน',
+        rosterTitle:  '👷 ตารางงานและ OT',
+        rosterEdit:   '✏️ แก้ไข',
+        rosterEditOn: '✏️ แก้ไข ON',
+        rosterEditBadge: 'กำลังแก้ไข',
+        shiftDay:     '☀️ กลางวัน',
+        shiftNight:   '🌙 กลางคืน',
+        statRegDays:  'วันทำงานปกติ',
+        statOtDays:   'วัน OT',
+        statAvgReg:   'จำนวนพนักงานเฉลี่ย',
+        statAvgOt:    'จำนวน OT เฉลี่ย',
+        rosterLine:   'ไลน์',
+        rosterTotal:  'รวม',
+        btnCost:      '💰 ค่าแรง',
+        costPwTitle:  '🔒 ค่าแรง',
+        costPwHint:   'ใส่รหัสผ่าน',
+        costPwErr:    'รหัสผ่านไม่ถูกต้อง',
+        costTitle:    '💰 คำนวณค่าแรง',
+        costTabDay:   'รายวัน',
+        costTabWeek:  'รายสัปดาห์',
+        costTabMonth: 'รายเดือน',
+        slideStop:    '⏹ หยุด',
+        slideNext:    (m,s) => `เปลี่ยนใน ${m}:${s}`,
+        thisNext:     'สัปดาห์นี้และสัปดาห์หน้า',
+        nextWeekLbl:  'สัปดาห์หน้า',
+        statDone:     (n) => `✔ เสร็จ ${n}`,
+        statDoing:    (n) => `⏳ ดำเนินการ ${n}`,
+        wkEmpty:      '—',
+        wkAdd:        '＋ เพิ่ม',
+        wkDone:       '✔ เสร็จ',
+        wkDoing:      '⏳ ดำเนินการ',
+        pmTitle:      '🔧 PM',
+        pmSettings:   '⚙️ กำหนด PM',
+        pmNoData:     'ไม่มีบันทึก',
+        pmNoItem:     'ยังไม่ทำ',
+        pmOver:       'เกินกำหนด',
+        pmImminent:   'ใกล้ถึง',
+        pmNormal:     'ปกติ',
+        pmToday:      'ต้องทำวันนี้',
+        pmNotice:     '※ วันที่ล่าสุดคือวันที่เสร็จสิ้นล่าสุดในปฏิทิน',
+        colLastDate:  'วันที่ล่าสุด',
+        colCycle:     'รอบ(วัน)',
+        colElapsed:   'ผ่านไป',
+        colRemain:    'คงเหลือ',
+        colStatus2:   'สถานะ',
+        tempTitle:    '🌡️ สถิติอุณหภูมิและความชื้น',
+        selectDate:   '-- เลือกวันที่ --',
+        tempAvg:      'อุณหภูมิ — เฉลี่ย / สูงสุด / ต่ำสุด',
+        humidAvg:     'ความชื้น — เฉลี่ย / สูงสุด / ต่ำสุด',
+        totalRec:     (n) => `${n} รายการ`,
+        noData:       'ไม่มีข้อมูลวันนี้',
+        colTime:      'เวลา',
+        colTemp:      'อุณหภูมิ(℃)',
+        colHumid:     'ความชื้น(%)',
+        colNoise:     'เสียง',
+        colAir:       'อากาศ',
+    }
+};
+
+function T(key, ...args) {
+    const d = LANG[currentLang] || LANG.ko;
+    const v = d[key];
+    if (typeof v === 'function') return v(...args);
+    return v !== undefined ? v : (LANG.ko[key] || key);
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    ['ko','en','th'].forEach(l => {
+        document.getElementById(`lang-${l}`).classList.toggle('active', l === lang);
+    });
+    applyLang();
+}
+
+function applyLang() {
+    // 탭 버튼
+    document.getElementById('btn-calendar-view').innerText = T('tabCalendar');
+    document.getElementById('btn-list-view').innerText     = T('tabList');
+    document.getElementById('btn-roster-view').innerText   = T('tabRoster');
+    const sb = document.getElementById('btn-slide-view');
+    if (sb) sb.innerText = slideActive ? T('tabSlideOn') : T('tabSlide');
+
+    // 상단 버튼 (aria-label로 찾기)
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.innerText = T(el.dataset.i18n);
+    });
+
+    // 센서
+    const sti = document.querySelectorAll('.sensor-title');
+    if (sti[0]) sti[0].innerText = T('sensorTemp');
+    if (sti[1]) sti[1].innerText = T('sensorHumid');
+    if (sti[2]) sti[2].innerText = T('sensorNoise');
+    if (sti[3]) sti[3].innerText = T('sensorAir');
+
+    // 캘린더 요일 헤더
+    document.querySelectorAll('.day-header-cell').forEach((el, i) => {
+        el.innerText = T('days')[i];
+    });
+
+    // 현재 뷰 재렌더
+    renderCalendar();
+    renderListView();
+
+    // 모달 레이블
+    const labelMap = {
+        'form-date':         'labelDate',
+        'form-line':         'labelLine',
+        'form-type':         'labelType',
+        'form-type-custom':  'labelCustom',
+        'form-title':        'labelDetail',
+    };
+    document.querySelectorAll('.form-group label').forEach(el => {
+        // placeholder 텍스트는 input에 직접
+    });
+    const ph = document.getElementById('form-title');
+    if (ph) ph.placeholder = T('phDetail');
+    const phc = document.getElementById('form-type-custom');
+    if (phc) phc.placeholder = T('phCustom');
+
+    // 버튼 텍스트
+    const bCancel = document.querySelector('#schedule-modal .btn-secondary');
+    const bSave   = document.querySelector('#schedule-modal .btn-primary');
+    if (bCancel) bCancel.innerText = T('btnCancel');
+    if (bSave)   bSave.innerText   = T('btnSave');
+    const bDel = document.getElementById('btn-delete');
+    if (bDel) bDel.innerText = T('btnDelete');
+}
+
+
 </script>
 </body>
 </html>
