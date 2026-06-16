@@ -1,2104 +1,728 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SAMHWA - 재고 관리 시스템</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg-deep: #0F1923;
-    --bg-mid: #162232;
-    --bg-card: #1E2F42;
-    --bg-card2: #243649;
-    --border: #2E4560;
-    --accent: #F5821F;
-    --accent2: #FFB347;
-    --text: #E8EEF4;
-    --text-dim: #7A9AB8;
-    --text-muted: #4E6A84;
-    --ok: #2ECC71;
-    --warn: #FFD600;
-    --danger: #E53935;
-    --info: #2196F3;
-    --sidebar-w: 220px;
-    --header-h: 56px;
-    --tabbar-h: 60px;
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg-deep); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-  button, input, select, textarea { font-family: inherit; }
+import os
+import json
+import base64
+import uuid
+import re
+from datetime import datetime
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-  /* ── LAYOUT ── */
-  #app { display: flex; min-height: 100vh; }
-  #sidebar {
-    width: var(--sidebar-w); background: var(--bg-mid); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; flex-shrink: 0; z-index: 100;
-    position: fixed; top: 0; left: 0; height: 100vh;
-  }
-  #main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; margin-left: var(--sidebar-w); }
-  #header {
-    height: var(--header-h); background: var(--bg-mid); border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0;
-    position: sticky; top: 0; z-index: 90;
-  }
-  #content { flex: 1; padding: 16px; padding-bottom: calc(16px + var(--tabbar-h) + var(--safe-bottom)); }
-  #conn-status {
-    font-size: 10px; padding: 3px 9px; border-radius: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
-  }
-  #conn-status.online { background: rgba(46,204,113,0.15); color: var(--ok); }
-  #conn-status.offline { background: rgba(229,57,53,0.15); color: var(--danger); }
-  #conn-status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+app = FastAPI()
 
-  /* ── SIDEBAR (desktop) ── */
-  .logo-area {
-    padding: 18px 16px 14px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-  }
-  .logo-icon {
-    width: 36px; height: 36px; background: var(--accent); border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; font-weight: 900;
-    font-size: 16px; color: #fff; letter-spacing: -1px; flex-shrink: 0;
-  }
-  .logo-text { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.3; }
-  .logo-sub { font-size: 10px; color: var(--text-dim); font-weight: 400; }
-  nav { flex: 1; padding: 12px 0; overflow-y: auto; }
-  .nav-section { padding: 8px 14px 4px; font-size: 10px; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer;
-    font-size: 13px; color: var(--text-dim); border-left: 3px solid transparent;
-    transition: all 0.15s; user-select: none;
-  }
-  .nav-item:hover { background: var(--bg-card); color: var(--text); }
-  .nav-item.active { background: var(--bg-card); color: var(--accent); border-left-color: var(--accent); }
-  .nav-item .icon { width: 18px; text-align: center; font-size: 16px; }
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-  .lang-switcher { padding: 12px 14px; border-top: 1px solid var(--border); }
-  .lang-label { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; letter-spacing: 1px; }
-  .lang-btns { display: flex; gap: 4px; }
-  .lang-btn {
-    flex: 1; padding: 6px 4px; border: 1px solid var(--border); background: transparent;
-    color: var(--text-dim); font-size: 11px; border-radius: 4px; cursor: pointer; text-align: center;
-    transition: all 0.15s; font-family: inherit;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .lang-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+# ─── 💾 통합 저장소 기본 경로 설정 ───
+BASE_STORAGE_DIR = "D:/SERVER-Storage"
 
-  /* ── BOTTOM TAB BAR (mobile) ── */
-  #tabbar {
-    display: none; position: fixed; bottom: 0; left: 0; right: 0; height: calc(var(--tabbar-h) + var(--safe-bottom));
-    background: var(--bg-mid); border-top: 1px solid var(--border); z-index: 200;
-    padding-bottom: var(--safe-bottom);
-  }
-  #tabbar .tabbar-inner { display: flex; height: var(--tabbar-h); }
-  .tabbar-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    color: var(--text-dim); font-size: 10px; font-weight: 600; cursor: pointer; transition: color 0.15s;
-  }
-  .tabbar-item .icon { font-size: 19px; }
-  .tabbar-item.active { color: var(--accent); }
-  .fab-in-out {
-    position: fixed; right: 16px; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 14px); z-index: 210;
-    display: none; flex-direction: column; gap: 10px;
-  }
-  .fab-btn {
-    width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-  }
-  .fab-btn.fab-in { background: var(--ok); }
-  .fab-btn.fab-out { background: var(--danger); }
+# =================================================================
+# 📂 [데이터 영구 저장 및 로드 유틸리티 함수]
+# =================================================================
 
-  /* ── HEADER ── */
-  .header-title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .header-title .sub { color: var(--text-dim); font-weight: 400; font-size: 12px; }
-  .header-right { display: flex; align-items: center; gap: 8px; }
-  .header-date { font-size: 11px; color: var(--text-dim); font-family: 'Roboto Mono', monospace; }
-  .btn {
-    padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
-    font-size: 13px; font-weight: 700; transition: all 0.15s;
-    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  }
-  .btn-accent { background: var(--accent); color: #fff; }
-  .btn-accent:hover { background: #e07010; }
-  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
-  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  .btn-ok { background: var(--ok); color: #fff; }
-  .btn-ok:hover { background: #27ae60; }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-danger:hover { background: #c62828; }
-  .btn-block { width: 100%; justify-content: center; padding: 13px; font-size: 14px; }
-  .header-desktop-actions { display: flex; gap: 8px; }
+# 1️⃣ ESP32 센서 데이터
+def load_sensor_data():
+    path = os.path.join(BASE_STORAGE_DIR, "ESP32", "latest_sensor.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return {"temp": 0.0, "humid": 0.0, "noise": "대기중", "air": "대기중"}
 
-  /* ── CARDS & GRID ── */
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .stat-card {
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 14px;
-  }
-  .stat-card.clickable { cursor: pointer; transition: all 0.15s; }
-  .stat-card.clickable:active { transform: scale(0.97); }
-  .stat-card.clickable:hover { border-color: var(--accent); }
-  .stat-icon { font-size: 20px; margin-bottom: 6px; }
-  .stat-label { font-size: 10px; color: var(--text-dim); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
-  .stat-value { font-size: 24px; font-weight: 900; color: var(--text); font-family: 'Roboto Mono', monospace; line-height: 1; }
-  .stat-value.warn { color: var(--warn); }
-  .stat-value.danger { color: var(--danger); }
-  .stat-value.ok { color: var(--ok); }
-  .stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
-  .card {
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-    margin-bottom: 14px;
-  }
-  .card-header {
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
-  }
-  .card-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
-  .card-body { padding: 14px 16px; }
+def save_sensor_data(data: dict):
+    target_folder = os.path.join(BASE_STORAGE_DIR, "ESP32")
+    os.makedirs(target_folder, exist_ok=True)
+    path = os.path.join(target_folder, "latest_sensor.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-  /* ── ITEM CARD GRID ── */
-  .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-  .item-card {
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px; cursor: pointer; transition: all 0.15s;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .item-card:active { transform: scale(0.97); }
-  .item-card:hover { border-color: var(--accent); }
-  .item-card-photo {
-    position: relative; width: 100%; aspect-ratio: 1.3/1; border-radius: 8px;
-    background: var(--bg-card2); display: flex; align-items: center; justify-content: center;
-    font-size: 30px; overflow: hidden;
-  }
-  .item-card-photo img { width: 100%; height: 100%; object-fit: cover; }
-  .status-dot { position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg-card); }
-  .status-dot.ok { background: var(--ok); }
-  .status-dot.warn { background: var(--warn); }
-  .status-dot.danger { background: var(--danger); }
-  .item-card-name { font-weight: 700; font-size: 12px; line-height: 1.3; }
-  .item-card-code { font-size: 9px; color: var(--text-dim); font-family: 'Roboto Mono', monospace; margin-top: 1px; }
-  .item-card-cats { display: flex; gap: 4px; flex-wrap: wrap; }
-  .chip-sm {
-    font-size: 9px; padding: 2px 7px; background: var(--bg-card2); border-radius: 8px;
-    color: var(--text-dim); border: 1px solid var(--border); font-weight: 500;
-  }
-  .item-card-stock-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: auto; }
-  .item-card-stock-num { font-family: 'Roboto Mono', monospace; font-weight: 900; font-size: 17px; min-width: 24px; text-align: right; }
+def save_sensor_log(data: dict):
+    target_folder = os.path.join(BASE_STORAGE_DIR, "ESP32")
+    os.makedirs(target_folder, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    path = os.path.join(target_folder, f"sensor_log_{today}.txt")
+    with open(path, "a", encoding="utf-8") as f:
+        log_payload = {"timestamp": datetime.now().isoformat(), **data}
+        f.write(json.dumps(log_payload, ensure_ascii=False) + "\n")
 
-  /* ── TABLE ── */
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 480px; }
-  thead th {
-    text-align: left; padding: 9px 10px; color: var(--text-dim);
-    border-bottom: 1px solid var(--border); font-weight: 600; font-size: 10px;
-    text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;
-  }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  tbody tr:hover { background: var(--bg-card2); }
-  tbody td { padding: 9px 10px; color: var(--text); vertical-align: middle; }
-  tbody td:last-child { white-space: nowrap; }
 
-  /* ── BADGES ── */
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.2px;
-  }
-  .badge-ok { background: rgba(46,204,113,0.15); color: var(--ok); border: 1px solid rgba(46,204,113,0.3); }
-  .badge-warn { background: rgba(255,214,0,0.15); color: var(--warn); border: 1px solid rgba(255,214,0,0.3); }
-  .badge-danger { background: rgba(229,57,53,0.15); color: var(--danger); border: 1px solid rgba(229,57,53,0.3); }
-  .badge-info { background: rgba(33,150,243,0.15); color: var(--info); border: 1px solid rgba(33,150,243,0.3); }
-  .badge-accent { background: rgba(245,130,31,0.15); color: var(--accent); border: 1px solid rgba(245,130,31,0.3); }
-
-  /* Stock Bar */
-  .stock-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 110px; }
-  .stock-bar { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
-  .stock-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
-  .stock-bar-fill.ok { background: var(--ok); }
-  .stock-bar-fill.warn { background: var(--warn); }
-  .stock-bar-fill.danger { background: var(--danger); }
-  .stock-qty { font-size: 12px; font-weight: 700; font-family: 'Roboto Mono', monospace; min-width: 32px; text-align: right; }
-
-  .item-thumb {
-    width: 30px; height: 30px; border-radius: 6px; object-fit: cover;
-    background: var(--bg-card2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 15px;
-    flex-shrink: 0;
-  }
-  .item-info { display: flex; align-items: center; gap: 8px; }
-  .item-info .item-name { font-weight: 600; font-size: 12px; }
-  .item-info .item-code { font-size: 9px; color: var(--text-dim); font-family: 'Roboto Mono', monospace; }
-
-  /* ── MODAL ── */
-  .modal-bg {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 1000; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px);
-  }
-  .modal-bg.open { display: flex; }
-  .modal {
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px 16px 0 0;
-    width: 100%; max-width: 600px; max-height: 92vh; display: flex; flex-direction: column;
-  }
-  .modal-header {
-    padding: 16px 18px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  .modal-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .modal-close {
-    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-    background: transparent; color: var(--text-dim); cursor: pointer; font-size: 16px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .modal-close:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-  .modal-body { padding: 18px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
-  .modal-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; padding-bottom: calc(12px + var(--safe-bottom)); }
-
-  @media (min-width: 700px) {
-    .modal-bg { align-items: center; }
-    .modal { border-radius: 14px; }
-  }
-
-  /* ── FORM ── */
-  .form-row { display: grid; gap: 12px; margin-bottom: 12px; }
-  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-label { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; }
-  .form-label .req { color: var(--danger); margin-left: 2px; }
-  .form-label .toggle-link { font-size: 10px; color: var(--accent); cursor: pointer; text-transform: none; font-weight: 600; }
-  .form-control {
-    padding: 11px 12px; background: var(--bg-deep); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-size: 14px;
-    transition: border-color 0.15s; outline: none; width: 100%;
-  }
-  .form-control:focus { border-color: var(--accent); }
-  .form-control::placeholder { color: var(--text-muted); }
-  select.form-control { cursor: pointer; }
-  textarea.form-control { resize: vertical; min-height: 64px; }
-  .manual-input-wrap { margin-top: 8px; display: none; }
-  .manual-input-wrap.show { display: block; }
-  .auto-field {
-    padding: 11px 12px; background: var(--bg-card2); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text-dim); font-size: 13px; font-family: 'Roboto Mono', monospace;
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  /* Photo Upload */
-  .photo-upload {
-    border: 2px dashed var(--border); border-radius: 10px; padding: 16px;
-    text-align: center; cursor: pointer; transition: all 0.15s; width: 100%; position: relative;
-  }
-  .photo-upload:hover { border-color: var(--accent); background: rgba(245,130,31,0.05); }
-  .photo-upload input { display: none; }
-  .photo-preview { width: 100%; height: 130px; object-fit: contain; border-radius: 6px; margin-bottom: 6px; }
-  .photo-remove-btn {
-    position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
-    background: var(--danger); color: #fff; border: none; font-size: 13px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  /* ── QTY STEPPER ── */
-  .qty-stepper { display: flex; flex-direction: column; gap: 10px; }
-  .qty-input {
-    font-size: 30px; font-weight: 900; text-align: center; font-family: 'Roboto Mono', monospace;
-    padding: 12px; background: var(--bg-deep); border: 2px solid var(--border); border-radius: 10px; color: var(--text);
-    outline: none; transition: border-color 0.15s; width: 100%;
-  }
-  .qty-input:focus { border-color: var(--accent); }
-  .qty-btns { display: flex; gap: 8px; }
-  .qty-btn {
-    flex: 1; padding: 14px 6px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card2);
-    color: var(--text); font-weight: 800; font-size: 15px; cursor: pointer; font-family: 'Roboto Mono', monospace;
-    transition: all 0.15s;
-  }
-  .qty-btn:active { transform: scale(0.95); }
-  .qty-btn.in:hover { background: rgba(46,204,113,0.18); border-color: var(--ok); color: var(--ok); }
-  .qty-btn.out:hover { background: rgba(229,57,53,0.18); border-color: var(--danger); color: var(--danger); }
-  .qty-btn.reset { flex: 0 0 48px; font-size: 17px; }
-  .qty-btn.reset:hover { background: var(--bg-card); border-color: var(--text-dim); color: var(--text); }
-  .qty-warning { font-size: 12px; color: var(--danger); font-weight: 600; min-height: 16px; margin-top: -2px; }
-
-  /* ── CHIPS (category list) ── */
-  .cat-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-  .cat-input-row .form-control { flex: 1; }
-  .chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip {
-    display: inline-flex; align-items: center; gap: 8px; padding: 7px 8px 7px 14px;
-    background: var(--bg-card2); border: 1px solid var(--border); border-radius: 20px; font-size: 13px; font-weight: 500;
-  }
-  .chip-del {
-    cursor: pointer; color: var(--text-muted); font-weight: 700; width: 20px; height: 20px;
-    display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; transition: all 0.15s;
-  }
-  .chip-del:hover { background: var(--danger); color: #fff; }
-
-  /* ── ITEM DETAIL ── */
-  .detail-top { display: flex; gap: 14px; margin-bottom: 14px; }
-  .detail-photo {
-    width: 90px; height: 90px; border-radius: 10px; background: var(--bg-card2);
-    display: flex; align-items: center; justify-content: center; font-size: 36px; overflow: hidden; flex-shrink: 0;
-  }
-  .detail-photo img { width: 100%; height: 100%; object-fit: cover; }
-  .detail-info { flex: 1; display: flex; flex-direction: column; gap: 6px; justify-content: center; min-width: 0; }
-  .detail-name { font-size: 15px; font-weight: 800; word-break: break-word; }
-  .detail-code { font-size: 10px; color: var(--text-dim); font-family: 'Roboto Mono', monospace; }
-  .detail-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-  .detail-stock-block {
-    display: flex; align-items: center; gap: 14px; background: var(--bg-card2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
-  }
-  .detail-stock-num { font-size: 28px; font-weight: 900; font-family: 'Roboto Mono', monospace; line-height: 1; }
-  .detail-stock-num.ok { color: var(--ok); }
-  .detail-stock-num.warn { color: var(--warn); }
-  .detail-stock-num.danger { color: var(--danger); }
-  .detail-stock-label { font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
-  .detail-min { font-size: 12px; color: var(--text-dim); font-family: 'Roboto Mono', monospace; }
-  .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .detail-actions-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-
-  /* ── TABS ── */
-  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 14px; overflow-x: auto; }
-  .tab {
-    padding: 10px 16px; font-size: 13px; cursor: pointer; color: var(--text-dim);
-    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; font-weight: 600; white-space: nowrap;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-  /* ── PAGE SECTIONS ── */
-  .page { display: none; }
-  .page.active { display: block; }
-
-  .empty-state {
-    text-align: center; padding: 30px 16px; color: var(--text-muted); font-size: 13px;
-    grid-column: 1 / -1;
-  }
-
-  /* Search + Filter bar */
-  .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
-  .filter-bar .form-control { font-size: 12px; padding: 9px 12px; }
-  .search-wrap { position: relative; }
-  .search-wrap .form-control { padding-left: 32px; }
-  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; }
-
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  /* ════════════ MOBILE BREAKPOINT ════════════ */
-  @media (max-width: 860px) {
-    #sidebar { display: none; }
-    #main { margin-left: 0; }
-    #tabbar { display: block; }
-    .fab-in-out { display: flex; }
-    #content { padding: 12px; padding-bottom: calc(12px + var(--tabbar-h) + var(--safe-bottom) + 70px); }
-    .header-desktop-actions { display: none; }
-    .grid-4 { grid-template-columns: repeat(2,1fr); }
-    .grid-3 { grid-template-columns: 1fr 1fr; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .form-row.cols-2 { grid-template-columns: 1fr; }
-    .item-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-    .header-title .sub { display: none; }
-    .detail-actions, .detail-actions-2 { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 420px) {
-    .grid-4 { grid-template-columns: repeat(2,1fr); }
-    .stat-value { font-size: 21px; }
-  }
-</style>
-</head>
-<body>
-<div id="app">
-
-<!-- ─────────── SIDEBAR (desktop) ─────────── -->
-<aside id="sidebar">
-  <div class="logo-area">
-    <div class="logo-icon">SW</div>
-    <div class="logo-text">
-      SAMHWA<br>
-      <span class="logo-sub" data-i18n="sys_name">재고 관리 시스템</span>
-    </div>
-  </div>
-  <nav>
-    <div class="nav-section" data-i18n="nav_main">메인</div>
-    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
-      <span class="icon">📊</span><span data-i18n="nav_dashboard">대시보드</span>
-    </div>
-    <div class="nav-item" data-page="inventory" onclick="showPage('inventory')">
-      <span class="icon">📦</span><span data-i18n="nav_inventory">재고 현황</span>
-    </div>
-    <div class="nav-section" data-i18n="nav_manage">관리</div>
-    <div class="nav-item" data-page="categories" onclick="showPage('categories')">
-      <span class="icon">🏷️</span><span data-i18n="nav_categories">분류 관리</span>
-    </div>
-    <div class="nav-item" data-page="personnel" onclick="showPage('personnel')">
-      <span class="icon">👤</span><span data-i18n="nav_personnel">담당자 관리</span>
-    </div>
-    <div class="nav-section" data-i18n="nav_report">리포트</div>
-    <div class="nav-item" data-page="report" onclick="showPage('report')">
-      <span class="icon">📈</span><span data-i18n="nav_report_monthly">월간 리포트</span>
-    </div>
-    <div class="nav-item" data-page="history" onclick="showPage('history')">
-      <span class="icon">📋</span><span data-i18n="nav_history">입출고 이력</span>
-    </div>
-  </nav>
-  <div class="lang-switcher">
-    <div class="lang-label">LANGUAGE</div>
-    <div class="lang-btns">
-      <button class="lang-btn active" onclick="setLang('ko')">KOR</button>
-      <button class="lang-btn" onclick="setLang('en')">ENG</button>
-      <button class="lang-btn" onclick="setLang('th')">ไทย</button>
-    </div>
-  </div>
-</aside>
-
-<!-- ─────────── MAIN ─────────── -->
-<div id="main">
-  <div id="header">
-    <div class="header-title">
-      <span id="page-title" data-i18n="nav_dashboard">대시보드</span>
-      <span class="sub">SAMHWA Spare Parts & Supplies</span>
-    </div>
-    <div class="header-right">
-      <span id="conn-status" class="offline" onclick="showConnDiag()" style="cursor:pointer"><span class="dot"></span><span id="conn-status-text">연결 중</span></span>
-      <div class="header-desktop-actions">
-        <button class="btn btn-ok btn-sm" onclick="openModal('modal-inbound')"><span>⬇️</span><span data-i18n="btn_inbound">입고</span></button>
-        <button class="btn btn-danger btn-sm" onclick="openModal('modal-outbound')"><span>⬆️</span><span data-i18n="btn_outbound">출고</span></button>
-      </div>
-    </div>
-  </div>
-
-  <div id="content">
-
-    <!-- ═══ DASHBOARD ═══ -->
-    <div id="page-dashboard" class="page active">
-      <div class="grid-4">
-        <div class="stat-card clickable" onclick="goToInventory('')">
-          <div class="stat-icon">📦</div>
-          <div class="stat-label" data-i18n="stat_total_items">전체 품목</div>
-          <div class="stat-value" id="st-total">0</div>
-          <div class="stat-sub" data-i18n="stat_registered">등록 품목 수</div>
-        </div>
-        <div class="stat-card clickable" onclick="goToInventory('ok')">
-          <div class="stat-icon">✅</div>
-          <div class="stat-label" data-i18n="stat_normal">정상 재고</div>
-          <div class="stat-value ok" id="st-ok">0</div>
-          <div class="stat-sub" data-i18n="stat_sufficient">충분한 수량</div>
-        </div>
-        <div class="stat-card clickable" onclick="goToInventory('warn')">
-          <div class="stat-icon">⚠️</div>
-          <div class="stat-label" data-i18n="stat_warn">주의 재고</div>
-          <div class="stat-value warn" id="st-warn">0</div>
-          <div class="stat-sub" data-i18n="stat_low">최소 수량 근접</div>
-        </div>
-        <div class="stat-card clickable" onclick="goToInventory('danger')">
-          <div class="stat-icon">🔴</div>
-          <div class="stat-label" data-i18n="stat_danger">위험 재고</div>
-          <div class="stat-value danger" id="st-danger">0</div>
-          <div class="stat-sub" data-i18n="stat_critical">즉시 발주 필요</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">⚠️ <span data-i18n="alert_title">재고 경보 품목</span></div>
-          <button class="btn btn-outline btn-sm" onclick="goToInventory('')" data-i18n="btn_view_all">전체 보기</button>
-        </div>
-        <div class="card-body">
-          <div class="item-grid" id="alert-grid"></div>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-header"><div class="card-title" data-i18n="chart_monthly">월별 입출고 현황</div></div>
-          <div class="card-body"><canvas id="chart-monthly" height="180"></canvas></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title" data-i18n="chart_cat">분류별 재고 비율</div></div>
-          <div class="card-body"><canvas id="chart-pie" height="180"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ INVENTORY ═══ -->
-    <div id="page-inventory" class="page">
-      <div class="filter-bar">
-        <div class="search-wrap" style="flex:1;min-width:140px">
-          <span class="search-icon">🔍</span>
-          <input class="form-control" style="width:100%" placeholder="품목명 / 코드 검색" id="inv-search" oninput="renderInventory()" data-i18n-ph="search_ph">
-        </div>
-        <select class="form-control" id="inv-cat1" onchange="renderInventory()" style="width:120px">
-          <option value="" data-i18n="filter_all_cat1">전체 분류1</option>
-        </select>
-        <select class="form-control" id="inv-status-filter" onchange="renderInventory()" style="width:110px">
-          <option value="" data-i18n="filter_all_status">전체 상태</option>
-          <option value="ok" data-i18n="filter_ok">정상</option>
-          <option value="warn" data-i18n="filter_warn">주의</option>
-          <option value="danger" data-i18n="filter_danger">위험</option>
-        </select>
-        <button class="btn btn-accent btn-sm" onclick="openItemModal()">+ <span data-i18n="btn_add_item">품목 등록</span></button>
-      </div>
-      <div class="item-grid" id="inventory-grid"></div>
-    </div>
-
-    <!-- ═══ CATEGORIES ═══ -->
-    <div id="page-categories" class="page">
-      <div class="card">
-        <div class="card-header"><div class="card-title">🏷️ <span data-i18n="cat1_title">분류 1 리스트</span></div></div>
-        <div class="card-body">
-          <div class="cat-input-row">
-            <input class="form-control" id="new-cat1" placeholder="새 분류 입력" data-i18n-ph="ph_new_cat" onkeydown="if(event.key==='Enter')addCategory('cat1')">
-            <button class="btn btn-accent" onclick="addCategory('cat1')" data-i18n="btn_add">추가</button>
-          </div>
-          <div class="chip-list" id="cat1-chip-list"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">🏷️ <span data-i18n="cat2_title">분류 2 리스트</span></div></div>
-        <div class="card-body">
-          <div class="cat-input-row">
-            <input class="form-control" id="new-cat2" placeholder="새 분류 입력" data-i18n-ph="ph_new_cat" onkeydown="if(event.key==='Enter')addCategory('cat2')">
-            <button class="btn btn-accent" onclick="addCategory('cat2')" data-i18n="btn_add">추가</button>
-          </div>
-          <div class="chip-list" id="cat2-chip-list"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">🏭 <span data-i18n="lines_title">사용 라인 리스트</span></div></div>
-        <div class="card-body">
-          <div class="cat-input-row">
-            <input class="form-control" id="new-line" placeholder="새 라인 입력 (예: L.11)" data-i18n-ph="ph_new_line" onkeydown="if(event.key==='Enter')addCategory('lines')">
-            <button class="btn btn-accent" onclick="addCategory('lines')" data-i18n="btn_add">추가</button>
-          </div>
-          <div class="chip-list" id="lines-chip-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ PERSONNEL ═══ -->
-    <div id="page-personnel" class="page">
-      <div class="card">
-        <div class="card-header"><div class="card-title" data-i18n="personnel_add">담당자 추가</div></div>
-        <div class="card-body">
-          <div class="form-row cols-2">
-            <div class="form-group">
-              <label class="form-label" data-i18n="col_name">이름 <span class="req">*</span></label>
-              <input class="form-control" id="p-name" data-i18n-ph="ph_name" onkeydown="if(event.key==='Enter')savePersonnel()">
-            </div>
-            <div class="form-group">
-              <label class="form-label" data-i18n="col_dept">부서</label>
-              <input class="form-control" id="p-dept" data-i18n-ph="ph_dept" onkeydown="if(event.key==='Enter')savePersonnel()">
-            </div>
-          </div>
-          <button class="btn btn-accent btn-block" onclick="savePersonnel()">+ <span data-i18n="btn_save">저장</span></button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title" data-i18n="personnel_list">담당자 목록</div></div>
-        <div class="card-body" style="padding:0">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th data-i18n="col_name">이름</th><th data-i18n="col_dept">부서</th><th data-i18n="col_action">관리</th></tr></thead>
-              <tbody id="personnel-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ REPORT ═══ -->
-    <div id="page-report" class="page">
-      <div class="filter-bar">
-        <select class="form-control" id="report-year" style="width:90px" onchange="generateReport()">
-          <option>2025</option><option selected>2026</option>
-        </select>
-        <select class="form-control" id="report-month" style="width:100px" onchange="generateReport()">
-          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
-          <option value="4">4월</option><option value="5">5월</option><option value="6" selected>6월</option>
-          <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
-          <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-        </select>
-      </div>
-      <div class="grid-3">
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="report_total_in">월 총 입고</div>
-          <div class="stat-value ok" id="r-total-in">-</div>
-          <div class="stat-sub" data-i18n="unit_ea">건</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="report_total_out">월 총 출고</div>
-          <div class="stat-value" style="color:var(--accent)" id="r-total-out">-</div>
-          <div class="stat-sub" data-i18n="unit_ea">건</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="report_line_top">최다 사용 라인</div>
-          <div class="stat-value" style="font-size:18px" id="r-top-line">-</div>
-          <div class="stat-sub" data-i18n="report_out_count">출고 건수</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title" data-i18n="report_trend">월별 입출고 추이</div></div>
-        <div class="card-body"><canvas id="chart-report-trend" height="160"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title" data-i18n="report_detail">월간 입출고 상세</div></div>
-        <div class="card-body" style="padding:0">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="col_item">품목</th>
-                  <th data-i18n="report_in_qty">입고 수량</th>
-                  <th data-i18n="report_out_qty">출고 수량</th>
-                  <th data-i18n="report_net">순변동</th>
-                  <th data-i18n="col_current">현재고</th>
-                </tr>
-              </thead>
-              <tbody id="report-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ HISTORY ═══ -->
-    <div id="page-history" class="page">
-      <div class="tabs">
-        <div class="tab active" onclick="switchHistoryTab('all')" data-i18n="tab_all">전체</div>
-        <div class="tab" onclick="switchHistoryTab('in')" data-i18n="tab_inbound">입고</div>
-        <div class="tab" onclick="switchHistoryTab('out')" data-i18n="tab_outbound">출고</div>
-      </div>
-      <div class="card">
-        <div class="card-body" style="padding:0">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="col_datetime">날짜/시간</th>
-                  <th data-i18n="col_type">구분</th>
-                  <th data-i18n="col_item">품목</th>
-                  <th data-i18n="col_qty">수량</th>
-                  <th data-i18n="col_person">담당자</th>
-                  <th data-i18n="col_line">라인</th>
-                  <th data-i18n="col_note">비고</th>
-                </tr>
-              </thead>
-              <tbody id="history-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /app -->
-
-<!-- ─────────── BOTTOM TAB BAR (mobile) ─────────── -->
-<div id="tabbar">
-  <div class="tabbar-inner">
-    <div class="tabbar-item active" data-page="dashboard" onclick="showPage('dashboard')">
-      <span class="icon">📊</span><span data-i18n="nav_dashboard">대시보드</span>
-    </div>
-    <div class="tabbar-item" data-page="inventory" onclick="showPage('inventory')">
-      <span class="icon">📦</span><span data-i18n="nav_inventory">재고</span>
-    </div>
-    <div class="tabbar-item" data-page="history" onclick="showPage('history')">
-      <span class="icon">📋</span><span data-i18n="nav_history">이력</span>
-    </div>
-    <div class="tabbar-item" data-page="report" onclick="showPage('report')">
-      <span class="icon">📈</span><span data-i18n="nav_report_monthly">리포트</span>
-    </div>
-    <div class="tabbar-item" data-page="more" onclick="openMoreMenu()">
-      <span class="icon">☰</span><span data-i18n="nav_more">더보기</span>
-    </div>
-  </div>
-</div>
-
-<!-- ─────────── FAB (mobile quick in/out) ─────────── -->
-<div class="fab-in-out">
-  <button class="fab-btn fab-out" onclick="openModal('modal-outbound')" title="출고">⬆️</button>
-  <button class="fab-btn fab-in" onclick="openModal('modal-inbound')" title="입고">⬇️</button>
-</div>
-
-<!-- ─────────── MORE MENU (mobile) ─────────── -->
-<div class="modal-bg" id="modal-more">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <div class="modal-title">☰ <span data-i18n="nav_more">더보기</span></div>
-      <button class="modal-close" onclick="closeModal('modal-more')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="nav-item" style="border-radius:8px;padding:14px" onclick="closeModal('modal-more');showPage('categories')">
-        <span class="icon">🏷️</span><span data-i18n="nav_categories">분류 관리</span>
-      </div>
-      <div class="nav-item" style="border-radius:8px;padding:14px" onclick="closeModal('modal-more');showPage('personnel')">
-        <span class="icon">👤</span><span data-i18n="nav_personnel">담당자 관리</span>
-      </div>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <div class="lang-label" style="margin-bottom:8px">LANGUAGE</div>
-        <div class="lang-btns">
-          <button class="lang-btn active" onclick="setLang('ko')">KOR</button>
-          <button class="lang-btn" onclick="setLang('en')">ENG</button>
-          <button class="lang-btn" onclick="setLang('th')">ไทย</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ITEM REGISTER -->
-<div class="modal-bg" id="modal-item">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="item-modal-title" data-i18n="modal_item_title">품목 등록</div>
-      <button class="modal-close" onclick="closeModal('modal-item')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group" style="align-items:center">
-          <label class="form-label" data-i18n="col_photo">사진</label>
-          <div class="photo-upload" id="photo-upload-box" onclick="document.getElementById('photo-input').click()">
-            <input type="file" id="photo-input" accept="image/*" onchange="previewPhoto(this)">
-            <div id="photo-preview-area">
-              <div style="font-size:30px">📷</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px" data-i18n="photo_click">탭하여 사진 촬영/업로드</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-row cols-2">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_code">품목코드</label>
-          <input class="form-control" id="item-code" placeholder="예: SP-001">
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_name">품목명 <span class="req">*</span></label>
-          <input class="form-control" id="item-name" placeholder="품목명 입력">
-        </div>
-      </div>
-      <div class="form-row cols-2">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_cat1">분류 1</label>
-          <select class="form-control" id="item-cat1">
-            <option value="" data-i18n="ph_select_cat">-- 선택 --</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_cat2">분류 2</label>
-          <select class="form-control" id="item-cat2">
-            <option value="" data-i18n="ph_select_cat">-- 선택 --</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row cols-2">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_brand">브랜드</label>
-          <input class="form-control" id="item-brand" placeholder="예: SKF">
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_min">최소 재고 수량 <span class="req">*</span></label>
-          <input class="form-control" type="number" id="item-min" placeholder="예: 5" min="0" inputmode="numeric">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_note">비고</label>
-          <textarea class="form-control" id="item-note" placeholder="추가 정보..."></textarea>
-        </div>
-      </div>
-      <input type="hidden" id="item-edit-id">
-      <input type="hidden" id="item-photo-data">
-      <input type="hidden" id="item-photo-existing">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-item')" data-i18n="btn_cancel">취소</button>
-      <button class="btn btn-accent" onclick="saveItem()" data-i18n="btn_save">저장</button>
-    </div>
-  </div>
-</div>
-
-<!-- ITEM DETAIL -->
-<div class="modal-bg" id="modal-detail">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">🔧 <span data-i18n="detail_title">품목 상세</span></div>
-      <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="detail-top">
-        <div class="detail-photo" id="detail-photo">🔧</div>
-        <div class="detail-info">
-          <div class="detail-name" id="detail-name"></div>
-          <div class="detail-code" id="detail-code"></div>
-          <div class="detail-badges" id="detail-badges"></div>
-        </div>
-      </div>
-      <div class="detail-stock-block">
-        <div>
-          <div class="detail-stock-label" data-i18n="current_stock_label">현재 재고</div>
-          <div class="detail-stock-num" id="detail-stock-value">0</div>
-        </div>
-        <div style="flex:1">
-          <div class="stock-bar" style="height:8px"><div class="stock-bar-fill" id="detail-stock-bar-fill" style="width:0%"></div></div>
-          <div class="detail-min" style="margin-top:6px"><span data-i18n="min_stock_label">최소 수량</span>: <span id="detail-min-value">0</span></div>
-        </div>
-      </div>
-      <div class="detail-actions">
-        <button class="btn btn-ok btn-block" onclick="quickAction('in')">⬇️ <span data-i18n="btn_quick_in">입고</span></button>
-        <button class="btn btn-danger btn-block" onclick="quickAction('out')">⬆️ <span data-i18n="btn_quick_out">출고</span></button>
-      </div>
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><div class="card-title">📈 <span data-i18n="detail_chart_title">월별 입출고 추이</span></div></div>
-        <div class="card-body"><canvas id="chart-item-detail" height="150"></canvas></div>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <div class="card-header"><div class="card-title">📋 <span data-i18n="detail_records_title">입출고 기록</span></div></div>
-        <div class="card-body" style="padding:0;max-height:220px;overflow-y:auto">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="col_datetime">날짜/시간</th>
-                  <th data-i18n="col_type">구분</th>
-                  <th data-i18n="col_qty">수량</th>
-                  <th data-i18n="col_person">담당자</th>
-                  <th data-i18n="col_line">라인</th>
-                </tr>
-              </thead>
-              <tbody id="detail-records-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="detail-actions-2">
-        <button class="btn btn-outline btn-block" onclick="editItemFromDetail()">✏️ <span data-i18n="edit">수정</span></button>
-        <button class="btn btn-outline btn-block" style="color:var(--danger);border-color:rgba(229,57,53,0.3)" onclick="deleteItemFromDetail()">🗑️ <span data-i18n="del">삭제</span></button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- INBOUND REGISTER -->
-<div class="modal-bg" id="modal-inbound">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">⬇️ <span data-i18n="nav_inbound_title">입고 등록</span></div>
-      <button class="modal-close" onclick="closeModal('modal-inbound')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_datetime_auto">등록 일시</label>
-          <div class="auto-field">🕒 <span id="in-datetime-display">-</span></div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_item">품목 <span class="req">*</span></label>
-          <select class="form-control" id="in-item" onchange="updateInStock()">
-            <option value="" data-i18n="ph_select_item">-- 품목 선택 --</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="current_stock_label">현재 재고</label>
-          <input class="form-control" id="in-current-stock" readonly style="color:var(--text-dim)">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_qty">입고 수량 <span class="req">*</span></label>
-          <div class="qty-stepper">
-            <input type="number" class="qty-input" id="in-qty" value="0" min="0" inputmode="numeric">
-            <div class="qty-btns">
-              <button type="button" class="qty-btn in" onclick="bumpQty('in',1)">+1</button>
-              <button type="button" class="qty-btn in" onclick="bumpQty('in',5)">+5</button>
-              <button type="button" class="qty-btn in" onclick="bumpQty('in',10)">+10</button>
-              <button type="button" class="qty-btn reset" onclick="bumpQty('in','reset')" title="reset">↺</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">
-            <span data-i18n="col_receiver">입고 담당자</span> <span class="req">*</span>
-            <span class="toggle-link" onclick="toggleManual('in-person')" data-i18n="opt_custom">직접 입력</span>
-          </label>
-          <select class="form-control" id="in-person">
-            <option value="" data-i18n="ph_select_person">-- 담당자 선택 --</option>
-          </select>
-          <div class="manual-input-wrap" id="in-person-manual-wrap">
-            <input class="form-control" id="in-person-manual" placeholder="이름 직접 입력" data-i18n-ph="ph_manual_name">
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_note">비고</label>
-          <textarea class="form-control" id="in-note" placeholder="입고 관련 메모..."></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-inbound')" data-i18n="btn_cancel">취소</button>
-      <button class="btn btn-ok" onclick="saveInbound()" data-i18n="btn_confirm_in">입고 확정</button>
-    </div>
-  </div>
-</div>
-
-<!-- OUTBOUND REGISTER -->
-<div class="modal-bg" id="modal-outbound">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">⬆️ <span data-i18n="nav_outbound_title">출고 등록</span></div>
-      <button class="modal-close" onclick="closeModal('modal-outbound')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_datetime_auto">등록 일시</label>
-          <div class="auto-field">🕒 <span id="out-datetime-display">-</span></div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_item">품목 <span class="req">*</span></label>
-          <select class="form-control" id="out-item" onchange="updateOutStock()">
-            <option value="" data-i18n="ph_select_item">-- 품목 선택 --</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="current_stock_label">현재 재고</label>
-          <input class="form-control" id="out-current-stock" readonly style="color:var(--text-dim)">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_qty">출고 수량 <span class="req">*</span></label>
-          <div class="qty-stepper">
-            <input type="number" class="qty-input" id="out-qty" value="0" min="0" inputmode="numeric" oninput="checkOutQty()">
-            <div class="qty-btns">
-              <button type="button" class="qty-btn out" onclick="bumpQty('out',1)">-1</button>
-              <button type="button" class="qty-btn out" onclick="bumpQty('out',5)">-5</button>
-              <button type="button" class="qty-btn out" onclick="bumpQty('out',10)">-10</button>
-              <button type="button" class="qty-btn reset" onclick="bumpQty('out','reset')" title="reset">↺</button>
-            </div>
-            <div class="qty-warning" id="out-qty-warning"></div>
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">
-            <span data-i18n="col_issuer">출고 담당자</span> <span class="req">*</span>
-            <span class="toggle-link" onclick="toggleManual('out-person')" data-i18n="opt_custom">직접 입력</span>
-          </label>
-          <select class="form-control" id="out-person">
-            <option value="" data-i18n="ph_select_person">-- 담당자 선택 --</option>
-          </select>
-          <div class="manual-input-wrap" id="out-person-manual-wrap">
-            <input class="form-control" id="out-person-manual" placeholder="이름 직접 입력" data-i18n-ph="ph_manual_name">
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">
-            <span data-i18n="col_line">사용 라인</span> <span class="req">*</span>
-            <span class="toggle-link" onclick="toggleManual('out-line')" data-i18n="opt_custom">직접 입력</span>
-          </label>
-          <select class="form-control" id="out-line">
-            <option value="" data-i18n="ph_select_line">-- 라인 선택 --</option>
-          </select>
-          <div class="manual-input-wrap" id="out-line-manual-wrap">
-            <input class="form-control" id="out-line-manual" placeholder="라인 직접 입력" data-i18n-ph="ph_manual_line">
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" data-i18n="col_note">비고</label>
-          <textarea class="form-control" id="out-note" placeholder="기타 메모..."></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-outbound')" data-i18n="btn_cancel">취소</button>
-      <button class="btn btn-danger" onclick="saveOutbound()" data-i18n="btn_confirm_out">출고 확정</button>
-    </div>
-  </div>
-</div>
-
-<!-- ─── SCRIPTS ─── -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-// ═══════════════════════════════════════════
-//  SERVER CONFIG
-// ═══════════════════════════════════════════
-// ─── 🛠️ 클라우드플레어 터널 환경 주소 설정 (다른 페이지: wave/ESP32/5S_PM_PLAN 과 동일한 방식) ───
-// 도메인이 samhwa.cloud 이므로, 서버(server.py)는 별도 서브도메인 server.samhwa.cloud 의
-// 클라우드플레어 터널을 통해 외부에 노출되어 있다. 외부 접속이므로 보안 wss:// 로 통신한다.
-const TUNNEL_DOMAIN = "server.samhwa.cloud";
-const WS_URL = `wss://${TUNNEL_DOMAIN}/ws/inventory`;
-const HTTP_BASE = `https://${TUNNEL_DOMAIN}`;
-let socket = null;
-let wsReconnectTimer = null;
-
-function photoUrl(path) {
-  if (!path) return '';
-  if (path.startsWith('data:') || path.startsWith('http')) return path;
-  return HTTP_BASE + path;
-}
-
-let lastConnInfo = { url: '', event: '', code: '', reason: '', time: '' };
-
-function connectWS() {
-  lastConnInfo = { url: WS_URL, event: 'connecting', code: '', reason: '', time: nowDisplay() };
-  try { socket = new WebSocket(WS_URL); } catch(e) {
-    lastConnInfo = { url: WS_URL, event: 'exception', code: '', reason: String(e), time: nowDisplay() };
-    scheduleReconnect(); return;
-  }
-
-  socket.onopen = () => {
-    lastConnInfo = { url: WS_URL, event: 'open', code: '', reason: '', time: nowDisplay() };
-    setConnStatus(true);
-    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
-  };
-  socket.onclose = (ev) => {
-    lastConnInfo = { url: WS_URL, event: 'close', code: ev.code, reason: ev.reason || '(no reason given)', time: nowDisplay() };
-    setConnStatus(false); scheduleReconnect();
-  };
-  socket.onerror = (ev) => {
-    lastConnInfo = { url: WS_URL, event: 'error', code: '', reason: 'WebSocket error event (see console)', time: nowDisplay() };
-    setConnStatus(false);
-  };
-  socket.onmessage = (ev) => {
-    let msg;
-    try { msg = JSON.parse(ev.data); } catch(e) { return; }
-    handleServerMessage(msg);
-  };
-}
-function showConnDiag() {
-  alert(
-    'URL: ' + lastConnInfo.url + '\n' +
-    'Event: ' + lastConnInfo.event + '\n' +
-    'Code: ' + lastConnInfo.code + '\n' +
-    'Reason: ' + lastConnInfo.reason + '\n' +
-    'Time: ' + lastConnInfo.time + '\n' +
-    'Page origin: ' + location.origin
-  );
-}
-function scheduleReconnect() {
-  if (wsReconnectTimer) return;
-  wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; connectWS(); }, 3000);
-}
-function setConnStatus(online) {
-  const el = document.getElementById('conn-status');
-  const txt = document.getElementById('conn-status-text');
-  if (!el) return;
-  el.className = online ? 'online' : 'offline';
-  txt.textContent = online ? t('conn_online') : t('conn_offline');
-}
-function sendWS(payload) {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify(payload));
-    return true;
-  }
-  alert(t('msg_offline'));
-  return false;
-}
-
-function handleServerMessage(msg) {
-  switch (msg.type) {
-    case 'INIT_ITEMS': items = msg.data || []; renderAll(); break;
-    case 'INIT_INBOUNDS': inbounds = msg.data || []; renderAll(); break;
-    case 'INIT_OUTBOUNDS': outbounds = msg.data || []; renderAll(); break;
-    case 'INIT_PERSONNEL': personnel = msg.data || []; renderAll(); break;
-    case 'INIT_CATEGORIES':
-      categories1 = (msg.data && msg.data.cat1) || [];
-      categories2 = (msg.data && msg.data.cat2) || [];
-      lines = (msg.data && msg.data.lines) || [];
-      renderAll();
-      break;
-    case 'ITEM_UPSERTED': {
-      const idx = items.findIndex(i=>i.id===msg.item.id);
-      if (idx > -1) items[idx] = msg.item; else items.push(msg.item);
-      renderAll();
-      if (currentDetailItemId === msg.item.id) openItemDetail(msg.item.id);
-      break;
+# 2️⃣ Wave 라인 상태
+def load_wave_status():
+    path = os.path.join(BASE_STORAGE_DIR, "wave", "wave_status.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return {
+        "wave": {
+            str(i): {"status": "OFF", "lastChanged": int(datetime.now().timestamp() * 1000)}
+            for i in range(1, 8)
+        }
     }
-    case 'ITEM_DELETED':
-      items = items.filter(i=>i.id!==msg.id);
-      renderAll();
-      break;
-    case 'INBOUND_ADDED':
-      inbounds.push(msg.record);
-      renderAll();
-      break;
-    case 'OUTBOUND_ADDED':
-      outbounds.push(msg.record);
-      renderAll();
-      break;
-    case 'PERSONNEL_ADDED':
-      personnel.push(msg.person);
-      renderAll();
-      break;
-    case 'PERSONNEL_DELETED':
-      personnel = personnel.filter(p=>p.id!==msg.id);
-      renderAll();
-      break;
-    case 'CATEGORY_ADDED': {
-      const arr = msg.catType === 'cat1' ? categories1 : msg.catType === 'cat2' ? categories2 : lines;
-      if (!arr.includes(msg.value)) arr.push(msg.value);
-      renderAll();
-      break;
-    }
-    case 'CATEGORY_DELETED': {
-      if (msg.catType === 'cat1') categories1 = categories1.filter(c=>c!==msg.value);
-      else if (msg.catType === 'cat2') categories2 = categories2.filter(c=>c!==msg.value);
-      else lines = lines.filter(c=>c!==msg.value);
-      renderAll();
-      break;
-    }
-  }
-}
-
-// ═══════════════════════════════════════════
-//  I18N
-// ═══════════════════════════════════════════
-const i18n = {
-  ko: {
-    sys_name:'재고 관리 시스템', nav_main:'메인', nav_dashboard:'대시보드', nav_inventory:'재고 현황',
-    nav_manage:'관리', nav_categories:'분류 관리', nav_personnel:'담당자 관리',
-    nav_report:'리포트', nav_report_monthly:'월간 리포트', nav_history:'입출고 이력', nav_more:'더보기',
-    nav_inbound_title:'입고 등록', nav_outbound_title:'출고 등록',
-    btn_inbound:'입고', btn_outbound:'출고', btn_add_item:'품목 등록', btn_save:'저장',
-    btn_cancel:'취소', btn_confirm_in:'입고 확정', btn_confirm_out:'출고 확정',
-    btn_view_all:'전체 보기', btn_add:'추가', btn_quick_in:'입고', btn_quick_out:'출고',
-    stat_total_items:'전체 품목', stat_normal:'정상 재고', stat_warn:'주의 재고', stat_danger:'위험 재고',
-    stat_registered:'등록 품목 수', stat_sufficient:'충분한 수량', stat_low:'최소 수량 근접', stat_critical:'즉시 발주 필요',
-    alert_title:'재고 경보 품목', chart_monthly:'월별 입출고 현황', chart_cat:'분류별 재고 비율',
-    col_item:'품목', col_cat1:'분류1', col_cat2:'분류2', col_brand:'브랜드',
-    col_min:'최소 수량', col_current:'현재 재고', col_action:'관리', col_date:'날짜', col_qty:'수량',
-    col_datetime:'날짜/시간', col_datetime_auto:'등록 일시',
-    col_receiver:'입고 담당자', col_issuer:'출고 담당자', col_line:'사용 라인', col_note:'비고',
-    col_type:'구분', col_person:'담당자', col_name:'이름', col_dept:'부서',
-    col_photo:'사진', col_code:'품목코드',
-    filter_all_cat1:'전체 분류1', filter_all_status:'전체 상태', filter_ok:'정상', filter_warn:'주의', filter_danger:'위험',
-    search_ph:'품목명 / 코드 검색',
-    modal_item_title:'품목 등록', modal_item_edit_title:'품목 수정', photo_click:'탭하여 사진 촬영/업로드',
-    ph_select_item:'-- 품목 선택 --', ph_select_person:'-- 담당자 선택 --', ph_select_line:'-- 라인 선택 --',
-    ph_select_cat:'-- 선택 --', ph_new_cat:'새 분류 입력', ph_new_line:'새 라인 입력 (예: L.11)',
-    ph_name:'이름 입력', ph_dept:'부서 입력', ph_manual_name:'이름 직접 입력', ph_manual_line:'라인 직접 입력',
-    opt_custom:'직접 입력',
-    tab_all:'전체', tab_inbound:'입고', tab_outbound:'출고',
-    badge_ok:'정상', badge_warn:'주의', badge_danger:'위험', badge_in:'입고', badge_out:'출고',
-    personnel_list:'담당자 목록', personnel_add:'담당자 추가',
-    report_total_in:'월 총 입고', report_total_out:'월 총 출고', report_line_top:'최다 사용 라인',
-    report_trend:'월별 입출고 추이', report_detail:'월간 입출고 상세', report_in_qty:'입고 수량',
-    report_out_qty:'출고 수량', report_net:'순변동', report_out_count:'출고 건수',
-    unit_ea:'건', edit:'수정', del:'삭제',
-    cat1_title:'분류 1 리스트', cat2_title:'분류 2 리스트', lines_title:'사용 라인 리스트',
-    detail_title:'품목 상세', detail_chart_title:'월별 입출고 추이', detail_records_title:'입출고 기록',
-    detail_no_records:'기록이 없습니다', current_stock_label:'현재 재고', min_stock_label:'최소 수량',
-    empty_inventory:'등록된 품목이 없습니다', all_normal:'모든 재고가 정상입니다',
-    conn_online:'서버 연결됨', conn_offline:'서버 연결 끊김',
-    msg_offline:'서버에 연결되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
-    msg_required:'필수 항목을 모두 입력하세요.', msg_stock_insufficient:'재고가 부족합니다',
-    msg_enter_item_name:'품목명을 입력하세요.', msg_enter_name:'이름을 입력하세요.',
-    msg_confirm_delete_item:'품목을 삭제하시겠습니까?', msg_confirm_delete_person:'담당자를 삭제하시겠습니까?',
-    msg_confirm_delete_cat:'이 항목을 삭제하시겠습니까?', msg_qty_zero:'수량을 입력하세요.',
-    months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
-  },
-  en: {
-    sys_name:'Inventory System', nav_main:'MAIN', nav_dashboard:'Dashboard', nav_inventory:'Inventory',
-    nav_manage:'MANAGE', nav_categories:'Categories', nav_personnel:'Personnel',
-    nav_report:'REPORT', nav_report_monthly:'Monthly Report', nav_history:'History', nav_more:'More',
-    nav_inbound_title:'Inbound', nav_outbound_title:'Outbound',
-    btn_inbound:'In', btn_outbound:'Out', btn_add_item:'Add Item', btn_save:'Save',
-    btn_cancel:'Cancel', btn_confirm_in:'Confirm IN', btn_confirm_out:'Confirm OUT',
-    btn_view_all:'View All', btn_add:'Add', btn_quick_in:'Inbound', btn_quick_out:'Outbound',
-    stat_total_items:'Total Items', stat_normal:'Normal', stat_warn:'Warning', stat_danger:'Critical',
-    stat_registered:'Registered items', stat_sufficient:'Sufficient stock', stat_low:'Near minimum', stat_critical:'Reorder required',
-    alert_title:'Stock Alerts', chart_monthly:'Monthly IN/OUT', chart_cat:'Stock by Category',
-    col_item:'Item', col_cat1:'Category 1', col_cat2:'Category 2', col_brand:'Brand',
-    col_min:'Min. Qty', col_current:'Current Stock', col_action:'Action', col_date:'Date', col_qty:'Qty',
-    col_datetime:'Date/Time', col_datetime_auto:'Registered At',
-    col_receiver:'Receiver', col_issuer:'Issuer', col_line:'Line', col_note:'Note',
-    col_type:'Type', col_person:'Person', col_name:'Name', col_dept:'Dept',
-    col_photo:'Photo', col_code:'Code',
-    filter_all_cat1:'All Cat.1', filter_all_status:'All Status', filter_ok:'Normal', filter_warn:'Warning', filter_danger:'Critical',
-    search_ph:'Search item / code',
-    modal_item_title:'Add Item', modal_item_edit_title:'Edit Item', photo_click:'Tap to take/upload photo',
-    ph_select_item:'-- Select Item --', ph_select_person:'-- Select Person --', ph_select_line:'-- Select Line --',
-    ph_select_cat:'-- Select --', ph_new_cat:'Enter new category', ph_new_line:'Enter new line (e.g. L.11)',
-    ph_name:'Enter name', ph_dept:'Enter dept', ph_manual_name:'Enter name manually', ph_manual_line:'Enter line manually',
-    opt_custom:'Manual input',
-    tab_all:'All', tab_inbound:'Inbound', tab_outbound:'Outbound',
-    badge_ok:'OK', badge_warn:'WARN', badge_danger:'CRIT', badge_in:'IN', badge_out:'OUT',
-    personnel_list:'Personnel List', personnel_add:'Add Personnel',
-    report_total_in:'Total IN', report_total_out:'Total OUT', report_line_top:'Top Line',
-    report_trend:'Monthly Trend', report_detail:'Monthly Detail', report_in_qty:'IN Qty',
-    report_out_qty:'OUT Qty', report_net:'Net Change', report_out_count:'OUT count',
-    unit_ea:'records', edit:'Edit', del:'Delete',
-    cat1_title:'Category 1 List', cat2_title:'Category 2 List', lines_title:'Line List',
-    detail_title:'Item Detail', detail_chart_title:'Monthly IN/OUT Trend', detail_records_title:'IN/OUT Records',
-    detail_no_records:'No records', current_stock_label:'Current Stock', min_stock_label:'Min. Qty',
-    empty_inventory:'No items registered', all_normal:'All stock levels are normal',
-    conn_online:'Connected', conn_offline:'Disconnected',
-    msg_offline:'Not connected to server. Please try again shortly.',
-    msg_required:'Please fill in all required fields.', msg_stock_insufficient:'Insufficient stock',
-    msg_enter_item_name:'Please enter item name.', msg_enter_name:'Please enter a name.',
-    msg_confirm_delete_item:'Delete this item?', msg_confirm_delete_person:'Delete this person?',
-    msg_confirm_delete_cat:'Delete this entry?', msg_qty_zero:'Please enter a quantity.',
-    months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  },
-  th: {
-    sys_name:'ระบบจัดการสินค้าคงคลัง', nav_main:'หลัก', nav_dashboard:'แดชบอร์ด', nav_inventory:'สินค้าคงคลัง',
-    nav_manage:'จัดการ', nav_categories:'จัดการประเภท', nav_personnel:'ผู้รับผิดชอบ',
-    nav_report:'รายงาน', nav_report_monthly:'รายงานรายเดือน', nav_history:'ประวัติ', nav_more:'เพิ่มเติม',
-    nav_inbound_title:'รับสินค้า', nav_outbound_title:'จ่ายสินค้า',
-    btn_inbound:'รับเข้า', btn_outbound:'จ่ายออก', btn_add_item:'เพิ่มสินค้า', btn_save:'บันทึก',
-    btn_cancel:'ยกเลิก', btn_confirm_in:'ยืนยันรับเข้า', btn_confirm_out:'ยืนยันจ่ายออก',
-    btn_view_all:'ดูทั้งหมด', btn_add:'เพิ่ม', btn_quick_in:'รับเข้า', btn_quick_out:'จ่ายออก',
-    stat_total_items:'รายการทั้งหมด', stat_normal:'สต็อกปกติ', stat_warn:'คำเตือน', stat_danger:'วิกฤต',
-    stat_registered:'จำนวนรายการ', stat_sufficient:'เพียงพอ', stat_low:'ใกล้ขั้นต่ำ', stat_critical:'ต้องสั่งซื้อ',
-    alert_title:'แจ้งเตือนสต็อก', chart_monthly:'รับ/จ่าย รายเดือน', chart_cat:'สัดส่วนตามประเภท',
-    col_item:'รายการ', col_cat1:'ประเภท 1', col_cat2:'ประเภท 2', col_brand:'แบรนด์',
-    col_min:'ขั้นต่ำ', col_current:'สต็อกปัจจุบัน', col_action:'จัดการ', col_date:'วันที่', col_qty:'จำนวน',
-    col_datetime:'วันที่/เวลา', col_datetime_auto:'เวลาที่บันทึก',
-    col_receiver:'ผู้รับ', col_issuer:'ผู้จ่าย', col_line:'ไลน์', col_note:'หมายเหตุ',
-    col_type:'ประเภท', col_person:'บุคคล', col_name:'ชื่อ', col_dept:'แผนก',
-    col_photo:'รูปภาพ', col_code:'รหัส',
-    filter_all_cat1:'ทุกประเภท 1', filter_all_status:'ทุกสถานะ', filter_ok:'ปกติ', filter_warn:'เตือน', filter_danger:'วิกฤต',
-    search_ph:'ค้นหารายการ / รหัส',
-    modal_item_title:'เพิ่มรายการ', modal_item_edit_title:'แก้ไขรายการ', photo_click:'แตะเพื่อถ่าย/อัปโหลดรูป',
-    ph_select_item:'-- เลือกรายการ --', ph_select_person:'-- เลือกบุคคล --', ph_select_line:'-- เลือกไลน์ --',
-    ph_select_cat:'-- เลือก --', ph_new_cat:'ระบุประเภทใหม่', ph_new_line:'ระบุไลน์ใหม่ (เช่น L.11)',
-    ph_name:'ระบุชื่อ', ph_dept:'ระบุแผนก', ph_manual_name:'ระบุชื่อเอง', ph_manual_line:'ระบุไลน์เอง',
-    opt_custom:'ระบุเอง',
-    tab_all:'ทั้งหมด', tab_inbound:'รับเข้า', tab_outbound:'จ่ายออก',
-    badge_ok:'ปกติ', badge_warn:'เตือน', badge_danger:'วิกฤต', badge_in:'รับ', badge_out:'จ่าย',
-    personnel_list:'รายชื่อผู้รับผิดชอบ', personnel_add:'เพิ่มผู้รับผิดชอบ',
-    report_total_in:'รับรวม', report_total_out:'จ่ายรวม', report_line_top:'ไลน์สูงสุด',
-    report_trend:'แนวโน้มรายเดือน', report_detail:'รายละเอียดเดือน', report_in_qty:'จำนวนรับ',
-    report_out_qty:'จำนวนจ่าย', report_net:'การเปลี่ยนแปลง', report_out_count:'จำนวนครั้ง',
-    unit_ea:'รายการ', edit:'แก้ไข', del:'ลบ',
-    cat1_title:'รายการประเภท 1', cat2_title:'รายการประเภท 2', lines_title:'รายการไลน์',
-    detail_title:'รายละเอียดสินค้า', detail_chart_title:'แนวโน้มรับ-จ่ายรายเดือน', detail_records_title:'ประวัติรับ-จ่าย',
-    detail_no_records:'ไม่มีประวัติ', current_stock_label:'สต็อกปัจจุบัน', min_stock_label:'จำนวนขั้นต่ำ',
-    empty_inventory:'ไม่มีรายการสินค้า', all_normal:'สต็อกทั้งหมดอยู่ในระดับปกติ',
-    conn_online:'เชื่อมต่อแล้ว', conn_offline:'ขาดการเชื่อมต่อ',
-    msg_offline:'ไม่ได้เชื่อมต่อกับเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง',
-    msg_required:'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน', msg_stock_insufficient:'สต็อกไม่เพียงพอ',
-    msg_enter_item_name:'กรุณาระบุชื่อสินค้า', msg_enter_name:'กรุณาระบุชื่อ',
-    msg_confirm_delete_item:'ต้องการลบสินค้านี้หรือไม่?', msg_confirm_delete_person:'ต้องการลบผู้รับผิดชอบนี้หรือไม่?',
-    msg_confirm_delete_cat:'ต้องการลบรายการนี้หรือไม่?', msg_qty_zero:'กรุณาระบุจำนวน',
-    months:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
-  }
-};
-let currentLang = 'ko';
-
-function t(key) { return (i18n[currentLang] || i18n.ko)[key] || key; }
-
-function setLang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.lang-btn').forEach(b => {
-    const m = b.getAttribute('onclick') && b.getAttribute('onclick').match(/'(\w+)'/);
-    if (m && m[1] === lang) b.classList.add('active');
-    else b.classList.remove('active');
-  });
-  applyI18n();
-  renderAll();
-  setConnStatus(socket && socket.readyState === WebSocket.OPEN);
-}
-
-function applyI18n() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    el.textContent = t(key);
-  });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-    el.placeholder = t(el.getAttribute('data-i18n-ph'));
-  });
-}
-
-// ═══════════════════════════════════════════
-//  DATA STORE
-// ═══════════════════════════════════════════
-let items = [];
-let inbounds = [];
-let outbounds = [];
-let personnel = [];
-let categories1 = [];
-let categories2 = [];
-let lines = [];
-let currentDetailItemId = null;
-let historyTabFilter = 'all';
-let currentPage = 'dashboard';
-
-let chartMonthly = null, chartPie = null, chartReportTrend = null, chartItemDetail = null;
-
-function getStockStatus(item) {
-  const stock = item.stock || 0;
-  const min = item.minQty || 0;
-  if (stock <= 0) return 'danger';
-  if (stock <= min) return 'danger';
-  if (stock <= min * 1.5) return 'warn';
-  return 'ok';
-}
-function stockPct(item) {
-  const stock = item.stock || 0;
-  const min = item.minQty || 0;
-  const target = Math.max(min * 2, 1);
-  return Math.min(100, Math.round((stock / target) * 100));
-}
-function statusBadge(status) {
-  const map = { ok: 'badge-ok', warn: 'badge-warn', danger: 'badge-danger' };
-  const labelKey = { ok: 'badge_ok', warn: 'badge_warn', danger: 'badge_danger' };
-  return `<span class="badge ${map[status]}">${t(labelKey[status])}</span>`;
-}
-function personName(p) {
-  if (!p) return '-';
-  if (typeof p === 'string') return p;
-  return p.name + (p.dept ? ` (${p.dept})` : '');
-}
-function findPersonById(id) { return personnel.find(p => p.id === id); }
-function findItem(id) { return items.find(i => i.id === id); }
-
-// ═══════════════════════════════════════════
-//  NAVIGATION
-// ═══════════════════════════════════════════
-function showPage(page) {
-  currentPage = page;
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const target = document.getElementById('page-' + page);
-  if (target) target.classList.add('active');
-
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
-  document.querySelectorAll('.tabbar-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
-
-  const titles = {
-    dashboard:'nav_dashboard', inventory:'nav_inventory', categories:'nav_categories',
-    personnel:'nav_personnel', report:'nav_report_monthly', history:'nav_history'
-  };
-  const titleEl = document.getElementById('page-title');
-  if (titleEl && titles[page]) titleEl.textContent = t(titles[page]);
-
-  if (page === 'report') generateReport();
-  if (page === 'inventory') renderInventory();
-}
-
-function goToInventory(status) {
-  showPage('inventory');
-  document.getElementById('inv-status-filter').value = status || '';
-  renderInventory();
-}
-
-function openMoreMenu() { openModal('modal-more'); }
-
-// ═══════════════════════════════════════════
-//  MODAL CONTROL
-// ═══════════════════════════════════════════
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-  if (id === 'modal-inbound') {
-    resetManual('in-person');
-    document.getElementById('in-datetime-display').textContent = nowDisplay();
-    document.getElementById('in-qty').value = 0;
-    document.getElementById('in-note').value = '';
-    document.getElementById('in-item').value = '';
-    document.getElementById('in-current-stock').value = '';
-  }
-  if (id === 'modal-outbound') {
-    resetManual('out-person'); resetManual('out-line');
-    document.getElementById('out-datetime-display').textContent = nowDisplay();
-    document.getElementById('out-qty').value = 0;
-    document.getElementById('out-note').value = '';
-    document.getElementById('out-item').value = '';
-    document.getElementById('out-current-stock').value = '';
-    document.getElementById('out-qty-warning').textContent = '';
-  }
-}
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-function nowDisplay() {
-  const d = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-function toggleManual(prefix) {
-  const wrap = document.getElementById(prefix + '-manual-wrap');
-  const select = document.getElementById(prefix);
-  wrap.classList.toggle('show');
-  if (wrap.classList.contains('show')) {
-    select.value = '';
-    document.getElementById(prefix + '-manual').focus();
-  } else {
-    document.getElementById(prefix + '-manual').value = '';
-  }
-}
-function resetManual(prefix) {
-  const wrap = document.getElementById(prefix + '-manual-wrap');
-  wrap.classList.remove('show');
-  document.getElementById(prefix + '-manual').value = '';
-  document.getElementById(prefix).value = '';
-}
-function getPersonValue(prefix) {
-  const wrap = document.getElementById(prefix + '-manual-wrap');
-  if (wrap.classList.contains('show')) {
-    return document.getElementById(prefix + '-manual').value.trim();
-  }
-  const sel = document.getElementById(prefix);
-  const p = findPersonById(sel.value);
-  return p ? personName(p) : '';
-}
-function getLineValue(prefix) {
-  const wrap = document.getElementById(prefix + '-manual-wrap');
-  if (wrap.classList.contains('show')) {
-    return document.getElementById(prefix + '-manual').value.trim();
-  }
-  return document.getElementById(prefix).value;
-}
-
-// ═══════════════════════════════════════════
-//  RENDER: ALL
-// ═══════════════════════════════════════════
-function renderAll() {
-  updateSelects();
-  renderDashboard();
-  renderInventory();
-  renderCategories();
-  renderPersonnel();
-  renderHistory();
-  if (currentPage === 'report') generateReport();
-}
-
-function updateSelects() {
-  // category selects in item modal
-  fillSelect('item-cat1', categories1, t('ph_select_cat'));
-  fillSelect('item-cat2', categories2, t('ph_select_cat'));
-  fillSelect('inv-cat1', categories1, t('filter_all_cat1'), true);
-  fillSelect('out-line', lines, t('ph_select_line'));
-
-  // item selects for in/out
-  const itemOptions = items.map(i => ({ value: i.id, label: `${i.name}${i.code ? ' (' + i.code + ')' : ''}` }));
-  fillSelectObjs('in-item', itemOptions, t('ph_select_item'));
-  fillSelectObjs('out-item', itemOptions, t('ph_select_item'));
-
-  // person selects
-  const personOptions = personnel.map(p => ({ value: p.id, label: personName(p) }));
-  fillSelectObjs('in-person', personOptions, t('ph_select_person'));
-  fillSelectObjs('out-person', personOptions, t('ph_select_person'));
-}
-function fillSelect(id, arr, placeholder, isFilter) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const current = el.value;
-  el.innerHTML = `<option value="">${placeholder}</option>` + arr.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-  el.value = current && arr.includes(current) ? current : '';
-}
-function fillSelectObjs(id, arr, placeholder) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const current = el.value;
-  el.innerHTML = `<option value="">${placeholder}</option>` + arr.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
-  if (current && arr.some(o => o.value === current)) el.value = current;
-}
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-// ═══════════════════════════════════════════
-//  RENDER: DASHBOARD
-// ═══════════════════════════════════════════
-function renderDashboard() {
-  const total = items.length;
-  const okCount = items.filter(i => getStockStatus(i) === 'ok').length;
-  const warnCount = items.filter(i => getStockStatus(i) === 'warn').length;
-  const dangerCount = items.filter(i => getStockStatus(i) === 'danger').length;
-
-  document.getElementById('st-total').textContent = total;
-  document.getElementById('st-ok').textContent = okCount;
-  document.getElementById('st-warn').textContent = warnCount;
-  document.getElementById('st-danger').textContent = dangerCount;
-
-  const alertItems = items.filter(i => getStockStatus(i) !== 'ok').slice(0, 8);
-  const alertGrid = document.getElementById('alert-grid');
-  alertGrid.innerHTML = alertItems.length
-    ? alertItems.map(itemCardHtml).join('')
-    : `<div class="empty-state">✅ ${t('all_normal')}</div>`;
-
-  drawMonthlyChart();
-  drawPieChart();
-}
-
-function itemCardHtml(item) {
-  const status = getStockStatus(item);
-  const photo = item.photo
-    ? `<img src="${escapeHtml(photoUrl(item.photo))}" alt="">`
-    : `🔧`;
-  return `
-    <div class="item-card" onclick="openItemDetail('${item.id}')">
-      <div class="item-card-photo">${photo}<span class="status-dot ${status}"></span></div>
-      <div>
-        <div class="item-card-name">${escapeHtml(item.name)}</div>
-        <div class="item-card-code">${escapeHtml(item.code || '')}</div>
-      </div>
-      <div class="item-card-cats">
-        ${item.cat1 ? `<span class="chip-sm">${escapeHtml(item.cat1)}</span>` : ''}
-        ${item.cat2 ? `<span class="chip-sm">${escapeHtml(item.cat2)}</span>` : ''}
-      </div>
-      <div class="item-card-stock-row">
-        <div class="stock-bar"><div class="stock-bar-fill ${status}" style="width:${stockPct(item)}%"></div></div>
-        <div class="item-card-stock-num">${item.stock || 0}</div>
-      </div>
-    </div>`;
-}
-
-// ═══════════════════════════════════════════
-//  RENDER: INVENTORY
-// ═══════════════════════════════════════════
-function renderInventory() {
-  const search = (document.getElementById('inv-search').value || '').toLowerCase();
-  const cat1Filter = document.getElementById('inv-cat1').value;
-  const statusFilter = document.getElementById('inv-status-filter').value;
-
-  let filtered = items.filter(i => {
-    if (search && !(i.name.toLowerCase().includes(search) || (i.code || '').toLowerCase().includes(search))) return false;
-    if (cat1Filter && i.cat1 !== cat1Filter) return false;
-    if (statusFilter && getStockStatus(i) !== statusFilter) return false;
-    return true;
-  });
-
-  const grid = document.getElementById('inventory-grid');
-  grid.innerHTML = filtered.length
-    ? filtered.map(itemCardHtml).join('')
-    : `<div class="empty-state">${t('empty_inventory')}</div>`;
-}
-
-// ═══════════════════════════════════════════
-//  RENDER: CATEGORIES
-// ═══════════════════════════════════════════
-function renderCategories() {
-  renderChipList('cat1-chip-list', categories1, 'cat1');
-  renderChipList('cat2-chip-list', categories2, 'cat2');
-  renderChipList('lines-chip-list', lines, 'lines');
-}
-function renderChipList(elId, arr, catType) {
-  const el = document.getElementById(elId);
-  el.innerHTML = arr.length
-    ? arr.map(v => `<div class="chip">${escapeHtml(v)}<span class="chip-del" onclick="deleteCategory('${catType}','${escapeHtml(v).replace(/'/g,"\\'")}')">✕</span></div>`).join('')
-    : `<div class="empty-state" style="padding:10px">-</div>`;
-}
-
-// ═══════════════════════════════════════════
-//  RENDER: PERSONNEL
-// ═══════════════════════════════════════════
-function renderPersonnel() {
-  const body = document.getElementById('personnel-body');
-  body.innerHTML = personnel.length
-    ? personnel.map(p => `
-      <tr>
-        <td>${escapeHtml(p.name)}</td>
-        <td>${escapeHtml(p.dept || '-')}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="deletePersonnel('${p.id}')">${t('del')}</button></td>
-      </tr>`).join('')
-    : `<tr><td colspan="3" class="empty-state">-</td></tr>`;
-}
-
-// ═══════════════════════════════════════════
-//  RENDER: HISTORY
-// ═══════════════════════════════════════════
-function switchHistoryTab(tab) {
-  historyTabFilter = tab;
-  document.querySelectorAll('#page-history .tab').forEach((el, idx) => {
-    const map = ['all','in','out'];
-    el.classList.toggle('active', map[idx] === tab);
-  });
-  renderHistory();
-}
-function renderHistory() {
-  let rows = [];
-  if (historyTabFilter !== 'out') {
-    rows = rows.concat(inbounds.map(r => ({...r, _type:'in'})));
-  }
-  if (historyTabFilter !== 'in') {
-    rows = rows.concat(outbounds.map(r => ({...r, _type:'out'})));
-  }
-  rows.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
-
-  const body = document.getElementById('history-body');
-  body.innerHTML = rows.length ? rows.map(r => {
-    const item = findItem(r.itemId);
-    return `
-      <tr>
-        <td>${escapeHtml(r.date)} ${escapeHtml(r.time || '')}</td>
-        <td>${r._type === 'in' ? `<span class="badge badge-ok">${t('badge_in')}</span>` : `<span class="badge badge-danger">${t('badge_out')}</span>`}</td>
-        <td>${item ? escapeHtml(item.name) : '-'}</td>
-        <td>${r.qty}</td>
-        <td>${escapeHtml(r.person || '-')}</td>
-        <td>${escapeHtml(r.line || '-')}</td>
-        <td>${escapeHtml(r.note || '-')}</td>
-      </tr>`;
-  }).join('') : `<tr><td colspan="7" class="empty-state">-</td></tr>`;
-}
-
-// ═══════════════════════════════════════════
-//  ITEM MODAL (register / edit)
-// ═══════════════════════════════════════════
-function openItemModal(editId) {
-  document.getElementById('item-edit-id').value = '';
-  document.getElementById('item-photo-data').value = '';
-  document.getElementById('item-photo-existing').value = '';
-  document.getElementById('item-code').value = '';
-  document.getElementById('item-name').value = '';
-  document.getElementById('item-cat1').value = '';
-  document.getElementById('item-cat2').value = '';
-  document.getElementById('item-brand').value = '';
-  document.getElementById('item-min').value = '';
-  document.getElementById('item-note').value = '';
-  resetPhotoPreview();
-  document.getElementById('item-modal-title').textContent = t('modal_item_title');
-
-  if (editId) {
-    const item = findItem(editId);
-    if (item) {
-      document.getElementById('item-edit-id').value = item.id;
-      document.getElementById('item-photo-existing').value = item.photo || '';
-      document.getElementById('item-code').value = item.code || '';
-      document.getElementById('item-name').value = item.name || '';
-      document.getElementById('item-cat1').value = item.cat1 || '';
-      document.getElementById('item-cat2').value = item.cat2 || '';
-      document.getElementById('item-brand').value = item.brand || '';
-      document.getElementById('item-min').value = item.minQty || 0;
-      document.getElementById('item-note').value = item.note || '';
-      document.getElementById('item-modal-title').textContent = t('modal_item_edit_title');
-      if (item.photo) showPhotoPreview(photoUrl(item.photo));
-    }
-  }
-  openModal('modal-item');
-}
-
-function resetPhotoPreview() {
-  document.getElementById('photo-preview-area').innerHTML = `
-    <div style="font-size:30px">📷</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('photo_click')}</div>`;
-}
-function showPhotoPreview(src) {
-  document.getElementById('photo-preview-area').innerHTML = `
-    <img src="${src}" class="photo-preview">
-    <button type="button" class="photo-remove-btn" onclick="event.stopPropagation();removePhoto()">✕</button>`;
-}
-function previewPhoto(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('item-photo-data').value = e.target.result;
-    document.getElementById('item-photo-existing').value = '';
-    showPhotoPreview(e.target.result);
-  };
-  reader.readAsDataURL(file);
-}
-function removePhoto() {
-  document.getElementById('item-photo-data').value = '';
-  document.getElementById('item-photo-existing').value = '';
-  document.getElementById('photo-input').value = '';
-  resetPhotoPreview();
-}
-
-function saveItem() {
-  const name = document.getElementById('item-name').value.trim();
-  const minQty = parseInt(document.getElementById('item-min').value, 10);
-  if (!name) { alert(t('msg_enter_item_name')); return; }
-  if (isNaN(minQty)) { alert(t('msg_required')); return; }
-
-  const editId = document.getElementById('item-edit-id').value;
-  const photoData = document.getElementById('item-photo-data').value;
-  const photoExisting = document.getElementById('item-photo-existing').value;
-
-  const item = {
-    id: editId || ('item_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
-    code: document.getElementById('item-code').value.trim(),
-    name: name,
-    cat1: document.getElementById('item-cat1').value,
-    cat2: document.getElementById('item-cat2').value,
-    brand: document.getElementById('item-brand').value.trim(),
-    minQty: minQty,
-    note: document.getElementById('item-note').value.trim(),
-    photo: photoData || photoExisting || '',
-  };
-
-  if (sendWS({ type: 'UPSERT_ITEM', item })) {
-    closeModal('modal-item');
-  }
-}
-
-function editItem(id) { openItemModal(id); }
-
-function deleteItem(id) {
-  if (!confirm(t('msg_confirm_delete_item'))) return;
-  sendWS({ type: 'DELETE_ITEM', id });
-}
-
-// ═══════════════════════════════════════════
-//  ITEM DETAIL MODAL
-// ═══════════════════════════════════════════
-function openItemDetail(id) {
-  const item = findItem(id);
-  if (!item) return;
-  currentDetailItemId = id;
-
-  document.getElementById('detail-photo').innerHTML = item.photo
-    ? `<img src="${escapeHtml(photoUrl(item.photo))}" alt="">`
-    : '🔧';
-  document.getElementById('detail-name').textContent = item.name;
-  document.getElementById('detail-code').textContent = item.code || '';
-
-  const status = getStockStatus(item);
-  let badges = statusBadge(status);
-  if (item.brand) badges += `<span class="badge badge-info">${escapeHtml(item.brand)}</span>`;
-  if (item.cat1) badges += `<span class="badge badge-accent">${escapeHtml(item.cat1)}</span>`;
-  if (item.cat2) badges += `<span class="badge badge-accent">${escapeHtml(item.cat2)}</span>`;
-  document.getElementById('detail-badges').innerHTML = badges;
-
-  const stockNumEl = document.getElementById('detail-stock-value');
-  stockNumEl.textContent = item.stock || 0;
-  stockNumEl.className = 'detail-stock-num ' + status;
-  document.getElementById('detail-stock-bar-fill').className = 'stock-bar-fill ' + status;
-  document.getElementById('detail-stock-bar-fill').style.width = stockPct(item) + '%';
-  document.getElementById('detail-min-value').textContent = item.minQty || 0;
-
-  const itemIn = inbounds.filter(r => r.itemId === id).map(r => ({...r, _type:'in'}));
-  const itemOut = outbounds.filter(r => r.itemId === id).map(r => ({...r, _type:'out'}));
-  const allRecords = itemIn.concat(itemOut).sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
-
-  const body = document.getElementById('detail-records-body');
-  body.innerHTML = allRecords.length ? allRecords.map(r => `
-    <tr>
-      <td>${escapeHtml(r.date)} ${escapeHtml(r.time||'')}</td>
-      <td>${r._type==='in' ? `<span class="badge badge-ok">${t('badge_in')}</span>` : `<span class="badge badge-danger">${t('badge_out')}</span>`}</td>
-      <td>${r.qty}</td>
-      <td>${escapeHtml(r.person||'-')}</td>
-      <td>${escapeHtml(r.line||'-')}</td>
-    </tr>`).join('') : `<tr><td colspan="5" class="empty-state">${t('detail_no_records')}</td></tr>`;
-
-  drawItemDetailChart(id);
-  openModal('modal-detail');
-}
-
-function quickAction(type) {
-  closeModal('modal-detail');
-  const item = findItem(currentDetailItemId);
-  if (!item) return;
-  if (type === 'in') {
-    openModal('modal-inbound');
-    document.getElementById('in-item').value = item.id;
-    updateInStock();
-  } else {
-    openModal('modal-outbound');
-    document.getElementById('out-item').value = item.id;
-    updateOutStock();
-  }
-}
-function editItemFromDetail() { closeModal('modal-detail'); openItemModal(currentDetailItemId); }
-function deleteItemFromDetail() {
-  if (!confirm(t('msg_confirm_delete_item'))) return;
-  sendWS({ type: 'DELETE_ITEM', id: currentDetailItemId });
-  closeModal('modal-detail');
-}
-
-// ═══════════════════════════════════════════
-//  INBOUND / OUTBOUND
-// ═══════════════════════════════════════════
-function updateInStock() {
-  const item = findItem(document.getElementById('in-item').value);
-  document.getElementById('in-current-stock').value = item ? item.stock || 0 : '';
-}
-function updateOutStock() {
-  const item = findItem(document.getElementById('out-item').value);
-  document.getElementById('out-current-stock').value = item ? item.stock || 0 : '';
-  checkOutQty();
-}
-function bumpQty(prefix, amount) {
-  const input = document.getElementById(prefix + '-qty');
-  if (amount === 'reset') { input.value = 0; }
-  else { input.value = Math.max(0, (parseInt(input.value,10) || 0) + amount); }
-  if (prefix === 'out') checkOutQty();
-}
-function checkOutQty() {
-  const item = findItem(document.getElementById('out-item').value);
-  const qty = parseInt(document.getElementById('out-qty').value, 10) || 0;
-  const warnEl = document.getElementById('out-qty-warning');
-  if (item && qty > (item.stock || 0)) {
-    warnEl.textContent = `⚠️ ${t('msg_stock_insufficient')} (${t('current_stock_label')}: ${item.stock || 0})`;
-  } else {
-    warnEl.textContent = '';
-  }
-}
-
-function saveInbound() {
-  const itemId = document.getElementById('in-item').value;
-  const qty = parseInt(document.getElementById('in-qty').value, 10) || 0;
-  const person = getPersonValue('in-person');
-
-  if (!itemId) { alert(t('msg_required')); return; }
-  if (qty <= 0) { alert(t('msg_qty_zero')); return; }
-  if (!person) { alert(t('msg_enter_name')); return; }
-
-  const note = document.getElementById('in-note').value.trim();
-  if (sendWS({ type: 'ADD_INBOUND', itemId, qty, person, note })) {
-    closeModal('modal-inbound');
-  }
-}
-
-function saveOutbound() {
-  const itemId = document.getElementById('out-item').value;
-  const qty = parseInt(document.getElementById('out-qty').value, 10) || 0;
-  const person = getPersonValue('out-person');
-  const line = getLineValue('out-line');
-
-  if (!itemId) { alert(t('msg_required')); return; }
-  if (qty <= 0) { alert(t('msg_qty_zero')); return; }
-  if (!person) { alert(t('msg_enter_name')); return; }
-  if (!line) { alert(t('msg_required')); return; }
-
-  const item = findItem(itemId);
-  if (item && qty > (item.stock || 0)) {
-    if (!confirm(`${t('msg_stock_insufficient')}. ${t('btn_confirm_out')}?`)) return;
-  }
-
-  const note = document.getElementById('out-note').value.trim();
-  if (sendWS({ type: 'ADD_OUTBOUND', itemId, qty, person, line, note })) {
-    closeModal('modal-outbound');
-  }
-}
-
-// ═══════════════════════════════════════════
-//  PERSONNEL CRUD
-// ═══════════════════════════════════════════
-function savePersonnel() {
-  const name = document.getElementById('p-name').value.trim();
-  const dept = document.getElementById('p-dept').value.trim();
-  if (!name) { alert(t('msg_enter_name')); return; }
-  const person = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name, dept };
-  if (sendWS({ type: 'ADD_PERSONNEL', person })) {
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-dept').value = '';
-  }
-}
-function deletePersonnel(id) {
-  if (!confirm(t('msg_confirm_delete_person'))) return;
-  sendWS({ type: 'DELETE_PERSONNEL', id });
-}
-
-// ═══════════════════════════════════════════
-//  CATEGORY CRUD
-// ═══════════════════════════════════════════
-function addCategory(catType) {
-  const inputId = catType === 'cat1' ? 'new-cat1' : catType === 'cat2' ? 'new-cat2' : 'new-line';
-  const input = document.getElementById(inputId);
-  const value = input.value.trim();
-  if (!value) return;
-  if (sendWS({ type: 'ADD_CATEGORY', catType, value })) {
-    input.value = '';
-  }
-}
-function deleteCategory(catType, value) {
-  if (!confirm(t('msg_confirm_delete_cat'))) return;
-  sendWS({ type: 'DELETE_CATEGORY', catType, value });
-}
-
-// ═══════════════════════════════════════════
-//  MONTHLY REPORT
-// ═══════════════════════════════════════════
-async function generateReport() {
-  const year = parseInt(document.getElementById('report-year').value, 10);
-  const month = parseInt(document.getElementById('report-month').value, 10);
-
-  let report = null;
-  try {
-    const res = await fetch(`${HTTP_BASE}/api/inventory/report?year=${year}&month=${month}`);
-    if (res.ok) report = await res.json();
-  } catch (e) { /* fall back to client-side calc below */ }
-
-  if (!report) {
-    const prefix = `${year}-${String(month).padStart(2,'0')}`;
-    const monthIn = inbounds.filter(r => r.date.startsWith(prefix));
-    const monthOut = outbounds.filter(r => r.date.startsWith(prefix));
-    const lineCounts = {};
-    monthOut.forEach(r => { const l = r.line || '-'; lineCounts[l] = (lineCounts[l]||0)+1; });
-    report = {
-      totalIn: monthIn.reduce((s,r)=>s+r.qty,0),
-      totalOut: monthOut.reduce((s,r)=>s+r.qty,0),
-      lineCounts,
-      items: items.map(item => {
-        const inQty = monthIn.filter(r=>r.itemId===item.id).reduce((s,r)=>s+r.qty,0);
-        const outQty = monthOut.filter(r=>r.itemId===item.id).reduce((s,r)=>s+r.qty,0);
-        return { itemId:item.id, name:item.name, code:item.code, inQty, outQty, net:inQty-outQty, currentStock:item.stock||0, minQty:item.minQty||0 };
-      })
-    };
-  }
-
-  document.getElementById('r-total-in').textContent = report.totalIn;
-  document.getElementById('r-total-out').textContent = report.totalOut;
-
-  const lineEntries = Object.entries(report.lineCounts || {});
-  if (lineEntries.length) {
-    lineEntries.sort((a,b)=>b[1]-a[1]);
-    document.getElementById('r-top-line').textContent = `${lineEntries[0][0]} (${lineEntries[0][1]})`;
-  } else {
-    document.getElementById('r-top-line').textContent = '-';
-  }
-
-  const body = document.getElementById('report-body');
-  const rows = (report.items || []).filter(r => r.inQty > 0 || r.outQty > 0);
-  body.innerHTML = rows.length ? rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.name)}</td>
-      <td style="color:var(--ok)">+${r.inQty}</td>
-      <td style="color:var(--danger)">-${r.outQty}</td>
-      <td style="font-weight:700;color:${r.net>=0?'var(--ok)':'var(--danger)'}">${r.net>=0?'+':''}${r.net}</td>
-      <td>${r.currentStock}</td>
-    </tr>`).join('') : `<tr><td colspan="5" class="empty-state">-</td></tr>`;
-
-  drawReportTrendChart(year);
-}
-
-// ═══════════════════════════════════════════
-//  CHARTS
-// ═══════════════════════════════════════════
-function monthlyTotals(year) {
-  const inTotals = Array(12).fill(0);
-  const outTotals = Array(12).fill(0);
-  inbounds.forEach(r => { if (r.date.startsWith(String(year))) { const m = parseInt(r.date.slice(5,7),10)-1; if(m>=0&&m<12) inTotals[m]+=r.qty; } });
-  outbounds.forEach(r => { if (r.date.startsWith(String(year))) { const m = parseInt(r.date.slice(5,7),10)-1; if(m>=0&&m<12) outTotals[m]+=r.qty; } });
-  return { inTotals, outTotals };
-}
-
-function chartTextColor() { return '#7A9AB8'; }
-function chartGridColor() { return 'rgba(46,69,96,0.4)'; }
-
-function drawMonthlyChart() {
-  const year = new Date().getFullYear();
-  const { inTotals, outTotals } = monthlyTotals(year);
-  const ctx = document.getElementById('chart-monthly');
-  if (!ctx) return;
-  if (chartMonthly) chartMonthly.destroy();
-  chartMonthly = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: t('months'),
-      datasets: [
-        { label: t('badge_in'), data: inTotals, backgroundColor: '#2ECC71' },
-        { label: t('badge_out'), data: outTotals, backgroundColor: '#E53935' },
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: chartTextColor() } } },
-      scales: {
-        x: { ticks: { color: chartTextColor(), font:{size:9} }, grid: { color: chartGridColor() } },
-        y: { ticks: { color: chartTextColor() }, grid: { color: chartGridColor() }, beginAtZero: true }
-      }
-    }
-  });
-}
-
-function drawPieChart() {
-  const ctx = document.getElementById('chart-pie');
-  if (!ctx) return;
-  if (chartPie) chartPie.destroy();
-  const counts = {};
-  items.forEach(i => { const c = i.cat1 || '-'; counts[c] = (counts[c]||0) + 1; });
-  const labels = Object.keys(counts);
-  const data = Object.values(counts);
-  const palette = ['#F5821F','#2ECC71','#2196F3','#FFD600','#E53935','#9C27B0','#00BCD4','#795548'];
-  chartPie = new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }] },
-    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: chartTextColor(), font:{size:10} } } } }
-  });
-}
-
-function drawReportTrendChart(year) {
-  const { inTotals, outTotals } = monthlyTotals(year);
-  const ctx = document.getElementById('chart-report-trend');
-  if (!ctx) return;
-  if (chartReportTrend) chartReportTrend.destroy();
-  chartReportTrend = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: t('months'),
-      datasets: [
-        { label: t('badge_in'), data: inTotals, borderColor: '#2ECC71', backgroundColor: 'rgba(46,204,113,0.15)', fill: true, tension: 0.3 },
-        { label: t('badge_out'), data: outTotals, borderColor: '#E53935', backgroundColor: 'rgba(229,57,53,0.15)', fill: true, tension: 0.3 },
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: chartTextColor() } } },
-      scales: {
-        x: { ticks: { color: chartTextColor(), font:{size:9} }, grid: { color: chartGridColor() } },
-        y: { ticks: { color: chartTextColor() }, grid: { color: chartGridColor() }, beginAtZero: true }
-      }
-    }
-  });
-}
-
-function drawItemDetailChart(itemId) {
-  const year = new Date().getFullYear();
-  const inTotals = Array(12).fill(0);
-  const outTotals = Array(12).fill(0);
-  inbounds.filter(r=>r.itemId===itemId && r.date.startsWith(String(year))).forEach(r => {
-    const m = parseInt(r.date.slice(5,7),10)-1; if(m>=0&&m<12) inTotals[m]+=r.qty;
-  });
-  outbounds.filter(r=>r.itemId===itemId && r.date.startsWith(String(year))).forEach(r => {
-    const m = parseInt(r.date.slice(5,7),10)-1; if(m>=0&&m<12) outTotals[m]+=r.qty;
-  });
-  const ctx = document.getElementById('chart-item-detail');
-  if (!ctx) return;
-  if (chartItemDetail) chartItemDetail.destroy();
-  chartItemDetail = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: t('months'),
-      datasets: [
-        { label: t('badge_in'), data: inTotals, backgroundColor: '#2ECC71' },
-        { label: t('badge_out'), data: outTotals, backgroundColor: '#E53935' },
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: chartTextColor(), font:{size:10} } } },
-      scales: {
-        x: { ticks: { color: chartTextColor(), font:{size:9} }, grid: { display:false } },
-        y: { ticks: { color: chartTextColor() }, grid: { color: chartGridColor() }, beginAtZero: true }
-      }
-    }
-  });
-}
-
-// ═══════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-  applyI18n();
-  renderAll();
-  connectWS();
-});
-</script>
-</body>
-</html>
+
+def save_wave_status():
+    target_folder = os.path.join(BASE_STORAGE_DIR, "wave")
+    os.makedirs(target_folder, exist_ok=True)
+    path = os.path.join(target_folder, "wave_status.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(wave_status, f, ensure_ascii=False, indent=2)
+
+
+# 3️⃣ 5S_PM_PLAN 일정
+def load_schedules():
+    path = os.path.join(BASE_STORAGE_DIR, "5S_PM_PLAN", "schedules.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
+    return []
+
+def save_schedules():
+    target_folder = os.path.join(BASE_STORAGE_DIR, "5S_PM_PLAN")
+    os.makedirs(target_folder, exist_ok=True)
+    path = os.path.join(target_folder, "schedules.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(schedules_data, f, ensure_ascii=False, indent=2)
+
+
+# 4️⃣ 근무표(Roster) 데이터
+def load_roster_data():
+    path = os.path.join(BASE_STORAGE_DIR, "5S_PM_PLAN", "roster_data.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return {"day": {}, "night": {}}
+
+def save_roster_data():
+    target_folder = os.path.join(BASE_STORAGE_DIR, "5S_PM_PLAN")
+    os.makedirs(target_folder, exist_ok=True)
+    path = os.path.join(target_folder, "roster_data.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(roster_data, f, ensure_ascii=False, indent=2)
+
+
+# 5️⃣ PM 주기 추적 설정 ({ "5S": 30, "Wave PM": 60, ... })
+def load_pm_settings():
+    path = os.path.join(BASE_STORAGE_DIR, "5S_PM_PLAN", "pm_settings.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return {}
+
+def save_pm_settings():
+    target_folder = os.path.join(BASE_STORAGE_DIR, "5S_PM_PLAN")
+    os.makedirs(target_folder, exist_ok=True)
+    path = os.path.join(target_folder, "pm_settings.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(pm_settings, f, ensure_ascii=False, indent=2)
+
+
+# 6️⃣ 재고 관리(Inventory): 품목 / 입고 / 출고 / 담당자 / 분류
+INVENTORY_DIR   = os.path.join(BASE_STORAGE_DIR, "inventory")
+INVENTORY_PHOTO_DIR = os.path.join(INVENTORY_DIR, "photos")
+
+def _load_inv_json(filename, default):
+    path = os.path.join(INVENTORY_DIR, filename)
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return default
+
+def load_inv_items():
+    return _load_inv_json("items.json", [])
+
+def load_inv_inbounds():
+    return _load_inv_json("inbounds.json", [])
+
+def load_inv_outbounds():
+    return _load_inv_json("outbounds.json", [])
+
+def load_inv_personnel():
+    return _load_inv_json("personnel.json", [])
+
+def load_inv_categories():
+    return _load_inv_json("categories.json", {"cat1": [], "cat2": [], "lines": []})
+    # cat1: [{"id": "...", "name": "A"}]
+    # cat2: [{"id": "...", "name": "etc", "parentId": "<cat1 id>"}]  ← 분류1에 종속
+
+def save_inv_items():
+    os.makedirs(INVENTORY_DIR, exist_ok=True)
+    path = os.path.join(INVENTORY_DIR, "items.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(inv_items, f, ensure_ascii=False, indent=2)
+
+def save_inv_inbounds():
+    os.makedirs(INVENTORY_DIR, exist_ok=True)
+    path = os.path.join(INVENTORY_DIR, "inbounds.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(inv_inbounds, f, ensure_ascii=False, indent=2)
+
+def save_inv_outbounds():
+    os.makedirs(INVENTORY_DIR, exist_ok=True)
+    path = os.path.join(INVENTORY_DIR, "outbounds.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(inv_outbounds, f, ensure_ascii=False, indent=2)
+
+def save_inv_personnel():
+    os.makedirs(INVENTORY_DIR, exist_ok=True)
+    path = os.path.join(INVENTORY_DIR, "personnel.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(inv_personnel, f, ensure_ascii=False, indent=2)
+
+def save_inv_categories():
+    os.makedirs(INVENTORY_DIR, exist_ok=True)
+    path = os.path.join(INVENTORY_DIR, "categories.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(inv_categories, f, ensure_ascii=False, indent=2)
+
+def save_inv_photo(item_id: str, data_url: str):
+    """data:image/png;base64,xxxx 형태의 문자열을 파일로 저장하고 상대경로 반환"""
+    os.makedirs(INVENTORY_PHOTO_DIR, exist_ok=True)
+    try:
+        header, b64data = data_url.split(",", 1)
+        ext = "jpg"
+        if "image/png" in header:
+            ext = "png"
+        elif "image/webp" in header:
+            ext = "webp"
+        elif "image/jpeg" in header or "image/jpg" in header:
+            ext = "jpg"
+        filename = f"{item_id}_{uuid.uuid4().hex[:8]}.{ext}"
+        filepath = os.path.join(INVENTORY_PHOTO_DIR, filename)
+        with open(filepath, "wb") as f:
+            f.write(base64.b64decode(b64data))
+        return f"/static/inventory_photos/{filename}"
+    except Exception:
+        return ""
+
+
+def _next_cat1_prefix():
+    """분류1에 등록된 순서대로 A, B, C ... Z, AA, AB ... 식으로 다음 접두문자를 반환"""
+    used = {c.get("prefix") for c in inv_categories.get("cat1", []) if c.get("prefix")}
+    n = len(used)
+    letters = ""
+    n2 = n
+    while True:
+        letters = chr(65 + (n2 % 26)) + letters
+        n2 = n2 // 26 - 1
+        if n2 < 0:
+            break
+    while letters in used:
+        n += 1
+        n2 = n
+        letters = ""
+        while True:
+            letters = chr(65 + (n2 % 26)) + letters
+            n2 = n2 // 26 - 1
+            if n2 < 0:
+                break
+    return letters
+
+
+def _next_item_code(cat1_id: str):
+    """해당 분류1의 접두문자를 기준으로 다음 순번 코드(예: A-003) 생성"""
+    cat1 = next((c for c in inv_categories.get("cat1", []) if c["id"] == cat1_id), None)
+    if not cat1:
+        return ""
+    prefix = cat1.get("prefix", "X")
+    existing = [it.get("code", "") for it in inv_items if it.get("cat1") == cat1_id]
+    max_n = 0
+    for code in existing:
+        m_ = re.match(rf"^{re.escape(prefix)}-(\d+)$", code or "")
+        if m_:
+            max_n = max(max_n, int(m_.group(1)))
+    return f"{prefix}-{max_n + 1:03d}"
+
+
+# =================================================================
+# 🚀 서버 구동 시 최신 데이터 자동 복구
+# =================================================================
+current_sensor_data = load_sensor_data()
+wave_status         = load_wave_status()
+schedules_data      = load_schedules()
+roster_data         = load_roster_data()
+pm_settings         = load_pm_settings()
+
+inv_items      = load_inv_items()
+inv_inbounds   = load_inv_inbounds()
+inv_outbounds  = load_inv_outbounds()
+inv_personnel  = load_inv_personnel()
+inv_categories = load_inv_categories()
+
+# 사진 정적 파일 서빙: http://<host>:8000/static/inventory_photos/파일명
+os.makedirs(INVENTORY_PHOTO_DIR, exist_ok=True)
+app.mount("/static/inventory_photos", StaticFiles(directory=INVENTORY_PHOTO_DIR), name="inventory_photos")
+
+
+# --- Wave 로그 관리 ---
+def save_wave_log(log_data: dict):
+    target_folder = os.path.join(BASE_STORAGE_DIR, "wave")
+    os.makedirs(target_folder, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    file_path = os.path.join(target_folder, f"solder_log_{today}.txt")
+    with open(file_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
+
+def get_today_wave_logs():
+    target_folder = os.path.join(BASE_STORAGE_DIR, "wave")
+    today = datetime.now().strftime("%Y-%m-%d")
+    file_path = os.path.join(target_folder, f"solder_log_{today}.txt")
+    logs = []
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    logs.append(json.loads(line.strip()))
+    return logs[::-1]
+
+
+# --- 실시간 통신 매니저 ---
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: dict[str, list[WebSocket]] = {}
+
+    async def connect(self, web_socket: WebSocket, page_name: str):
+        await web_socket.accept()
+        if page_name not in self.active_connections:
+            self.active_connections[page_name] = []
+        self.active_connections[page_name].append(web_socket)
+
+        if page_name == "wave":
+            await web_socket.send_json({"type": "INIT_STATUS", "data": wave_status["wave"]})
+            await web_socket.send_json({"type": "INIT_LOGS", "logs": get_today_wave_logs()})
+        elif page_name == "5S_PM_PLAN":
+            await web_socket.send_json({"type": "INIT_SCHEDULES", "data": schedules_data})
+            await web_socket.send_json({"type": "SENSOR_UPDATED", "data": current_sensor_data})
+            await web_socket.send_json({"type": "INIT_ROSTER", "data": roster_data})
+            await web_socket.send_json({"type": "INIT_PM_SETTINGS", "data": pm_settings})
+        elif page_name == "ESP32":
+            await web_socket.send_json({"type": "CONNECTED", "message": "Server handshake OK"})
+        elif page_name == "inventory":
+            await web_socket.send_json({"type": "INIT_ITEMS", "data": inv_items})
+            await web_socket.send_json({"type": "INIT_INBOUNDS", "data": inv_inbounds})
+            await web_socket.send_json({"type": "INIT_OUTBOUNDS", "data": inv_outbounds})
+            await web_socket.send_json({"type": "INIT_PERSONNEL", "data": inv_personnel})
+            await web_socket.send_json({"type": "INIT_CATEGORIES", "data": inv_categories})
+
+    def disconnect(self, web_socket: WebSocket, page_name: str):
+        if page_name in self.active_connections:
+            try:
+                self.active_connections[page_name].remove(web_socket)
+            except ValueError:
+                pass
+
+    async def broadcast(self, page_name: str, message: dict):
+        if page_name in self.active_connections:
+            for connection in self.active_connections[page_name]:
+                try:
+                    await connection.send_json(message)
+                except Exception:
+                    pass
+
+manager = ConnectionManager()
+
+
+# =================================================================
+# 🔵 WebSocket: 실시간 양방향 통신
+# =================================================================
+@app.websocket("/ws/{page_name}")
+async def websocket_endpoint(websocket: WebSocket, page_name: str):
+    # ✅ global 선언은 반드시 함수 최상단에 위치해야 합니다
+    global current_sensor_data, schedules_data, roster_data, pm_settings
+    global inv_items, inv_inbounds, inv_outbounds, inv_personnel, inv_categories
+
+    await manager.connect(websocket, page_name)
+    try:
+        while True:
+            data = await websocket.receive_json()
+
+            # 1️⃣ ESP32 센서 데이터 수신
+            if page_name == "ESP32":
+                current_sensor_data = {
+                    "temp":  float(data.get("temp",  0.0)),
+                    "humid": float(data.get("humid", 0.0)),
+                    "noise": str(data.get("noise",   "대기중")),
+                    "air":   str(data.get("air",     "대기중")),
+                }
+                save_sensor_data(current_sensor_data)
+                save_sensor_log(current_sensor_data)
+                await manager.broadcast("5S_PM_PLAN", {"type": "SENSOR_UPDATED", "data": current_sensor_data})
+
+            # 2️⃣ Wave 라인 상태 변경
+            elif page_name == "wave" and data.get("type") == "UPDATE_STATUS":
+                line_id     = str(data["lineId"])
+                new_status  = data["newStatus"]
+                prev_status = wave_status["wave"][line_id]["status"]
+                now_ms      = data["createdAt"]
+
+                wave_status["wave"][line_id] = {"status": new_status, "lastChanged": now_ms}
+                save_wave_status()
+
+                log_payload = {
+                    "lineId":      int(line_id),
+                    "prevStatus":  prev_status,
+                    "newStatus":   new_status,
+                    "durationStr": data["durationStr"],
+                    "durationMs":  data["durationMs"],
+                    "date":        data["date"],
+                    "time":        data["time"],
+                    "shift":       data["shift"],
+                    "createdAt":   now_ms,
+                }
+                save_wave_log(log_payload)
+                await manager.broadcast(page_name, {
+                    "type": "STATUS_CHANGED",
+                    "lineId": line_id,
+                    "status": new_status,
+                    "lastChanged": now_ms,
+                    "newLog": log_payload,
+                })
+
+            # 3️⃣ 5S/PM 일정 관리
+            elif page_name == "5S_PM_PLAN":
+                if data.get("type") == "UPDATE_SCHEDULE":
+                    schedule = data["schedule"]
+                    idx = next((i for i, s in enumerate(schedules_data) if s["id"] == schedule["id"]), -1)
+                    if idx > -1:
+                        schedules_data[idx] = schedule
+                    else:
+                        schedules_data.append(schedule)
+                    save_schedules()
+                    await manager.broadcast(page_name, {"type": "SCHEDULE_UPDATED", "schedule": schedule})
+
+                elif data.get("type") == "DELETE_SCHEDULE":
+                    s_id = data["id"]
+                    schedules_data = [s for s in schedules_data if s["id"] != s_id]
+                    save_schedules()
+                    await manager.broadcast(page_name, {"type": "SCHEDULE_DELETED", "id": s_id})
+
+                # 4️⃣ 근무표(Roster) 인원 등록/수정
+                elif data.get("type") == "UPDATE_ROSTER":
+                    shift = data["shift"]      # "day" | "night"
+                    line  = data["line"]       # "L.1" 등
+                    date_str = data["date"]    # "YYYY-MM-DD"
+                    reg = int(data.get("reg", 0))
+                    ot  = int(data.get("ot", 0))
+
+                    if shift not in roster_data:
+                        roster_data[shift] = {}
+                    if line not in roster_data[shift]:
+                        roster_data[shift][line] = {}
+
+                    if reg == 0 and ot == 0:
+                        roster_data[shift][line].pop(date_str, None)
+                    else:
+                        roster_data[shift][line][date_str] = {"reg": reg, "ot": ot}
+
+                    save_roster_data()
+                    await manager.broadcast(page_name, {
+                        "type": "ROSTER_UPDATED",
+                        "shift": shift, "line": line, "date": date_str,
+                        "reg": reg, "ot": ot,
+                    })
+
+                # 5️⃣ PM 주기 추적 항목 설정 (영구 저장)
+                elif data.get("type") == "UPDATE_PM_SETTINGS":
+                    pm_settings = data.get("settings", {})
+                    save_pm_settings()
+                    await manager.broadcast(page_name, {
+                        "type": "PM_SETTINGS_UPDATED",
+                        "settings": pm_settings,
+                    })
+
+            # 6️⃣ 재고 관리(Inventory): 품목 / 입고 / 출고 / 담당자 / 분류
+            elif page_name == "inventory":
+                msg_type = data.get("type")
+
+                # 품목 등록/수정 (사진은 data:base64 문자열로 들어오면 파일로 변환 후 경로 저장)
+                if msg_type == "UPSERT_ITEM":
+                    item = data["item"]
+                    photo_val = item.get("photo", "")
+                    if photo_val.startswith("data:"):
+                        item["photo"] = save_inv_photo(str(item["id"]), photo_val)
+
+                    idx = next((i for i, x in enumerate(inv_items) if x["id"] == item["id"]), -1)
+                    if idx > -1:
+                        # 새 사진이 없으면 기존 사진 유지
+                        if not item.get("photo"):
+                            item["photo"] = inv_items[idx].get("photo", "")
+                        item["stock"] = inv_items[idx].get("stock", item.get("stock", 0))
+                        # 기존 품목의 코드는 그대로 유지 (재채번하지 않음)
+                        if not item.get("code"):
+                            item["code"] = inv_items[idx].get("code", "")
+                        inv_items[idx] = item
+                    else:
+                        item.setdefault("stock", 0)
+                        # 신규 등록 시 코드가 비어있으면 분류1 기준 자동 채번 (A-001, A-002, B-001 ...)
+                        if not item.get("code") and item.get("cat1"):
+                            item["code"] = _next_item_code(item["cat1"])
+                        inv_items.append(item)
+                    save_inv_items()
+                    await manager.broadcast(page_name, {"type": "ITEM_UPSERTED", "item": item})
+
+                elif msg_type == "DELETE_ITEM":
+                    item_id = data["id"]
+                    inv_items = [x for x in inv_items if x["id"] != item_id]
+                    save_inv_items()
+                    await manager.broadcast(page_name, {"type": "ITEM_DELETED", "id": item_id})
+
+                # 입고 등록 (날짜/시간은 서버가 직접 기록 — 클라이언트 입력 무시)
+                elif msg_type == "ADD_INBOUND":
+                    item_id = data["itemId"]
+                    qty = int(data["qty"])
+                    now = datetime.now()
+                    record = {
+                        "id": uuid.uuid4().hex,
+                        "date": now.strftime("%Y-%m-%d"),
+                        "time": now.strftime("%H:%M:%S"),
+                        "itemId": item_id,
+                        "qty": qty,
+                        "person": data.get("person", ""),
+                        "note": data.get("note", ""),
+                    }
+                    inv_inbounds.append(record)
+                    save_inv_inbounds()
+
+                    idx = next((i for i, x in enumerate(inv_items) if x["id"] == item_id), -1)
+                    if idx > -1:
+                        inv_items[idx]["stock"] = inv_items[idx].get("stock", 0) + qty
+                        save_inv_items()
+                        await manager.broadcast(page_name, {"type": "ITEM_UPSERTED", "item": inv_items[idx]})
+
+                    await manager.broadcast(page_name, {"type": "INBOUND_ADDED", "record": record})
+
+                # 출고 등록 (날짜/시간은 서버가 직접 기록)
+                elif msg_type == "ADD_OUTBOUND":
+                    item_id = data["itemId"]
+                    qty = int(data["qty"])
+                    now = datetime.now()
+                    record = {
+                        "id": uuid.uuid4().hex,
+                        "date": now.strftime("%Y-%m-%d"),
+                        "time": now.strftime("%H:%M:%S"),
+                        "itemId": item_id,
+                        "qty": qty,
+                        "person": data.get("person", ""),
+                        "line": data.get("line", ""),
+                        "note": data.get("note", ""),
+                    }
+                    inv_outbounds.append(record)
+                    save_inv_outbounds()
+
+                    idx = next((i for i, x in enumerate(inv_items) if x["id"] == item_id), -1)
+                    if idx > -1:
+                        inv_items[idx]["stock"] = max(0, inv_items[idx].get("stock", 0) - qty)
+                        save_inv_items()
+                        await manager.broadcast(page_name, {"type": "ITEM_UPSERTED", "item": inv_items[idx]})
+
+                    await manager.broadcast(page_name, {"type": "OUTBOUND_ADDED", "record": record})
+
+                # 담당자 추가/수정/삭제
+                elif msg_type == "ADD_PERSONNEL":
+                    person = data["person"]
+                    inv_personnel.append(person)
+                    save_inv_personnel()
+                    await manager.broadcast(page_name, {"type": "PERSONNEL_ADDED", "person": person})
+
+                elif msg_type == "UPDATE_PERSONNEL":
+                    person = data["person"]
+                    idx = next((i for i, p in enumerate(inv_personnel) if p["id"] == person["id"]), -1)
+                    if idx > -1:
+                        inv_personnel[idx] = person
+                        save_inv_personnel()
+                        await manager.broadcast(page_name, {"type": "PERSONNEL_UPDATED", "person": person})
+
+                elif msg_type == "DELETE_PERSONNEL":
+                    p_id = data["id"]
+                    inv_personnel = [p for p in inv_personnel if p["id"] != p_id]
+                    save_inv_personnel()
+                    await manager.broadcast(page_name, {"type": "PERSONNEL_DELETED", "id": p_id})
+
+                # 분류1 추가/수정/삭제 (분류1은 등록 순서대로 A,B,C... 접두문자를 자동 부여)
+                elif msg_type == "ADD_CAT1":
+                    name = data["name"]
+                    cat1 = {"id": "c1_" + uuid.uuid4().hex[:8], "name": name, "prefix": _next_cat1_prefix()}
+                    inv_categories.setdefault("cat1", []).append(cat1)
+                    # 모든 분류1 산하에는 마지막 항목으로 'etc' 분류2를 자동 포함
+                    inv_categories.setdefault("cat2", []).append({
+                        "id": "c2_" + uuid.uuid4().hex[:8], "name": "etc", "parentId": cat1["id"], "isEtc": True
+                    })
+                    save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORIES_SYNCED", "data": inv_categories})
+
+                elif msg_type == "UPDATE_CAT1":
+                    cat1_id = data["id"]
+                    new_name = data["name"]
+                    idx = next((i for i, c in enumerate(inv_categories.get("cat1", [])) if c["id"] == cat1_id), -1)
+                    if idx > -1:
+                        inv_categories["cat1"][idx]["name"] = new_name
+                        save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORIES_SYNCED", "data": inv_categories})
+
+                elif msg_type == "DELETE_CAT1":
+                    cat1_id = data["id"]
+                    inv_categories["cat1"] = [c for c in inv_categories.get("cat1", []) if c["id"] != cat1_id]
+                    inv_categories["cat2"] = [c for c in inv_categories.get("cat2", []) if c.get("parentId") != cat1_id]
+                    save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORIES_SYNCED", "data": inv_categories})
+
+                # 분류2 추가/수정/삭제 (특정 분류1에 종속)
+                elif msg_type == "ADD_CAT2":
+                    parent_id = data["parentId"]
+                    name = data["name"]
+                    cat2 = {"id": "c2_" + uuid.uuid4().hex[:8], "name": name, "parentId": parent_id}
+                    inv_categories.setdefault("cat2", []).append(cat2)
+                    save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORIES_SYNCED", "data": inv_categories})
+
+                elif msg_type == "UPDATE_CAT2":
+                    cat2_id = data["id"]
+                    new_name = data["name"]
+                    idx = next((i for i, c in enumerate(inv_categories.get("cat2", [])) if c["id"] == cat2_id), -1)
+                    if idx > -1:
+                        inv_categories["cat2"][idx]["name"] = new_name
+                        save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORIES_SYNCED", "data": inv_categories})
+
+                elif msg_type == "DELETE_CAT2":
+                    cat2_id = data["id"]
+                    inv_categories["cat2"] = [c for c in inv_categories.get("cat2", []) if c["id"] != cat2_id]
+                    save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORIES_SYNCED", "data": inv_categories})
+
+                # 사용 라인 추가/삭제 (플랫 리스트 유지)
+                elif msg_type == "ADD_CATEGORY":
+                    cat_type = data["catType"]   # "lines"
+                    value = data["value"]
+                    inv_categories.setdefault(cat_type, [])
+                    if value not in inv_categories[cat_type]:
+                        inv_categories[cat_type].append(value)
+                        save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORY_ADDED", "catType": cat_type, "value": value})
+
+                elif msg_type == "DELETE_CATEGORY":
+                    cat_type = data["catType"]
+                    value = data["value"]
+                    if cat_type in inv_categories and value in inv_categories[cat_type]:
+                        inv_categories[cat_type].remove(value)
+                        save_inv_categories()
+                    await manager.broadcast(page_name, {"type": "CATEGORY_DELETED", "catType": cat_type, "value": value})
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, page_name)
+
+
+# =================================================================
+# 📈 HTTP API: 센서 이력 통계 조회
+# =================================================================
+
+@app.get("/api/sensor/latest")
+def api_sensor_latest():
+    """현재 최신 센서값 조회"""
+    return JSONResponse(current_sensor_data)
+
+@app.get("/api/sensor/history")
+def api_sensor_history(date: str = Query(default=None, description="조회 날짜 YYYY-MM-DD, 미입력 시 오늘")):
+    """날짜별 센서 로그 조회"""
+    target_date = date if date else datetime.now().strftime("%Y-%m-%d")
+    path = os.path.join(BASE_STORAGE_DIR, "ESP32", f"sensor_log_{target_date}.txt")
+    logs = []
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        logs.append(json.loads(line.strip()))
+                    except json.JSONDecodeError:
+                        pass
+    return JSONResponse({"date": target_date, "count": len(logs), "logs": logs})
+
+@app.get("/api/sensor/dates")
+def api_sensor_dates():
+    """센서 로그가 존재하는 날짜 목록"""
+    folder = os.path.join(BASE_STORAGE_DIR, "ESP32")
+    dates = []
+    if os.path.exists(folder):
+        for fname in sorted(os.listdir(folder)):
+            if fname.startswith("sensor_log_") and fname.endswith(".txt"):
+                dates.append(fname.replace("sensor_log_", "").replace(".txt", ""))
+    return JSONResponse({"dates": dates})
+
+
+# =================================================================
+# 📦 HTTP API: 재고 관리(Inventory) — 조회 / 월간 리포트
+# =================================================================
+
+@app.get("/api/inventory/items")
+def api_inventory_items():
+    """전체 품목 목록 조회"""
+    return JSONResponse(inv_items)
+
+@app.get("/api/inventory/history")
+def api_inventory_history(item_id: str = Query(default=None)):
+    """입출고 이력 조회 (item_id 지정 시 해당 품목만)"""
+    inbounds = inv_inbounds if not item_id else [r for r in inv_inbounds if r["itemId"] == item_id]
+    outbounds = inv_outbounds if not item_id else [r for r in inv_outbounds if r["itemId"] == item_id]
+    return JSONResponse({"inbounds": inbounds, "outbounds": outbounds})
+
+@app.get("/api/inventory/report")
+def api_inventory_report(year: int = Query(...), month: int = Query(...)):
+    """월간 입출고 리포트: 품목별 입고/출고 합계, 라인별 출고 횟수"""
+    prefix = f"{year:04d}-{month:02d}"
+    month_in = [r for r in inv_inbounds if r["date"].startswith(prefix)]
+    month_out = [r for r in inv_outbounds if r["date"].startswith(prefix)]
+
+    line_counts = {}
+    for r in month_out:
+        line = r.get("line", "-")
+        line_counts[line] = line_counts.get(line, 0) + 1
+
+    item_summary = []
+    for item in inv_items:
+        in_qty = sum(r["qty"] for r in month_in if r["itemId"] == item["id"])
+        out_qty = sum(r["qty"] for r in month_out if r["itemId"] == item["id"])
+        item_summary.append({
+            "itemId": item["id"], "name": item["name"], "code": item.get("code", ""),
+            "inQty": in_qty, "outQty": out_qty, "net": in_qty - out_qty,
+            "currentStock": item.get("stock", 0), "minQty": item.get("minQty", 0),
+        })
+
+    return JSONResponse({
+        "year": year, "month": month,
+        "totalIn": sum(r["qty"] for r in month_in),
+        "totalOut": sum(r["qty"] for r in month_out),
+        "lineCounts": line_counts,
+        "items": item_summary,
+    })
+
+@app.post("/api/inventory/upload-photo")
+async def api_inventory_upload_photo(item_id: str = Query(...), data_url: str = Query(...)):
+    """사진을 별도 HTTP 업로드로 저장하고 싶을 때 사용 (대용량 사진은 WebSocket보다 이 경로 권장)"""
+    path = save_inv_photo(item_id, data_url)
+    return JSONResponse({"path": path})
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="10.0.0.48", port=8000)
