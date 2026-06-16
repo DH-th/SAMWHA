@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="app-logo.png">
 
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#eef2f7">
+<meta name="theme-color" content="#0B1220">
 
 <title>SAMHWA</title>
 
@@ -19,9 +19,15 @@
 <style>
 
 :root {
-    --primary-color: #4A90E2; 
-    --bg-gradient: linear-gradient(135deg, #eef2f7 0%, #d9e4f5 100%);
-    --text-main: #2c3e50;
+    --ink: #0B1220;
+    --ink-soft: #4A5568;
+    --panel: #FFFFFF;
+    --bg-deep: #0B1220;
+    --accent: #2F6FED;
+    --accent-soft: #E8F0FE;
+    --line-glow: #5FD0C9;
+    --grid-line: rgba(255,255,255,0.06);
+    --steel: #8A98AC;
 }
 
 * {
@@ -31,135 +37,340 @@
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-
-    background:
-        radial-gradient(circle at 20% 20%, rgba(74,144,226,0.25), transparent 40%),
-        radial-gradient(circle at 80% 80%, rgba(120,200,180,0.25), transparent 40%),
-        linear-gradient(135deg, #eef2f7, #d9e4f5);
+html, body {
+    background: var(--bg-deep);
 }
 
-/* 모바일 앱 화면 컨테이너 */
-.app-container {
-    width: 100%;
-    max-width: 480px;
+body {
     min-height: 100vh;
-    
-    background: var(--bg-gradient);
-    
+    color: var(--ink);
+    overflow-x: hidden;
+}
+
+/* ===== 배경 ===== */
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 42px 42px;
+    background-color: var(--bg-deep);
+}
+
+.bg-glow {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 900px 600px at 12% -5%, rgba(47,111,237,0.35), transparent 60%),
+        radial-gradient(ellipse 700px 500px at 110% 10%, rgba(95,208,201,0.18), transparent 60%);
+}
+
+/* ===== 레이아웃 셔블 ===== */
+.shell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    position: relative;
-    overflow: hidden;
 }
 
-/* 상단 헤더 */
+/* ===== 헤더 ===== */
 header {
     width: 100%;
-    overflow: hidden;
-    
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
-    z-index: 10;
-    
-    /* 아이폰 노치(상단 상태표시줄)를 고려하여 위쪽 여백 추가 */
-    padding-top: env(safe-area-inset-top); 
+    padding-top: env(safe-area-inset-top);
+    position: relative;
 }
 
-/* 로고 */
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 24px 18px;
+}
+
 .logo {
-    width: 100%;
-    height: auto;
+    height: 34px;
+    width: auto;
     object-fit: contain;
     display: block;
-    padding: 0 0 10px;
+    filter: brightness(0) invert(1);
 }
 
-/* 중간 버튼 영역 */
+.status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 12px;
+    font-weight: 600;
+    color: #C9D4E5;
+    letter-spacing: 0.02em;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line-glow);
+    box-shadow: 0 0 8px var(--line-glow);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.header-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+}
+
+/* ===== 메인 ===== */
 main {
     flex: 1;
-    padding: 30px 20px;
+    padding: 8px 24px 40px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 1;
 }
 
+.intro {
+    padding: 28px 4px 30px;
+}
+
+.eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--line-glow);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.intro h1 {
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+.intro p {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--steel);
+    line-height: 1.5;
+}
+
+/* ===== 그리드 ===== */
 .grid-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 30px 15px;
+    gap: 16px;
 }
 
-/* 버튼 */
 .nav-button {
+    --n: 0;
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    justify-content: space-between;
     text-decoration: none;
-    transition: transform 0.2s;
-    -webkit-tap-highlight-color: transparent; /* 모바일 터치 시 깜빡임 제거 */
+    -webkit-tap-highlight-color: transparent;
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 18px 16px 16px;
+    min-height: 152px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 30px -10px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    overflow: hidden;
+}
+
+.nav-button::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--line-glow));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.nav-button:hover::before,
+.nav-button:active::before {
+    transform: scaleX(1);
+}
+
+.nav-button:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 20px 36px -10px rgba(0,0,0,0.5);
 }
 
 .nav-button:active {
-    transform: scale(0.92);
+    transform: scale(0.96);
+}
+
+.icon-frame {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    overflow: hidden;
 }
 
 .nav-button img {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 22px;
-    margin-bottom: 12px;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
-    background-color: #ffffff;
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    display: block;
 }
 
-.nav-button span {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-main);
-    text-align: center;
+.nav-button .index {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #C7D2E0;
+    letter-spacing: 0.04em;
 }
 
-/* 푸터 */
+.nav-button span.label {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+}
+
+.nav-button .sub {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+/* ===== 푸터 ===== */
 footer {
-    text-align: center;
-    padding: 25px 20px calc(20px + env(safe-area-inset-bottom)); /* 아이폰 하단 홈 바 고려 */
-    
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-top: 1px solid rgba(255, 255, 255, 0.6);
-    margin-top: auto;
+    position: relative;
+    padding: 28px 24px calc(24px + env(safe-area-inset-bottom));
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    z-index: 10;
+    justify-content: center;
+    gap: 18px;
+    border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .qr-code {
-    width: 100px;
-    height: 100px;
+    width: 56px;
+    height: 56px;
     object-fit: cover;
     background-color: #fff;
-    padding: 5px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    padding: 4px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.footer-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .copyright {
-    font-size: 12px;
-    color: #7f8c8d;
+    font-size: 12.5px;
+    color: #E2E8F0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.copyright-sub {
+    font-size: 11px;
+    color: var(--steel);
     font-weight: 500;
+}
+
+/* ===== 데스크탑 ===== */
+@media (min-width: 768px) {
+
+    .shell {
+        padding: 0 32px;
+    }
+
+    .header-inner {
+        padding: 32px 0 24px;
+    }
+
+    .logo {
+        height: 40px;
+    }
+
+    main {
+        padding: 0 0 60px;
+    }
+
+    .intro {
+        padding: 44px 0 36px;
+    }
+
+    .grid-container {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 18px;
+    }
+
+    .nav-button {
+        min-height: 188px;
+        padding: 22px 18px 20px;
+        border-radius: 20px;
+    }
+
+    .icon-frame {
+        width: 56px;
+        height: 56px;
+    }
+
+    .nav-button img {
+        width: 32px;
+        height: 32px;
+    }
+
+    .nav-button span.label {
+        font-size: 15px;
+    }
+
+    footer {
+        padding: 36px 0 calc(28px + env(safe-area-inset-bottom));
+        justify-content: flex-start;
+        gap: 20px;
+    }
+
+    .qr-code {
+        width: 64px;
+        height: 64px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid-container {
+        gap: 22px;
+    }
 }
 
 </style>
@@ -167,50 +378,105 @@ footer {
 
 <body>
 
-<div class="app-container">
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="shell">
 
     <header>
-        <img src="mainlogo.png" alt="COMPANY LOGO" class="logo">
+        <div class="header-inner">
+            <img src="mainlogo.png" alt="COMPANY LOGO" class="logo">
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                System Online
+            </div>
+        </div>
+        <div class="header-rule"></div>
     </header>
 
     <main>
+
+        <div class="intro">
+            <div class="eyebrow">Smart Factory Console</div>
+            <h1>오늘도 안전하고 정확하게,<br>현장을 한 화면에서 관리하세요.</h1>
+            <p>실시간 설비 현황부터 부품 관리까지, 필요한 메뉴를 바로 선택하세요.</p>
+        </div>
+
         <div class="grid-container">
             <a href="./B-1. Schedule/index.html" class="nav-button">
-                <img src="icon_01.png" alt="">
-                <span>Schedule</span>
+                <span class="index">01</span>
+                <div class="icon-frame">
+                    <img src="icon_01.png" alt="">
+                </div>
+                <div>
+                    <span class="label">Schedule</span>
+                    <div class="sub">생산 일정 관리</div>
+                </div>
             </a>
 
             <a href="./B-2. Maintence 알리미/index.html" class="nav-button">
-                <img src="icon_02.png" alt="">
-                <span>Maintenance</span>
+                <span class="index">02</span>
+                <div class="icon-frame">
+                    <img src="icon_02.png" alt="">
+                </div>
+                <div>
+                    <span class="label">Maintenance</span>
+                    <div class="sub">설비 점검 알리미</div>
+                </div>
             </a>
 
             <a href="./B-3. Spare Part/index.html" class="nav-button">
-                <img src="icon_03.png" alt="">
-                <span>Spare Part</span>
+                <span class="index">03</span>
+                <div class="icon-frame">
+                    <img src="icon_03.png" alt="">
+                </div>
+                <div>
+                    <span class="label">Spare Part</span>
+                    <div class="sub">예비 부품 현황</div>
+                </div>
             </a>
 
             <a href="./B-4. Alarm/index.html" class="nav-button">
-                <img src="icon_04.png" alt="">
-                <span>Alarm</span>
+                <span class="index">04</span>
+                <div class="icon-frame">
+                    <img src="icon_04.png" alt="">
+                </div>
+                <div>
+                    <span class="label">Alarm</span>
+                    <div class="sub">실시간 경보</div>
+                </div>
             </a>
 
             <a href="./B-5. Wave Solder/index.html" class="nav-button">
-                <img src="icon_05.png" alt="">
-                <span>Wave Solder</span>
+                <span class="index">05</span>
+                <div class="icon-frame">
+                    <img src="icon_05.png" alt="">
+                </div>
+                <div>
+                    <span class="label">Wave Solder</span>
+                    <div class="sub">웨이브 솔더 모니터링</div>
+                </div>
             </a>
 
             <a href="./B-6. Spare parts/index.html" class="nav-button">
-                <img src="icon_06.png" alt="">
-                <span>Spare Parts</span>
+                <span class="index">06</span>
+                <div class="icon-frame">
+                    <img src="icon_06.png" alt="">
+                </div>
+                <div>
+                    <span class="label">Spare Parts</span>
+                    <div class="sub">부품 재고 관리</div>
+                </div>
             </a>
         </div>
+
     </main>
 
     <footer>
         <img src="qr_code.png" alt="" class="qr-code">
-        <div class="copyright">
-            Smart Factory System of SAMHWA
+        <div class="footer-text">
+            <div class="copyright">Smart Factory System of SAMHWA</div>
+            <div class="copyright-sub">© 2026 SAMHWA. All rights reserved.</div>
         </div>
     </footer>
 
