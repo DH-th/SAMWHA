@@ -463,7 +463,7 @@
       <span class="sub">SAMHWA Spare Parts & Supplies</span>
     </div>
     <div class="header-right">
-      <span id="conn-status" class="offline"><span class="dot"></span><span id="conn-status-text">연결 중</span></span>
+      <span id="conn-status" class="offline" onclick="showConnDiag()" style="cursor:pointer"><span class="dot"></span><span id="conn-status-text">연결 중</span></span>
       <div class="header-desktop-actions">
         <button class="btn btn-ok btn-sm" onclick="openModal('modal-inbound')"><span>⬇️</span><span data-i18n="btn_inbound">입고</span></button>
         <button class="btn btn-danger btn-sm" onclick="openModal('modal-outbound')"><span>⬆️</span><span data-i18n="btn_outbound">출고</span></button>
@@ -1044,9 +1044,22 @@
 // ═══════════════════════════════════════════
 //  SERVER CONFIG
 // ═══════════════════════════════════════════
-const SERVER_HOST = '10.0.0.48:8000';
-const WS_URL = `ws://${SERVER_HOST}/ws/inventory`;
-const HTTP_BASE = `http://${SERVER_HOST}`;
+const SERVER_HOST = '10.0.0.48:8000';      // 폴백: 같은 LAN에서 직접 접속할 때 사용
+const IS_SECURE = location.protocol === 'https:';
+const WS_PROTO = IS_SECURE ? 'wss://' : 'ws://';
+const HTTP_PROTO = IS_SECURE ? 'https://' : 'http://';
+
+// 페이지가 도메인(예: samhwa.cloud)으로 열린 경우 같은 도메인의 리버스 프록시를 통해
+// /ws/inventory 와 /api/... , /static/... 이 그대로 노출되어 있다고 가정하고 같은 origin을 사용한다.
+// (도메인이 아니라 IP로 직접 열었을 때는 기존 방식대로 10.0.0.48:8000을 사용한다.)
+const USING_DOMAIN = !/^(\d{1,3}\.){3}\d{1,3}$/.test(location.hostname) && location.hostname !== 'localhost';
+
+const WS_URL = USING_DOMAIN
+  ? `${WS_PROTO}${location.host}/ws/inventory`
+  : `${WS_PROTO}${SERVER_HOST}/ws/inventory`;
+const HTTP_BASE = USING_DOMAIN
+  ? `${HTTP_PROTO}${location.host}`
+  : `${HTTP_PROTO}${SERVER_HOST}`;
 let socket = null;
 let wsReconnectTimer = null;
 
@@ -1056,20 +1069,44 @@ function photoUrl(path) {
   return HTTP_BASE + path;
 }
 
+let lastConnInfo = { url: '', event: '', code: '', reason: '', time: '' };
+
 function connectWS() {
-  try { socket = new WebSocket(WS_URL); } catch(e) { scheduleReconnect(); return; }
+  lastConnInfo = { url: WS_URL, event: 'connecting', code: '', reason: '', time: nowDisplay() };
+  try { socket = new WebSocket(WS_URL); } catch(e) {
+    lastConnInfo = { url: WS_URL, event: 'exception', code: '', reason: String(e), time: nowDisplay() };
+    scheduleReconnect(); return;
+  }
 
   socket.onopen = () => {
+    lastConnInfo = { url: WS_URL, event: 'open', code: '', reason: '', time: nowDisplay() };
     setConnStatus(true);
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
   };
-  socket.onclose = () => { setConnStatus(false); scheduleReconnect(); };
-  socket.onerror = () => { setConnStatus(false); };
+  socket.onclose = (ev) => {
+    lastConnInfo = { url: WS_URL, event: 'close', code: ev.code, reason: ev.reason || '(no reason given)', time: nowDisplay() };
+    setConnStatus(false); scheduleReconnect();
+  };
+  socket.onerror = (ev) => {
+    lastConnInfo = { url: WS_URL, event: 'error', code: '', reason: 'WebSocket error event (see console)', time: nowDisplay() };
+    setConnStatus(false);
+  };
   socket.onmessage = (ev) => {
     let msg;
     try { msg = JSON.parse(ev.data); } catch(e) { return; }
     handleServerMessage(msg);
   };
+}
+function showConnDiag() {
+  alert(
+    'URL: ' + lastConnInfo.url + '\n' +
+    'Event: ' + lastConnInfo.event + '\n' +
+    'Code: ' + lastConnInfo.code + '\n' +
+    'Reason: ' + lastConnInfo.reason + '\n' +
+    'Time: ' + lastConnInfo.time + '\n' +
+    'Page origin: ' + location.origin + '\n' +
+    'Using domain mode: ' + USING_DOMAIN
+  );
 }
 function scheduleReconnect() {
   if (wsReconnectTimer) return;
