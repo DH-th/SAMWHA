@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Production 관리</title>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<style>
+:root{
+  --bg:#0B1220;--panel:#131C2E;--panel2:#1A2438;
+  --border:rgba(255,255,255,0.08);--accent:#2F6FED;--teal:#5FD0C9;
+  --text:#E2E8F0;--muted:#8A98AC;--green:#34D399;--red:#F87171;--amber:#FBBF24;
+  --grid:rgba(255,255,255,0.04);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:42px 42px;background-color:var(--bg);}
+.shell{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 16px 60px;}
+
+/* header */
+header{display:flex;align-items:center;gap:12px;padding:20px 0 16px;
+  border-bottom:1px solid var(--border);margin-bottom:20px;}
+.back{padding:6px 11px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:7px;color:var(--muted);font-size:12px;text-decoration:none;transition:color .2s;}
+.back:hover{color:var(--text);}
+.ptitle{font-size:18px;font-weight:800;}
+.cpill{margin-left:auto;display:flex;align-items:center;gap:6px;padding:5px 10px;
+  border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  font-size:11px;font-weight:600;color:var(--muted);}
+.dot{width:7px;height:7px;border-radius:50%;}
+.dot-g{background:var(--green);box-shadow:0 0 5px var(--green);animation:pulse 2s infinite;}
+.dot-r{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* tabs */
+.tabs{display:flex;gap:8px;margin-bottom:20px;}
+.tab{padding:8px 18px;border-radius:8px;border:1px solid var(--border);
+  background:var(--panel2);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;}
+.tab.on{background:rgba(47,111,237,.15);border-color:var(--accent);color:var(--accent);}
+
+/* card */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:18px;margin-bottom:14px;}
+.card-ttl{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text);}
+
+/* excel info */
+.xlsx-info{
+  background:rgba(95,208,201,.06);border:1px solid rgba(95,208,201,.2);
+  border-radius:10px;padding:14px 16px;margin-bottom:14px;
+}
+.xlsx-path{font-size:12px;color:var(--teal);font-weight:700;margin-bottom:4px;letter-spacing:.01em;}
+.xlsx-desc{font-size:12px;color:var(--muted);line-height:1.7;}
+.xlsx-desc b{color:var(--text);}
+.fmt-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.fmt-table th{padding:5px 10px;background:rgba(255,255,255,.05);color:var(--muted);
+  font-weight:700;text-align:left;border:1px solid var(--border);}
+.fmt-table td{padding:5px 10px;border:1px solid var(--border);color:var(--text);}
+
+/* download btn */
+.dl-btn-wrap{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+.dl-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:10px 18px;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);
+  border-radius:9px;color:var(--green);font-size:13px;font-weight:700;cursor:pointer;
+  transition:background .2s;text-decoration:none;
+}
+.dl-btn:hover{background:rgba(52,211,153,.2);}
+.dl-note{font-size:11px;color:var(--muted);}
+
+/* plant list */
+.plant-item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+.plant-hd{display:flex;align-items:center;gap:8px;padding:11px 13px;cursor:pointer;}
+.plant-hd:hover{background:rgba(255,255,255,.03);}
+.chevron{font-size:11px;color:var(--muted);transition:transform .2s;}
+.chevron.open{transform:rotate(90deg);}
+.pname{font-size:14px;font-weight:700;flex:1;}
+.pcnt{font-size:11px;color:var(--muted);}
+.ibtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;}
+.ibtn:hover.e{color:var(--accent);border-color:var(--accent);}
+.ibtn:hover.d{color:var(--red);border-color:var(--red);}
+.model-list{display:none;padding:0 12px 12px;border-top:1px solid var(--border);}
+.model-list.open{display:block;padding-top:8px;}
+.mrow{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.mrow:last-of-type{border-bottom:none;}
+.mname{flex:1;font-size:13px;}
+.madd{display:flex;gap:7px;margin-top:8px;}
+input.txt{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);
+  border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+input.txt:focus{border-color:var(--accent);}
+button.add-btn{padding:8px 13px;background:var(--accent);border:none;border-radius:8px;
+  color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
+.add-plant-row{display:flex;gap:8px;margin-top:4px;}
+.iedit{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--accent);
+  border-radius:6px;padding:3px 8px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+
+/* QR */
+.line-sel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:14px;}
+.lbtn{padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--panel2);
+  color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;text-align:center;}
+.lbtn.on{border-color:var(--accent);background:rgba(47,111,237,.15);color:var(--accent);}
+.ptoggle{display:flex;gap:7px;margin-bottom:12px;}
+.pbtn{padding:7px 16px;border:1px solid var(--border);border-radius:7px;background:var(--panel2);
+  color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;}
+.pbtn.on{border-color:var(--teal);background:rgba(95,208,201,.12);color:var(--teal);}
+.qr-out{text-align:center;padding:20px;}
+.qr-out canvas{background:#fff;padding:12px;border-radius:12px;}
+.qr-url{font-size:11px;color:var(--muted);margin-top:8px;word-break:break-all;}
+.qr-dl{margin-top:10px;padding:9px 22px;background:var(--accent);border:none;border-radius:9px;
+  color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
+
+/* empty */
+.empty{text-align:center;padding:24px;color:var(--muted);font-size:13px;}
+
+/* toast */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--panel2);border:1px solid var(--border);border-radius:9px;
+  padding:9px 18px;font-size:13px;font-weight:600;z-index:200;
+  opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="shell">
+
+<header>
+  <a href="index.html" class="back">← 현황</a>
+  <div class="ptitle">Production 관리</div>
+  <div class="cpill"><span class="dot dot-g" id="cdot"></span><span id="ctxt">연결중</span></div>
+</header>
+
+<div class="tabs">
+  <button class="tab on" onclick="showTab('plant')">🏭 Plant / 모델</button>
+  <button class="tab"    onclick="showTab('qr')">📱 QR 코드</button>
+</div>
+
+<!-- ══ Plant / 모델 탭 ══ -->
+<div id="tab-plant">
+
+  <!-- 서버 Excel 파일 안내 -->
+  <div class="card">
+    <div class="card-ttl">서버 저장 파일</div>
+    <div class="xlsx-info">
+      <div class="xlsx-path">📁 D:/SERVER-Storage/production/plants.xlsx</div>
+      <div class="xlsx-desc">
+        웹에서 추가·수정·삭제하면 이 파일이 <b>자동으로 동기화</b>됩니다.<br>
+        엑셀로 직접 편집할 때는 아래 형식을 따르고, 서버 재시작 후 반영됩니다.
+        <table class="fmt-table">
+          <thead><tr><th>A열 — Plant 명</th><th>B열 — 모델 명</th><th>C열 — Plant ID</th><th>D열 — Model ID</th></tr></thead>
+          <tbody>
+            <tr><td>Plant A</td><td>Model 001</td><td>p_abc12345</td><td>m_def67890</td></tr>
+            <tr><td>Plant A</td><td>Model 002</td><td>p_abc12345</td><td>m_ghi11223</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:8px;font-size:11px;color:var(--amber)">
+          ※ C·D열(ID)은 수정하지 마세요. A·B열(이름)만 편집하면 됩니다.
+        </div>
+      </div>
+    </div>
+    <div class="dl-btn-wrap">
+      <a class="dl-btn" id="dl-btn" href="#" onclick="downloadXlsx(event)">
+        ⬇ plants.xlsx 다운로드
+      </a>
+      <span class="dl-note">현재 데이터를 엑셀 파일로 저장합니다.</span>
+    </div>
+  </div>
+
+  <!-- Plant 추가 -->
+  <div class="card">
+    <div class="card-ttl">Plant 추가</div>
+    <div class="add-plant-row">
+      <input class="txt" type="text" id="new-p" placeholder="Plant 이름" onkeydown="if(event.key==='Enter')addPlant()">
+      <button class="add-btn" onclick="addPlant()">추가</button>
+    </div>
+  </div>
+
+  <!-- Plant 목록 -->
+  <div id="plant-list"></div>
+</div>
+
+<!-- ══ QR 탭 ══ -->
+<div id="tab-qr" style="display:none">
+  <div class="card">
+    <div class="card-ttl">라인 선택</div>
+    <div class="line-sel-grid" id="lsel"></div>
+    <div class="card-ttl" style="margin-top:14px">공정</div>
+    <div class="ptoggle">
+      <button class="pbtn on" data-v="S1" onclick="pickProc('S1')">S1</button>
+      <button class="pbtn"    data-v="S2" onclick="pickProc('S2')">S2</button>
+      <button class="pbtn"    data-v=""   onclick="pickProc('')">없음</button>
+    </div>
+  </div>
+  <div class="card qr-out" id="qr-out">
+    <div style="color:var(--muted);font-size:13px">라인을 선택하면 QR 코드가 나타납니다.</div>
+  </div>
+</div>
+
+</div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+const TUNNEL   = 'server.samhwa.cloud';
+const WEB_BASE = 'https://samhwa.cloud/B-2%20Production/input.html';
+const LINES    = ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.7_Display','L.9','L.8_IN','L.8_OUT','FGA','Rotary','SDB'];
+
+let ws, plants=[], expanded=new Set();
+let qrLine='', qrProc='S1';
+
+/* ── 탭 ── */
+function showTab(t){
+  ['plant','qr'].forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'':'none');
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',['plant','qr'][i]===t));
+  if(t==='qr') renderLSel();
+}
+
+/* ── Excel 다운로드 ── */
+function downloadXlsx(e){
+  e.preventDefault();
+  const url=`https://${TUNNEL}/api/production/plants/download`;
+  const a=document.createElement('a');a.href=url;a.download='plants.xlsx';a.click();
+  toast('plants.xlsx 다운로드 시작');
+}
+
+/* ── Plant 렌더 ── */
+function renderPlants(){
+  const el=document.getElementById('plant-list');
+  if(!plants.length){el.innerHTML='<div class="empty">등록된 Plant가 없습니다.</div>';return;}
+  el.innerHTML=plants.map(p=>{
+    const open=expanded.has(p.id);
+    return`<div class="plant-item">
+      <div class="plant-hd" onclick="toggleP('${p.id}')">
+        <span class="chevron${open?' open':''}">▶</span>
+        <span class="pname" id="pn-${p.id}">${p.name}</span>
+        <span class="pcnt">${(p.models||[]).length}개 모델</span>
+        <button class="ibtn e" onclick="event.stopPropagation();editP('${p.id}')" title="이름 변경">✏</button>
+        <button class="ibtn d" onclick="event.stopPropagation();delP('${p.id}')" title="삭제">🗑</button>
+      </div>
+      <div class="model-list${open?' open':''}" id="ml-${p.id}">
+        ${(p.models||[]).map(m=>`
+          <div class="mrow" id="mr-${m.id}">
+            <span class="mname">${m.name}</span>
+            <button class="ibtn e" onclick="editM('${p.id}','${m.id}')">✏</button>
+            <button class="ibtn d" onclick="delM('${p.id}','${m.id}')">🗑</button>
+          </div>`).join('')}
+        <div class="madd">
+          <input class="txt" id="nm-${p.id}" placeholder="모델명" onkeydown="if(event.key==='Enter')addM('${p.id}')">
+          <button class="add-btn" onclick="addM('${p.id}')">추가</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleP(id){expanded.has(id)?expanded.delete(id):expanded.add(id);renderPlants();}
+
+/* ── Plant CRUD ── */
+function addPlant(){
+  const inp=document.getElementById('new-p');
+  const name=inp.value.trim();if(!name)return;
+  const p={id:'p_'+Date.now().toString(36),name,models:[]};
+  ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));
+  expanded.add(p.id);inp.value='';
+}
+function editP(id){
+  const el=document.getElementById('pn-'+id);
+  const old=el.textContent;
+  el.innerHTML=`<input class="iedit" id="ei-${id}" value="${old}"
+    onkeydown="if(event.key==='Enter')saveP('${id}');if(event.key==='Escape')renderPlants()">`;
+  document.getElementById('ei-'+id)?.focus();
+}
+function saveP(id){
+  const inp=document.getElementById('ei-'+id);if(!inp)return;
+  const name=inp.value.trim();if(!name)return;
+  const p=JSON.parse(JSON.stringify(plants.find(p=>p.id===id)));
+  p.name=name;ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));
+}
+function delP(id){
+  if(!confirm('이 Plant와 모델을 모두 삭제하시겠습니까?'))return;
+  ws.send(JSON.stringify({type:'DELETE_PLANT',id}));expanded.delete(id);
+}
+
+/* ── Model CRUD ── */
+function addM(pid){
+  const inp=document.getElementById('nm-'+pid);
+  const name=inp.value.trim();if(!name)return;
+  const p=JSON.parse(JSON.stringify(plants.find(p=>p.id===pid)));
+  (p.models=p.models||[]).push({id:'m_'+Date.now().toString(36),name});
+  ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));inp.value='';
+}
+function editM(pid,mid){
+  const row=document.getElementById('mr-'+mid);
+  const span=row.querySelector('.mname');
+  const old=span.textContent;
+  span.innerHTML=`<input class="iedit" id="em-${mid}" value="${old}"
+    onkeydown="if(event.key==='Enter')saveM('${pid}','${mid}');if(event.key==='Escape')renderPlants()">`;
+  document.getElementById('em-'+mid)?.focus();
+}
+function saveM(pid,mid){
+  const inp=document.getElementById('em-'+mid);if(!inp)return;
+  const name=inp.value.trim();if(!name)return;
+  const p=JSON.parse(JSON.stringify(plants.find(p=>p.id===pid)));
+  const m=p.models.find(m=>m.id===mid);
+  if(m){m.name=name;ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));}
+}
+function delM(pid,mid){
+  if(!confirm('모델을 삭제하시겠습니까?'))return;
+  const p=JSON.parse(JSON.stringify(plants.find(p=>p.id===pid)));
+  p.models=p.models.filter(m=>m.id!==mid);
+  ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));
+}
+
+/* ── QR ── */
+function renderLSel(){
+  document.getElementById('lsel').innerHTML=LINES.map(l=>
+    `<button class="lbtn${qrLine===l?' on':''}" onclick="pickLine('${l}')">${l}</button>`
+  ).join('');
+}
+function pickLine(l){qrLine=l;renderLSel();genQR();}
+function pickProc(v){
+  qrProc=v;
+  document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  genQR();
+}
+function genQR(){
+  if(!qrLine)return;
+  const proc=qrProc?`&process=${encodeURIComponent(qrProc)}`:'';
+  const url=`${WEB_BASE}?line=${encodeURIComponent(qrLine)}${proc}`;
+  const label=`${qrLine}${qrProc?' / '+qrProc:''}`;
+  const out=document.getElementById('qr-out');
+  out.innerHTML=`
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px">${label}</div>
+    <canvas id="qrc"></canvas>
+    <div class="qr-url">${url}</div>
+    <button class="qr-dl" onclick="dlQR('${label}')">QR 다운로드</button>`;
+  new QRious({element:document.getElementById('qrc'),value:url,size:220,level:'M',background:'#ffffff',foreground:'#000000'});
+}
+function dlQR(label){
+  const c=document.getElementById('qrc');
+  const a=document.createElement('a');
+  a.href=c.toDataURL('image/png');
+  a.download=`QR_${label.replace(/[/\s]/g,'_')}.png`;a.click();
+}
+
+/* ── WS ── */
+function connect(){
+  ws=new WebSocket(`wss://${TUNNEL}/ws/production`);
+  ws.onopen=()=>{
+    document.getElementById('cdot').className='dot dot-g';
+    document.getElementById('ctxt').textContent='연결됨';
+  };
+  ws.onmessage=(e)=>{
+    const msg=JSON.parse(e.data);
+    if(msg.type==='INIT_PLANTS'||msg.type==='PLANTS_UPDATED'){
+      plants=msg.data;renderPlants();
+    }
+  };
+  ws.onclose=()=>{
+    document.getElementById('cdot').className='dot dot-r';
+    document.getElementById('ctxt').textContent='연결 끊김';
+    setTimeout(connect,3000);
+  };
+  ws.onerror=()=>ws.close();
+}
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+connect();
+</script>
+</body>
+</html>
