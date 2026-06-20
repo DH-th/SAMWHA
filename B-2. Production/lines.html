@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>라인 설정</title>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<style>
+:root{
+  --bg:#F0EBE1;--surface:#FFFFFF;--s2:#F7F3EC;--s3:#EDE8DF;
+  --border:#DDD7CB;--border2:#C4BDB0;
+  --text:#1A1610;--text2:#3A342C;--muted:#8A8278;
+  --accent:#2558D4;--accent-bg:#EBF0FD;
+  --green:#146D38;--green-bg:#E6F4ED;
+  --red:#B91C1C;--red-bg:#FEE2E2;
+  --amber:#A8530A;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 14px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--sh);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:50;}
+.back{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;
+  font-weight:600;color:var(--muted);text-decoration:none;background:var(--s2);}
+.ptitle{font-size:16px;font-weight:900;letter-spacing:-.02em;}
+.psub{font-size:11px;color:var(--muted);margin-left:4px;}
+
+.page{max-width:680px;margin:0 auto;padding:16px 14px 40px;}
+
+/* ── save bar ── */
+.save-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:16px;box-shadow:var(--sh);gap:10px;flex-wrap:wrap;
+}
+.save-info{font-size:12px;color:var(--muted);font-weight:600;}
+.save-info span{color:var(--accent);font-weight:800;}
+.row-btns{display:flex;gap:8px;}
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;}
+.btn-save{background:var(--accent);color:#fff;}
+.btn-save:hover{background:#1E46B0;}
+.btn-reset{background:var(--s3);color:var(--muted);border:1px solid var(--border);}
+.btn-reset:hover{color:var(--red);border-color:var(--red);}
+.btn-add{background:var(--green-bg);color:var(--green);border:1px solid rgba(20,109,56,.25);}
+.btn-add:hover{background:#D1EAD9;}
+
+/* ── group section ── */
+.group-section{margin-bottom:20px;}
+.group-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.group-line{flex:1;height:1px;background:var(--border);}
+.group-lbl-wrap{display:flex;align-items:center;gap:6px;}
+.group-lbl{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;}
+.group-name-inp{font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:6px;
+  padding:3px 8px;background:var(--s2);color:var(--text2);outline:none;width:110px;}
+.group-name-inp:focus{border-color:var(--accent);}
+
+/* ── line row ── */
+.line-row{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;margin-bottom:8px;box-shadow:var(--sh);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.line-row:hover{box-shadow:var(--shm);}
+.order-col{display:flex;flex-direction:column;gap:3px;flex-shrink:0;}
+.ord-btn{width:24px;height:22px;border:1px solid var(--border);border-radius:5px;
+  background:var(--s2);color:var(--muted);font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1;}
+.ord-btn:hover{background:var(--s3);color:var(--text);}
+.ord-btn:disabled{opacity:.25;cursor:default;}
+.ord-num{font-size:10px;font-weight:800;color:var(--border2);text-align:center;}
+.name-col{flex:1;min-width:100px;}
+.name-inp{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;
+  font-size:14px;font-weight:700;color:var(--text);background:var(--s2);outline:none;font-family:inherit;}
+.name-inp:focus{border-color:var(--accent);background:var(--surface);}
+.proc-col{display:flex;gap:10px;flex-shrink:0;}
+.proc-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.proc-label{font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.05em;}
+/* custom checkbox */
+.cbox{position:relative;width:36px;height:20px;}
+.cbox input{opacity:0;width:0;height:0;position:absolute;}
+.cbox-track{position:absolute;inset:0;background:var(--border2);border-radius:999px;transition:background .2s;}
+.cbox-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;
+  border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.cbox input:checked~.cbox-track{background:var(--accent);}
+.cbox input:checked~.cbox-thumb{transform:translateX(16px);}
+.del-col{flex-shrink:0;}
+.del-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:7px;
+  background:var(--s2);color:var(--muted);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;}
+.del-btn:hover{background:var(--red-bg);color:var(--red);border-color:rgba(185,28,28,.3);}
+
+/* ── add line form ── */
+.add-form{
+  background:var(--accent-bg);border:1px dashed rgba(37,88,212,.3);border-radius:12px;
+  padding:14px 16px;margin-bottom:20px;display:none;
+}
+.add-form.on{display:block;}
+.add-form-title{font-size:12px;font-weight:800;color:var(--accent);margin-bottom:10px;}
+.add-grid{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.add-field{display:flex;flex-direction:column;gap:4px;}
+.add-field label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+.add-inp{border:1px solid rgba(37,88,212,.3);border-radius:7px;padding:7px 10px;
+  font-size:13px;font-weight:600;color:var(--text);background:#fff;outline:none;font-family:inherit;}
+.add-inp:focus{border-color:var(--accent);}
+.add-proc{display:flex;gap:12px;align-items:center;}
+.add-proc-item{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2);}
+.add-proc-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;}
+.add-actions{display:flex;gap:8px;margin-top:12px;}
+.btn-sm{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;}
+
+/* ── empty ── */
+.empty-group{text-align:center;padding:20px;color:var(--muted);font-size:12px;
+  background:var(--s2);border:1px dashed var(--border);border-radius:10px;margin-bottom:8px;}
+
+/* ── toast ── */
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  background:var(--text);color:#fff;border-radius:8px;padding:8px 16px;
+  font-size:12px;font-weight:600;z-index:200;opacity:0;transition:opacity .25s;
+  pointer-events:none;white-space:nowrap;}
+#toast.s{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back">← 대시보드</a>
+  <span class="ptitle">라인 설정</span>
+  <span class="psub">순서·이름·공정 관리</span>
+</header>
+
+<div class="page">
+
+  <div class="save-bar">
+    <div class="save-info">변경 후 <span>저장</span>을 눌러야 반영됩니다.</div>
+    <div class="row-btns">
+      <button class="btn btn-reset" onclick="resetDefault()">기본값 복원</button>
+      <button class="btn btn-add" onclick="toggleAdd()">+ 라인 추가</button>
+      <button class="btn btn-save" onclick="saveConfig()">💾 저장</button>
+    </div>
+  </div>
+
+  <!-- add form -->
+  <div class="add-form" id="add-form">
+    <div class="add-form-title">새 라인 추가</div>
+    <div class="add-grid">
+      <div class="add-field" style="flex:1;min-width:100px;">
+        <label>라인 이름</label>
+        <input class="add-inp" id="add-name" placeholder="예: L.10" style="width:100%">
+      </div>
+      <div class="add-field" style="flex:1;min-width:110px;">
+        <label>그룹</label>
+        <input class="add-inp" id="add-group" placeholder="예: 메인 라인" style="width:100%">
+      </div>
+      <div class="add-field">
+        <label>공정</label>
+        <div class="add-proc">
+          <div class="add-proc-item">
+            <input type="checkbox" id="add-s1" checked>
+            <label for="add-s1">S1</label>
+          </div>
+          <div class="add-proc-item">
+            <input type="checkbox" id="add-s2" checked>
+            <label for="add-s2">S2</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="add-actions">
+      <button class="btn-sm btn btn-save" onclick="addLine()">추가</button>
+      <button class="btn-sm btn btn-reset" onclick="toggleAdd()">취소</button>
+    </div>
+  </div>
+
+  <!-- line list -->
+  <div id="line-list"></div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const DEFAULT_LINE_CONFIG = [
+  {id:'L.1',      name:'L.1',       order:1,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.2',      name:'L.2',       order:2,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.3',      name:'L.3',       order:3,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.4',      name:'L.4',       order:4,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.5',      name:'L.5',       order:5,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.6',      name:'L.6',       order:6,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.7',      name:'L.7',       order:7,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.7_Display',name:'L.7_Display',order:8,hasS1:true,hasS2:true,  group:'메인 라인'},
+  {id:'L.9',      name:'L.9',       order:9,  hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
+  {id:'L.8_IN',   name:'L.8_IN',    order:10, hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
+  {id:'L.8_OUT',  name:'L.8_OUT',   order:11, hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
+  {id:'FGA',      name:'FGA',       order:12, hasS1:true,  hasS2:true,  group:'특수 라인'},
+  {id:'Rotary',   name:'Rotary',    order:13, hasS1:true,  hasS2:true,  group:'특수 라인'},
+  {id:'SDB',      name:'SDB',       order:14, hasS1:true,  hasS2:true,  group:'특수 라인'},
+];
+
+let config = [];
+
+function load(){
+  try{
+    const s=localStorage.getItem('prod_line_config');
+    config=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_LINE_CONFIG));
+  }catch{
+    config=JSON.parse(JSON.stringify(DEFAULT_LINE_CONFIG));
+  }
+  config.sort((a,b)=>a.order-b.order);
+  render();
+}
+
+function render(){
+  const groups=[...new Set(config.map(l=>l.group))];
+  let html='';
+  groups.forEach(g=>{
+    const gl=config.filter(l=>l.group===g);
+    html+=`<div class="group-section" data-group="${g}">
+      <div class="group-hd">
+        <div class="group-line"></div>
+        <div class="group-lbl-wrap">
+          <span class="group-lbl">그룹:</span>
+          <input class="group-name-inp" value="${g}" onchange="renameGroup('${g}',this.value)" placeholder="그룹명">
+        </div>
+        <div class="group-line"></div>
+      </div>`;
+    if(!gl.length){
+      html+=`<div class="empty-group">이 그룹에 라인이 없습니다.</div>`;
+    }
+    gl.forEach((lc,gi)=>{
+      const globalIdx=config.indexOf(lc);
+      const isFirst=globalIdx===0;
+      const isLast=globalIdx===config.length-1;
+      html+=`<div class="line-row" id="row-${lc.id}">
+        <div class="order-col">
+          <button class="ord-btn" onclick="moveUp(${globalIdx})" ${isFirst?'disabled':''}>↑</button>
+          <div class="ord-num">${lc.order}</div>
+          <button class="ord-btn" onclick="moveDown(${globalIdx})" ${isLast?'disabled':''}>↓</button>
+        </div>
+        <div class="name-col">
+          <input class="name-inp" value="${lc.name}"
+            onchange="config[${globalIdx}].name=this.value">
+        </div>
+        <div class="proc-col">
+          <div class="proc-item">
+            <span class="proc-label">S1</span>
+            <label class="cbox">
+              <input type="checkbox" ${lc.hasS1?'checked':''} onchange="config[${globalIdx}].hasS1=this.checked">
+              <div class="cbox-track"></div>
+              <div class="cbox-thumb"></div>
+            </label>
+          </div>
+          <div class="proc-item">
+            <span class="proc-label">S2</span>
+            <label class="cbox">
+              <input type="checkbox" ${lc.hasS2?'checked':''} onchange="config[${globalIdx}].hasS2=this.checked">
+              <div class="cbox-track"></div>
+              <div class="cbox-thumb"></div>
+            </label>
+          </div>
+        </div>
+        <div class="del-col">
+          <button class="del-btn" onclick="deleteLine('${lc.id}')" title="삭제">🗑</button>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('line-list').innerHTML=html;
+}
+
+function renameGroup(oldName, newName){
+  newName=newName.trim();
+  if(!newName||newName===oldName)return;
+  config.forEach(l=>{if(l.group===oldName)l.group=newName;});
+  render();
+}
+
+function moveUp(idx){
+  if(idx<=0)return;
+  [config[idx-1],config[idx]]=[config[idx],config[idx-1]];
+  reorder();render();
+}
+function moveDown(idx){
+  if(idx>=config.length-1)return;
+  [config[idx],config[idx+1]]=[config[idx+1],config[idx]];
+  reorder();render();
+}
+function reorder(){config.forEach((l,i)=>l.order=i+1);}
+
+function deleteLine(id){
+  if(!confirm(`"${config.find(l=>l.id===id)?.name}" 라인을 삭제하시겠습니까?`))return;
+  config=config.filter(l=>l.id!==id);
+  reorder();render();
+}
+
+/* add form */
+function toggleAdd(){
+  const f=document.getElementById('add-form');
+  f.classList.toggle('on');
+  if(f.classList.contains('on'))document.getElementById('add-name').focus();
+}
+function addLine(){
+  const name=document.getElementById('add-name').value.trim();
+  const group=document.getElementById('add-group').value.trim()||'메인 라인';
+  const hasS1=document.getElementById('add-s1').checked;
+  const hasS2=document.getElementById('add-s2').checked;
+  if(!name){alert('라인 이름을 입력하세요.');return;}
+  if(!hasS1&&!hasS2){alert('S1 또는 S2 중 하나 이상 선택하세요.');return;}
+  const id='line_'+Date.now().toString(36);
+  config.push({id,name,order:config.length+1,hasS1,hasS2,group});
+  document.getElementById('add-name').value='';
+  document.getElementById('add-group').value='';
+  document.getElementById('add-s1').checked=true;
+  document.getElementById('add-s2').checked=true;
+  document.getElementById('add-form').classList.remove('on');
+  render();toast('라인 추가됨 — 저장 버튼을 눌러 반영하세요.');
+}
+
+function saveConfig(){
+  reorder();
+  localStorage.setItem('prod_line_config',JSON.stringify(config));
+  render();toast('✓ 저장 완료');
+}
+function resetDefault(){
+  if(!confirm('기본 라인 설정으로 복원하시겠습니까?'))return;
+  config=JSON.parse(JSON.stringify(DEFAULT_LINE_CONFIG));
+  localStorage.setItem('prod_line_config',JSON.stringify(config));
+  render();toast('기본값으로 복원되었습니다.');
+}
+
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');
+  setTimeout(()=>t.classList.remove('s'),2500);
+}
+
+load();
+</script>
+</body>
+</html>

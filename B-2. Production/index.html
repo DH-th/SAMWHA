@@ -8,113 +8,157 @@
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <style>
 :root{
-  --bg:#F2EDE4;
+  --bg:#F0EBE1;
   --surface:#FFFFFF;
-  --surface2:#F7F3EC;
-  --surface3:#EDE8DF;
+  --s2:#F7F3EC;
+  --s3:#EDE8DF;
   --border:#DDD7CB;
   --border2:#C4BDB0;
   --text:#1A1610;
   --text2:#3A342C;
   --muted:#8A8278;
   --accent:#2558D4;
+  --accent2:#5FD0C9;
   --accent-bg:#EBF0FD;
   --green:#146D38;
-  --green-bg:#E8F5EE;
+  --green-bg:#E6F4ED;
   --amber:#A8530A;
   --amber-bg:#FEF3C7;
   --red:#B91C1C;
   --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
-  --shm:0 4px 14px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --shm:0 6px 20px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.06);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;}
 html,body{background:var(--bg);color:var(--text);min-height:100vh;}
 
 /* ── header ── */
-header{
-  background:var(--surface);border-bottom:1px solid var(--border);
-  box-shadow:var(--sh);padding:10px 14px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  position:sticky;top:0;z-index:50;
-}
-.back{padding:5px 10px;border:1px solid var(--border);border-radius:7px;
-  font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);}
-.ptitle{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
-.hdr-r{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.cpill{display:flex;align-items:center;gap:5px;padding:4px 9px;
-  border:1px solid var(--border);border-radius:999px;
-  font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);}
+header{background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--sh);
+  padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:60;}
+.back{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;
+  font-weight:600;color:var(--muted);text-decoration:none;background:var(--s2);}
+.ptitle{font-size:16px;font-weight:900;color:var(--text);letter-spacing:-.02em;}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.cpill{display:flex;align-items:center;gap:5px;padding:4px 9px;border:1px solid var(--border);
+  border-radius:999px;font-size:11px;font-weight:600;color:var(--muted);background:var(--s2);}
 .dot{width:6px;height:6px;border-radius:50%;}
 .dot-on{background:var(--green);box-shadow:0 0 4px var(--green);animation:pulse 2s infinite;}
 .dot-off{background:var(--red);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-#clock{font-size:12px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
-.tbl-btn{padding:5px 11px;border:1px solid var(--accent);border-radius:7px;
-  font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);text-decoration:none;}
-.adm{padding:5px 10px;border:1px solid var(--border);border-radius:7px;
-  font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);}
+#clock{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+.hlink{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:11px;
+  font-weight:600;color:var(--muted);text-decoration:none;background:var(--s2);}
+.hlink.accent{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
 
-/* ── ctrl bar ── */
-.ctrl-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;
+/* ── ctrl ── */
+.ctrl-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;
   background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.date-nav{display:flex;align-items:center;gap:4px;}
 .dnbtn{padding:5px 8px;border:1px solid var(--border);border-radius:6px;
-  background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;}
+  background:var(--s2);color:var(--text2);font-size:12px;cursor:pointer;}
 .today-btn{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important;font-size:11px;}
-#date-lbl{font-size:12px;font-weight:700;min-width:86px;text-align:center;color:var(--text);}
-.shift-tabs{display:flex;gap:4px;}
+#date-lbl{font-size:12px;font-weight:700;min-width:86px;text-align:center;}
 .stab{padding:5px 11px;border:1px solid var(--border);border-radius:6px;
-  background:var(--surface2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;}
+  background:var(--s2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;}
 .stab.d{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);}
 .stab.n{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
 
-/* ── summary ── */
-.sumbar{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap;}
-.sc{flex:1;min-width:90px;background:var(--surface);border:1px solid var(--border);
-  border-radius:10px;padding:10px 14px;box-shadow:var(--sh);}
-.sc-l{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px;}
-.sc-v{font-size:20px;font-weight:900;letter-spacing:-.02em;}
-.sc-s{font-size:10px;color:var(--muted);margin-top:1px;}
+/* ── summary 2-cards ── */
+.sumbar{display:flex;gap:10px;padding:12px 14px 4px;}
+.sc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:11px 16px;box-shadow:var(--sh);}
+.sc-l{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;}
+.sc-v{font-size:24px;font-weight:900;letter-spacing:-.03em;}
+.sc-s{font-size:11px;color:var(--muted);}
 
-/* ── grid ── */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
-  gap:10px;padding:12px 14px 28px;
-}
+/* ── dashboard ── */
+.dash{padding:10px 14px 32px;}
+
+/* group */
+.group-hd{display:flex;align-items:center;gap:10px;padding:14px 0 8px;}
+.group-line{flex:1;height:1px;background:var(--border);}
+.group-lbl{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;
+  white-space:nowrap;}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;margin-bottom:6px;}
 
 /* ── line card ── */
-.lcard{
-  background:var(--surface);border:1px solid var(--border);border-radius:14px;
-  padding:14px 14px 13px;box-shadow:var(--sh);
-  display:flex;flex-direction:column;gap:9px;
-  position:relative;overflow:hidden;
-  transition:box-shadow .18s,transform .18s;cursor:default;
-}
+.lcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:13px 13px 11px;box-shadow:var(--sh);cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;
+  transition:box-shadow .18s,transform .18s;}
 .lcard:hover{box-shadow:var(--shm);transform:translateY(-2px);}
-.lcard.active::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,var(--accent),#5FD0C9);
-}
-.lcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
-.lcard-name{font-size:15px;font-weight:900;letter-spacing:-.02em;color:var(--text);}
-.lcard-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;white-space:nowrap;flex-shrink:0;margin-top:2px;}
-.badge-on{background:var(--green-bg);color:var(--green);}
-.badge-off{background:var(--surface3);color:var(--muted);}
-.lcard-model{font-size:10px;color:var(--muted);font-weight:600;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:14px;}
-.lcard-nums{display:flex;gap:8px;align-items:stretch;}
-.nb{display:flex;flex-direction:column;gap:2px;flex:1;}
-.nb-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
-.nb-val{font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;color:var(--text);}
-.nb-val.dim{color:var(--border2);font-size:18px;}
-.num-sep{width:1px;background:var(--border);align-self:stretch;}
-.nb2{display:flex;flex-direction:column;gap:2px;align-items:flex-end;justify-content:center;}
-.nb2-val{font-size:16px;font-weight:900;color:var(--accent);line-height:1;}
-.nb2-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.04em;white-space:nowrap;}
+.lcard:active{transform:scale(.97);}
+.lcard.active::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));}
+/* card row 1 */
+.cr1{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+.cname{font-size:14px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
+.cbadge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;flex-shrink:0;margin-top:1px;}
+.bon{background:var(--green-bg);color:var(--green);}
+.boff{background:var(--s3);color:var(--muted);}
+/* card row 2 - model */
+.cmodel{font-size:10px;color:var(--muted);font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:13px;}
+/* card row 3 - S1/S2 qtys */
+.cs-rows{display:flex;flex-direction:column;gap:4px;}
+.cs-row{display:flex;align-items:center;gap:6px;}
+.cs-lbl{font-size:9px;font-weight:800;color:var(--muted);width:14px;flex-shrink:0;}
+.cs-bar{flex:1;height:5px;background:var(--s3);border-radius:999px;overflow:hidden;}
+.cs-fill{height:100%;border-radius:999px;transition:width .4s ease;}
+.cs-fill-1{background:linear-gradient(90deg,var(--accent),#6B9FF4);}
+.cs-fill-2{background:linear-gradient(90deg,var(--accent2),#8BE8E3);}
+.cs-val{font-size:12px;font-weight:800;color:var(--text);min-width:30px;text-align:right;
+  font-variant-numeric:tabular-nums;}
+.cs-val.dim{color:var(--border2);font-weight:400;}
+/* card row 4 - sparkline + avg */
+.cbot{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;}
+.sparkline{flex:1;}
+.cavg{font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap;text-align:right;}
+.cavg span{display:block;font-size:8px;color:var(--muted);font-weight:600;}
+
+/* ── modal ── */
+.backdrop{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:80;
+  opacity:0;pointer-events:none;transition:opacity .3s;}
+.backdrop.on{opacity:1;pointer-events:all;}
+.modal{position:fixed;left:0;right:0;bottom:0;z-index:90;max-height:88vh;
+  background:var(--surface);border-radius:22px 22px 0 0;
+  box-shadow:0 -8px 40px rgba(0,0,0,.12);
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;}
+.modal.on{transform:translateY(0);}
+.modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;
+  margin:12px auto 0;}
+.modal-hd{display:flex;align-items:flex-start;justify-content:space-between;
+  padding:14px 18px 12px;}
+.modal-title{font-size:18px;font-weight:900;letter-spacing:-.02em;}
+.modal-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.modal-cls{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;
+  background:var(--s2);cursor:pointer;font-size:18px;display:flex;align-items:center;
+  justify-content:center;color:var(--muted);flex-shrink:0;}
+.modal-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 18px 24px;}
+.modal-section{margin-bottom:18px;}
+.ms-title{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:10px;}
+/* chart */
+.chart-wrap{width:100%;overflow-x:auto;}
+/* hourly table */
+.htable{width:100%;border-collapse:collapse;font-size:11px;}
+.htable th{padding:5px 6px;background:var(--s2);font-weight:700;color:var(--muted);
+  text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;}
+.htable td{padding:5px 6px;text-align:center;border-bottom:1px solid var(--border);}
+.htable tr:last-child td{border-bottom:none;}
+.htable .cur-row td{background:var(--amber-bg);}
+.htable .tot-row td{background:var(--s2);font-weight:800;}
+.hval{font-weight:700;color:var(--text);}
+.hval.z{color:var(--border2);font-weight:400;}
+/* stat row in modal */
+.stat-row{display:flex;gap:10px;margin-bottom:12px;}
+.stat-box{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.stat-box .sl{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px;}
+.stat-box .sv{font-size:18px;font-weight:900;letter-spacing:-.02em;}
+.stat-box .ss{font-size:10px;color:var(--muted);}
 
 /* ── overlay / toast ── */
-#ov{position:fixed;inset:0;background:rgba(242,237,228,.9);z-index:300;
+#ov{position:fixed;inset:0;background:rgba(240,235,225,.92);z-index:300;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .sp{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);
   border-radius:50%;animation:spin .8s linear infinite;}
@@ -127,17 +171,20 @@ header{
 #toast.s{opacity:1;}
 
 @media(max-width:480px){
-  .grid{grid-template-columns:repeat(2,1fr);gap:8px;padding:10px 10px 20px;}
-  .sumbar{gap:6px;padding:10px 10px 0;}
-  .sc{padding:8px 10px;min-width:70px;}.sc-v{font-size:17px;}
-  .lcard-name{font-size:13px;}
-  .nb-val{font-size:19px;}.nb2-val{font-size:14px;}
+  .card-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .sumbar{gap:8px;padding:10px 10px 4px;}
+  .dash{padding:8px 10px 28px;}
+  .sc-v{font-size:20px;}
 }
 @media(min-width:768px){
-  header,ctrl-bar{padding:12px 20px;}
-  .ctrl-bar{padding:10px 20px;}
-  .sumbar{padding:14px 20px 0;}
-  .grid{grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;padding:14px 20px 28px;}
+  header,ctrl-bar{padding:12px 24px;}
+  .ctrl-bar{padding:10px 24px;}
+  .sumbar{padding:14px 24px 4px;}
+  .dash{padding:10px 24px 32px;}
+  .card-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:11px;}
+  .modal{max-width:640px;left:50%;right:auto;transform:translateX(-50%) translateY(100%);
+    border-radius:22px 22px 0 0;}
+  .modal.on{transform:translateX(-50%) translateY(0);}
 }
 </style>
 </head>
@@ -150,19 +197,20 @@ header{
   <div class="hdr-r">
     <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt">연결중</span></div>
     <span id="clock"></span>
-    <a href="table.html" class="tbl-btn">📊 상세 현황</a>
-    <a href="admin.html" class="adm">⚙ 관리</a>
+    <a href="table.html" class="hlink accent">📊 상세 현황</a>
+    <a href="lines.html" class="hlink">⚙ 라인 설정</a>
+    <a href="admin.html" class="hlink">🏭 Plant 관리</a>
   </div>
 </header>
 
 <div class="ctrl-bar">
-  <div class="date-nav">
+  <div style="display:flex;align-items:center;gap:4px;">
     <button class="dnbtn" onclick="changeDate(-1)">◀</button>
     <span id="date-lbl">-</span>
     <button class="dnbtn" onclick="changeDate(1)">▶</button>
     <button class="dnbtn today-btn" onclick="goToday()">오늘</button>
   </div>
-  <div class="shift-tabs">
+  <div style="display:flex;gap:4px;">
     <button class="stab" id="td" onclick="setShift('day')">☀ 주간</button>
     <button class="stab" id="tn" onclick="setShift('night')">🌙 야간</button>
   </div>
@@ -171,182 +219,372 @@ header{
 <div class="sumbar">
   <div class="sc"><div class="sc-l">총 생산</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
   <div class="sc"><div class="sc-l">시간당 평균</div><div class="sc-v" id="s-avg">0</div><div class="sc-s">PCS / h</div></div>
-  <div class="sc"><div class="sc-l">가동 라인</div><div class="sc-v" id="s-lines">0</div><div class="sc-s">/ 14</div></div>
-  <div class="sc"><div class="sc-l">경과 시간</div><div class="sc-v" id="s-el">0</div><div class="sc-s">h</div></div>
 </div>
 
-<div class="grid" id="grid"></div>
+<div class="dash" id="dash"></div>
+
+<!-- detail modal -->
+<div class="backdrop" id="backdrop" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-hd">
+    <div>
+      <div class="modal-title" id="m-title">-</div>
+      <div class="modal-sub" id="m-sub">-</div>
+    </div>
+    <div class="modal-cls" onclick="closeModal()">✕</div>
+  </div>
+  <div class="modal-body" id="m-body"></div>
+</div>
+
 <div id="toast"></div>
 
 <script>
+/* ─── constants ─── */
 const TUNNEL = 'server.samhwa.cloud';
-const LINES  = ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.7_Display','L.9','L.8_IN','L.8_OUT','FGA','Rotary','SDB'];
 const DAY_SLOTS   = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 const NIGHT_SLOTS = ['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 
-let ws, records = [], plants = [];
-let viewDate = '', viewShift = 'day';
+const DEFAULT_LINE_CONFIG = [
+  {id:'L.1',      name:'L.1',        order:1,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.2',      name:'L.2',        order:2,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.3',      name:'L.3',        order:3,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.4',      name:'L.4',        order:4,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.5',      name:'L.5',        order:5,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.6',      name:'L.6',        order:6,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.7',      name:'L.7',        order:7,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.7_Display',name:'L.7_Disp',order:8,  hasS1:true,  hasS2:true,  group:'메인 라인'},
+  {id:'L.9',      name:'L.9',        order:9,  hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
+  {id:'L.8_IN',   name:'L.8_IN',     order:10, hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
+  {id:'L.8_OUT',  name:'L.8_OUT',    order:11, hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
+  {id:'FGA',      name:'FGA',        order:12, hasS1:true,  hasS2:true,  group:'특수 라인'},
+  {id:'Rotary',   name:'Rotary',     order:13, hasS1:true,  hasS2:true,  group:'특수 라인'},
+  {id:'SDB',      name:'SDB',        order:14, hasS1:true,  hasS2:true,  group:'특수 라인'},
+];
 
-const p2 = n => String(n).padStart(2,'0');
-const fmtD = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+function getLines(){
+  try{const s=localStorage.getItem('prod_line_config');if(s)return JSON.parse(s);}catch{}
+  return DEFAULT_LINE_CONFIG;
+}
 
+/* ─── state ─── */
+let ws, records=[], plants=[];
+let viewDate='', viewShift='day';
+
+/* ─── utils ─── */
+const p2=n=>String(n).padStart(2,'0');
+const fmtD=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
 function calcDS(d){
-  const h = d.getHours();
-  if(h >= 8 && h < 20) return { date: fmtD(d), shift: 'day' };
-  if(h >= 20) return { date: fmtD(d), shift: 'night' };
-  const y = new Date(d); y.setDate(y.getDate() - 1);
-  return { date: fmtD(y), shift: 'night' };
+  const h=d.getHours();
+  if(h>=8&&h<20)return{date:fmtD(d),shift:'day'};
+  if(h>=20)return{date:fmtD(d),shift:'night'};
+  const y=new Date(d);y.setDate(y.getDate()-1);return{date:fmtD(y),shift:'night'};
 }
-
-function elapsed(){
-  const now = new Date();
-  const { date, shift } = calcDS(now);
-  if(viewDate !== date || viewShift !== shift) return 12;
-  const h = now.getHours();
-  if(viewShift === 'day'){
-    if(h < 8) return 0; if(h >= 20) return 12; return Math.max(1, h - 8 + 1);
-  } else {
-    if(h >= 20) return Math.max(1, h - 20 + 1);
-    if(h < 8)   return Math.max(1, 4 + h + 1);
-    return 12;
-  }
-}
-
-function allSlots(){ return viewShift === 'day' ? DAY_SLOTS : NIGHT_SLOTS; }
-
+function allSlots(){return viewShift==='day'?DAY_SLOTS:NIGHT_SLOTS;}
+function slotLbl(s){const h=parseInt(s);return`${p2(h)}~${p2((h+1)%24)}`;}
 function curSlot(){
-  const h = new Date().getHours();
-  const s = p2(h) + ':00';
-  return allSlots().includes(s) ? s : null;
+  const s=p2(new Date().getHours())+':00';
+  return allSlots().includes(s)?s:null;
 }
-
 function prevSlot(){
-  const all = allSlots(); const cur = curSlot();
-  if(!cur) return null;
-  const idx = all.indexOf(cur);
-  return idx > 0 ? all[idx - 1] : null;
+  const all=allSlots(),cur=curSlot();
+  if(!cur)return null;
+  const i=all.indexOf(cur);return i>0?all[i-1]:null;
+}
+function elapsed(){
+  const now=new Date();const{date,shift}=calcDS(now);
+  if(viewDate!==date||viewShift!==shift)return 12;
+  const h=now.getHours();
+  if(viewShift==='day'){if(h<8)return 0;if(h>=20)return 12;return Math.max(1,h-8+1);}
+  else{if(h>=20)return Math.max(1,h-20+1);if(h<8)return Math.max(1,4+h+1);return 12;}
 }
 
-function sr(){ return records.filter(r => r.prodDate === viewDate && r.shift === viewShift); }
-
-function lineQtySlot(line, slot){
-  return sr().filter(r => r.line === line && r.slot === slot).reduce((s, r) => s + (r.qty || 0), 0);
+/* ─── data ─── */
+function sr(){return records.filter(r=>r.prodDate===viewDate&&r.shift===viewShift);}
+function slotQ(line,proc,slot){
+  return sr().filter(r=>r.line===line&&r.process===proc&&r.slot===slot).reduce((s,r)=>s+(r.qty||0),0);
 }
-function lineQtyTotal(line){
-  return allSlots().reduce((s, slot) => s + lineQtySlot(line, slot), 0);
-}
+function lineSlotTotal(line,slot){return['S1','S2'].reduce((s,p)=>s+slotQ(line,p,slot),0);}
+function lineTotal(line){return allSlots().reduce((s,sl)=>s+lineSlotTotal(line,sl),0);}
 function lastModel(line){
-  const recs = sr().filter(r => r.line === line && r.modelName);
-  if(!recs.length) return '';
-  return recs.sort((a, b) => a.slot > b.slot ? 1 : -1).at(-1).modelName;
+  const recs=sr().filter(r=>r.line===line&&r.modelName);
+  if(!recs.length)return'';
+  return recs.sort((a,b)=>a.slot>b.slot?1:-1).at(-1).modelName;
 }
 
+/* ─── nav ─── */
 function changeDate(d){
-  const dt = new Date(viewDate + 'T12:00:00'); dt.setDate(dt.getDate() + d);
-  viewDate = fmtD(dt); document.getElementById('date-lbl').textContent = viewDate; fetchLog();
+  const dt=new Date(viewDate+'T12:00:00');dt.setDate(dt.getDate()+d);
+  viewDate=fmtD(dt);document.getElementById('date-lbl').textContent=viewDate;fetchLog();
 }
 function goToday(){
-  const { date, shift } = calcDS(new Date());
-  viewDate = date; viewShift = shift;
-  document.getElementById('date-lbl').textContent = viewDate;
-  renderTabs(); fetchLog();
+  const{date,shift}=calcDS(new Date());viewDate=date;viewShift=shift;
+  document.getElementById('date-lbl').textContent=viewDate;renderTabs();fetchLog();
 }
-function setShift(s){ viewShift = s; renderTabs(); renderAll(); }
+function setShift(s){viewShift=s;renderTabs();renderAll();}
 function renderTabs(){
-  document.getElementById('td').className = 'stab' + (viewShift === 'day' ? ' d' : '');
-  document.getElementById('tn').className = 'stab' + (viewShift === 'night' ? ' n' : '');
+  document.getElementById('td').className='stab'+(viewShift==='day'?' d':'');
+  document.getElementById('tn').className='stab'+(viewShift==='night'?' n':'');
 }
 function fetchLog(){
   fetch(`https://${TUNNEL}/api/production/log?date=${viewDate}`)
-    .then(r => r.json()).then(j => { records = j.records || []; renderAll(); });
+    .then(r=>r.json()).then(j=>{records=j.records||[];renderAll();});
 }
 
-function renderAll(){
-  const el = elapsed();
-  const total = sr().reduce((s, r) => s + (r.qty || 0), 0);
-  const avg   = el > 0 ? Math.round(total / el) : 0;
-  const actLines = new Set(sr().map(r => r.line)).size;
-  document.getElementById('s-tot').textContent   = total.toLocaleString();
-  document.getElementById('s-avg').textContent   = avg.toLocaleString();
-  document.getElementById('s-lines').textContent = actLines;
-  document.getElementById('s-el').textContent    = el;
-
-  const prev = prevSlot();
-  document.getElementById('grid').innerHTML = LINES.map(line => {
-    const tot   = lineQtyTotal(line);
-    const avgH  = el > 0 ? Math.round(tot / el) : 0;
-    const prevQ = prev != null ? lineQtySlot(line, prev) : null;
-    const model = lastModel(line);
-    const active = tot > 0;
-    const prevDisp = prevQ != null ? prevQ.toLocaleString() : '—';
-    const prevDim  = !prevQ;
-    return `<div class="lcard${active ? ' active' : ''}">
-      <div class="lcard-top">
-        <span class="lcard-name">${line}</span>
-        <span class="lcard-badge ${active ? 'badge-on' : 'badge-off'}">${active ? '가동' : '대기'}</span>
-      </div>
-      <div class="lcard-model">${model || '—'}</div>
-      <div class="lcard-nums">
-        <div class="nb">
-          <div class="nb-label">직전 수량</div>
-          <div class="nb-val${prevDim ? ' dim' : ''}">${prevDisp}</div>
-        </div>
-        <div class="num-sep"></div>
-        <div class="nb2">
-          <div class="nb2-val">${avgH.toLocaleString()}</div>
-          <div class="nb2-label">/ 1H 평균</div>
-        </div>
-      </div>
-    </div>`;
+/* ─── sparkline ─── */
+function sparkline(line){
+  const slots=allSlots();
+  const vals=slots.map(sl=>lineSlotTotal(line,sl));
+  const mx=Math.max(...vals,1);
+  const W=slots.length*8,H=20;
+  const bars=vals.map((v,i)=>{
+    const h=Math.max(v>0?2:0,Math.round((v/mx)*(H-2)));
+    const cur=slots[i]===curSlot();
+    const fill=cur?'var(--amber)':v>0?'var(--accent)':'var(--border)';
+    return`<rect x="${i*8+1}" y="${H-h}" width="6" height="${h}" rx="1.5" fill="${fill}"/>`;
   }).join('');
+  return`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block">${bars}</svg>`;
 }
 
+/* ─── render dashboard ─── */
+function renderAll(){
+  const el=elapsed();
+  const total=sr().reduce((s,r)=>s+(r.qty||0),0);
+  const avg=el>0?Math.round(total/el):0;
+  document.getElementById('s-tot').textContent=total.toLocaleString();
+  document.getElementById('s-avg').textContent=avg.toLocaleString();
+
+  const lines=getLines().sort((a,b)=>a.order-b.order);
+  const groups=[...new Set(lines.map(l=>l.group))];
+  const prev=prevSlot();
+  const maxPrev=Math.max(...lines.map(l=>{
+    const tot=(l.hasS1?slotQ(l.id,'S1',prev):0)+(l.hasS2?slotQ(l.id,'S2',prev):0);
+    return tot;
+  }),1);
+
+  let html='';
+  groups.forEach(g=>{
+    const gl=lines.filter(l=>l.group===g);
+    html+=`<div class="group-hd">
+      <div class="group-line"></div>
+      <div class="group-lbl">${g}</div>
+      <div class="group-line"></div>
+    </div>
+    <div class="card-grid">`;
+    gl.forEach(lc=>{
+      const {id,name,hasS1,hasS2}=lc;
+      const s1p=hasS1&&prev!=null?slotQ(id,'S1',prev):null;
+      const s2p=hasS2&&prev!=null?slotQ(id,'S2',prev):null;
+      const tot=lineTotal(id);
+      const active=tot>0;
+      const avgH=el>0?Math.round(tot/el):0;
+      const model=lastModel(id);
+      const maxBar=Math.max(s1p||0,s2p||0,1);
+
+      let sRows='';
+      if(hasS1&&hasS2){
+        const pct1=s1p!=null?Math.round((s1p/maxPrev)*100):0;
+        const pct2=s2p!=null?Math.round((s2p/maxPrev)*100):0;
+        sRows=`
+          <div class="cs-row">
+            <span class="cs-lbl">S1</span>
+            <div class="cs-bar"><div class="cs-fill cs-fill-1" style="width:${pct1}%"></div></div>
+            <span class="cs-val${!s1p?' dim':''}">${s1p!=null?s1p.toLocaleString():'—'}</span>
+          </div>
+          <div class="cs-row">
+            <span class="cs-lbl">S2</span>
+            <div class="cs-bar"><div class="cs-fill cs-fill-2" style="width:${pct2}%"></div></div>
+            <span class="cs-val${!s2p?' dim':''}">${s2p!=null?s2p.toLocaleString():'—'}</span>
+          </div>`;
+      } else if(hasS2){
+        const pct2=s2p!=null?Math.round((s2p/maxPrev)*100):0;
+        sRows=`<div class="cs-row">
+            <span class="cs-lbl">S2</span>
+            <div class="cs-bar"><div class="cs-fill cs-fill-2" style="width:${pct2}%"></div></div>
+            <span class="cs-val${!s2p?' dim':''}">${s2p!=null?s2p.toLocaleString():'—'}</span>
+          </div>`;
+      } else if(hasS1){
+        const pct1=s1p!=null?Math.round((s1p/maxPrev)*100):0;
+        sRows=`<div class="cs-row">
+            <span class="cs-lbl">S1</span>
+            <div class="cs-bar"><div class="cs-fill cs-fill-1" style="width:${pct1}%"></div></div>
+            <span class="cs-val${!s1p?' dim':''}">${s1p!=null?s1p.toLocaleString():'—'}</span>
+          </div>`;
+      }
+
+      html+=`<div class="lcard${active?' active':''}" onclick="openModal('${id}')">
+        <div class="cr1">
+          <span class="cname">${name}</span>
+          <span class="cbadge ${active?'bon':'boff'}">${active?'가동':'대기'}</span>
+        </div>
+        <div class="cmodel">${model||'—'}</div>
+        <div class="cs-rows">${sRows}</div>
+        <div class="cbot">
+          <div class="sparkline">${sparkline(id)}</div>
+          <div class="cavg">${avgH.toLocaleString()}<span>/ 1H avg</span></div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('dash').innerHTML=html;
+}
+
+/* ─── detail modal ─── */
+function openModal(lineId){
+  const lc=getLines().find(l=>l.id===lineId);
+  if(!lc)return;
+  const el=elapsed();
+  const slots=allSlots();
+  const cur=curSlot();
+  const tot=lineTotal(lineId);
+  const avgH=el>0?Math.round(tot/el):0;
+  const model=lastModel(lineId);
+  const s1tot=lc.hasS1?slots.reduce((s,sl)=>s+slotQ(lineId,'S1',sl),0):0;
+  const s2tot=lc.hasS2?slots.reduce((s,sl)=>s+slotQ(lineId,'S2',sl),0):0;
+
+  document.getElementById('m-title').textContent=lc.name;
+  document.getElementById('m-sub').textContent=`${model||'모델 미등록'} · ${viewDate} ${viewShift==='day'?'주간':'야간'}`;
+
+  /* build SVG bar chart */
+  const vals=slots.map(sl=>lineSlotTotal(lineId,sl));
+  const mx=Math.max(...vals,1);
+  const CW=480,CH=110,bW=Math.floor((CW-slots.length*2)/slots.length);
+  let chartBars='',chartLabels='',chartVals='';
+  slots.forEach((sl,i)=>{
+    const v=vals[i];
+    const s1=lc.hasS1?slotQ(lineId,'S1',sl):0;
+    const s2=lc.hasS2?slotQ(lineId,'S2',sl):0;
+    const hTot=Math.round((v/mx)*(CH-10));
+    const hS1=s1+s2>0?Math.round((s1/(s1+s2))*hTot):0;
+    const hS2=hTot-hS1;
+    const x=i*(bW+2)+1;
+    const isCur=sl===cur;
+    chartBars+=`
+      <rect x="${x}" y="${CH-hTot}" width="${bW}" height="${hS2}" rx="2"
+        fill="${isCur?'#FBBF24':lc.hasS2?'var(--accent2)':'var(--accent)'}"/>
+      <rect x="${x}" y="${CH-hTot+hS2}" width="${bW}" height="${hS1}" rx="2"
+        fill="${isCur?'#F59E0B':lc.hasS1?'var(--accent)':'transparent'}"/>`;
+    chartLabels+=`<text x="${x+bW/2}" y="${CH+14}" text-anchor="middle" font-size="8"
+      fill="${isCur?'var(--amber)':'var(--muted)'}" font-weight="${isCur?'800':'600'}">${slotLbl(sl)}</text>`;
+    if(v>0) chartVals+=`<text x="${x+bW/2}" y="${CH-hTot-3}" text-anchor="middle" font-size="8.5"
+      fill="var(--text2)" font-weight="700">${v}</text>`;
+  });
+  const chart=`<svg viewBox="0 0 ${CW} ${CH+22}" style="width:100%;min-width:320px">
+    <line x1="0" y1="${CH}" x2="${CW}" y2="${CH}" stroke="var(--border)" stroke-width="1"/>
+    ${chartBars}${chartVals}${chartLabels}
+  </svg>`;
+
+  /* legend */
+  let legend='';
+  if(lc.hasS1&&lc.hasS2){
+    legend=`<div style="display:flex;gap:14px;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:10px;">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px;vertical-align:middle"></span>S1</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent2);margin-right:4px;vertical-align:middle"></span>S2</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#FBBF24;margin-right:4px;vertical-align:middle"></span>현재 시간대</span>
+    </div>`;
+  }
+
+  /* hourly table */
+  let thCols='<th>시간대</th>';
+  if(lc.hasS1) thCols+='<th>S1</th>';
+  if(lc.hasS2) thCols+='<th>S2</th>';
+  thCols+='<th>합계</th>';
+  let tRows='';
+  let grandS1=0,grandS2=0,grandTot=0;
+  slots.forEach(sl=>{
+    const s1=lc.hasS1?slotQ(lineId,'S1',sl):0;
+    const s2=lc.hasS2?slotQ(lineId,'S2',sl):0;
+    const t=s1+s2;
+    grandS1+=s1;grandS2+=s2;grandTot+=t;
+    const isCur=sl===cur;
+    let tds=`<td style="white-space:nowrap;font-weight:${isCur?'800':'600'};color:${isCur?'var(--amber)':'var(--muted)'}">${slotLbl(sl)}</td>`;
+    if(lc.hasS1) tds+=`<td class="hval${!s1?' z':''}">${s1||'—'}</td>`;
+    if(lc.hasS2) tds+=`<td class="hval${!s2?' z':''}">${s2||'—'}</td>`;
+    tds+=`<td class="hval${!t?' z':''}">${t||'—'}</td>`;
+    tRows+=`<tr class="${isCur?'cur-row':''}">${tds}</tr>`;
+  });
+  let sumTds='<td style="font-weight:800;color:var(--text2)">합계</td>';
+  if(lc.hasS1) sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandS1.toLocaleString()}</td>`;
+  if(lc.hasS2) sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandS2.toLocaleString()}</td>`;
+  sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandTot.toLocaleString()}</td>`;
+  tRows+=`<tr class="tot-row">${sumTds}</tr>`;
+
+  document.getElementById('m-body').innerHTML=`
+    <div class="stat-row">
+      <div class="stat-box"><div class="sl">총 생산</div><div class="sv">${tot.toLocaleString()}</div><div class="ss">PCS</div></div>
+      <div class="stat-box"><div class="sl">1H 평균</div><div class="sv">${avgH.toLocaleString()}</div><div class="ss">PCS / h</div></div>
+      ${lc.hasS1&&lc.hasS2?`<div class="stat-box"><div class="sl">S1 합계</div><div class="sv">${s1tot.toLocaleString()}</div><div class="ss">PCS</div></div>
+      <div class="stat-box"><div class="sl">S2 합계</div><div class="sv">${s2tot.toLocaleString()}</div><div class="ss">PCS</div></div>`:''}
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">시간별 생산 현황</div>
+      ${legend}
+      <div class="chart-wrap">${chart}</div>
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">시간대별 상세</div>
+      <table class="htable"><thead><tr>${thCols}</tr></thead><tbody>${tRows}</tbody></table>
+    </div>`;
+
+  document.getElementById('backdrop').classList.add('on');
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){
+  document.getElementById('backdrop').classList.remove('on');
+  document.getElementById('modal').classList.remove('on');
+}
+/* touch drag to close modal */
+let mTy=null;
+document.getElementById('modal').addEventListener('touchstart',e=>{mTy=e.touches[0].clientY;},{passive:true});
+document.getElementById('modal').addEventListener('touchend',e=>{
+  if(mTy===null)return;
+  if(e.changedTouches[0].clientY-mTy>60)closeModal();mTy=null;
+},{passive:true});
+
+/* ─── WS ─── */
 function connect(){
-  ws = new WebSocket(`wss://${TUNNEL}/ws/production`);
-  ws.onopen = () => {
+  ws=new WebSocket(`wss://${TUNNEL}/ws/production`);
+  ws.onopen=()=>{
     document.getElementById('ov').classList.add('h');
-    document.getElementById('cdot').className = 'dot dot-on';
-    document.getElementById('ctxt').textContent = '연결됨';
+    document.getElementById('cdot').className='dot dot-on';
+    document.getElementById('ctxt').textContent='연결됨';
   };
-  ws.onmessage = e => {
-    const msg = JSON.parse(e.data);
-    if(msg.type === 'INIT_PLANTS'){ plants = msg.data; }
-    else if(msg.type === 'INIT_PRODUCTION'){
-      records = msg.data; viewDate = msg.prodDate; viewShift = msg.shift;
-      document.getElementById('date-lbl').textContent = viewDate;
-      renderTabs(); renderAll();
+  ws.onmessage=e=>{
+    const msg=JSON.parse(e.data);
+    if(msg.type==='INIT_PLANTS'){plants=msg.data;}
+    else if(msg.type==='INIT_PRODUCTION'){
+      records=msg.data;viewDate=msg.prodDate;viewShift=msg.shift;
+      document.getElementById('date-lbl').textContent=viewDate;
+      renderTabs();renderAll();
     }
-    else if(msg.type === 'PRODUCTION_ADDED'){
-      const i = records.findIndex(r => r.id === msg.record.id);
-      if(i > -1) records[i] = msg.record; else records.push(msg.record);
-      renderAll(); toast('✓ 생산 기록 추가');
+    else if(msg.type==='PRODUCTION_ADDED'){
+      const i=records.findIndex(r=>r.id===msg.record.id);
+      if(i>-1)records[i]=msg.record;else records.push(msg.record);
+      renderAll();toast('✓ 생산 기록 추가');
     }
-    else if(msg.type === 'PRODUCTION_DELETED'){
-      records = records.filter(r => r.id !== msg.id); renderAll();
-    }
-    else if(msg.type === 'PLANTS_UPDATED'){ plants = msg.data; }
+    else if(msg.type==='PRODUCTION_DELETED'){records=records.filter(r=>r.id!==msg.id);renderAll();}
+    else if(msg.type==='PLANTS_UPDATED'){plants=msg.data;}
   };
-  ws.onclose = () => {
+  ws.onclose=()=>{
     document.getElementById('ov').classList.remove('h');
-    document.getElementById('cdot').className = 'dot dot-off';
-    document.getElementById('ctxt').textContent = '연결 끊김';
-    setTimeout(connect, 3000);
+    document.getElementById('cdot').className='dot dot-off';
+    document.getElementById('ctxt').textContent='연결 끊김';
+    setTimeout(connect,3000);
   };
-  ws.onerror = () => ws.close();
+  ws.onerror=()=>ws.close();
 }
-
 function toast(m){
-  const t = document.getElementById('toast'); t.textContent = m; t.classList.add('s');
-  setTimeout(() => t.classList.remove('s'), 2000);
+  const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');
+  setTimeout(()=>t.classList.remove('s'),2000);
 }
-function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-setInterval(tick, 1000); tick();
-
-const { date, shift } = calcDS(new Date());
-viewDate = date; viewShift = shift;
-document.getElementById('date-lbl').textContent = viewDate;
-renderTabs(); connect();
-setInterval(renderAll, 60000);
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(tick,1000);tick();
+const{date,shift}=calcDS(new Date());
+viewDate=date;viewShift=shift;
+document.getElementById('date-lbl').textContent=viewDate;
+renderTabs();connect();
+setInterval(renderAll,60000);
 </script>
 </body>
 </html>
