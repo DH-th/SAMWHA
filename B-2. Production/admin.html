@@ -190,7 +190,6 @@ button.add-btn{padding:8px 13px;background:var(--accent);border:none;border-radi
     <div class="ptoggle">
       <button class="pbtn on" data-v="S1" onclick="pickProc('S1')">S1</button>
       <button class="pbtn"    data-v="S2" onclick="pickProc('S2')">S2</button>
-      <button class="pbtn"    data-v=""   onclick="pickProc('')">없음</button>
     </div>
   </div>
   <div class="card qr-out" id="qr-out">
@@ -204,7 +203,7 @@ button.add-btn{padding:8px 13px;background:var(--accent);border:none;border-radi
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
 const TUNNEL   = 'server.samhwa.cloud';
-const WEB_BASE = 'https://samhwa.cloud/B-2%20Production/input.html';
+const WEB_BASE = 'https://samhwa.cloud/B-2.%20Production/input.html';
 const LINES    = ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.7_Display','L.9','L.8_IN','L.8_OUT','FGA','Rotary','SDB'];
 
 let ws, plants=[], expanded=new Set();
