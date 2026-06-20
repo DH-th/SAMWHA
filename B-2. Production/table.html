@@ -214,6 +214,49 @@ td{
   .col-line{width:62px;min-width:62px;max-width:62px;}
   .sh{min-width:46px;}
 }
+
+/* ── PC full table ── */
+#pc-wrap{display:none;padding:12px 20px 28px;}
+.pc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shm);overflow-x:auto;}
+.pc-card table{min-width:900px;border-collapse:collapse;width:100%;}
+.pc-card thead th{
+  padding:10px 6px;font-size:12px;font-weight:700;color:var(--muted);
+  letter-spacing:.04em;text-align:center;background:var(--surface2);
+  border-bottom:2px solid var(--border2);white-space:nowrap;
+}
+.pc-card .col-line{
+  position:sticky;left:0;z-index:12!important;background:var(--surface2)!important;
+  width:90px;min-width:90px;max-width:90px;
+  text-align:left!important;padding-left:14px!important;
+  border-right:2px solid var(--border2)!important;
+}
+.pc-card .sh{min-width:64px;}
+.pc-card .sh.cur{background:var(--cur)!important;color:var(--amber)!important;border-bottom-color:var(--cur-border)!important;}
+.pc-card .col-tot{min-width:80px;border-left:2px solid var(--border2)!important;font-weight:800!important;color:var(--text2)!important;}
+.pc-card td{padding:0;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;}
+.pc-card .ln-cell{padding:10px 12px;text-align:left;}
+.pc-card .ln-name{font-size:15px;font-weight:800;color:var(--text);display:block;}
+.pc-card .ln-model{font-size:10px;color:var(--muted);white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:2px;}
+.pc-card .sv{height:58px;}
+.pc-card .sv-inner{padding:4px 3px;}
+.pc-card .sv-total{font-size:18px;font-weight:800;color:var(--text);}
+.pc-card .sv-detail{font-size:10px;color:var(--muted);}
+.pc-card .tv{padding:8px 6px;font-size:17px;font-weight:900;color:var(--text);}
+.pc-card .tv.z{color:var(--border2);font-size:14px;font-weight:400;}
+.pc-card .odd .sv,.pc-card .odd .tv{background:var(--surface);}
+.pc-card .even .sv,.pc-card .even .tv{background:var(--surface2);}
+.pc-card .odd .sv.cur,.pc-card .even .sv.cur{background:var(--cur)!important;}
+.pc-card .sum-row td{background:var(--surface3);border-top:2px solid var(--border2);font-size:12px;font-weight:700;padding:7px 6px;color:var(--text2);}
+.pc-card .sum-row .col-line{font-size:12px;font-weight:800;}
+.pc-card .sum-val{color:var(--accent)!important;font-weight:900!important;font-size:15px!important;}
+
+@media(min-width:768px){
+  .slide-wrap{display:none;}
+  #pc-wrap{display:block;}
+  .sumbar{padding:14px 20px 0;}
+  .sc{padding:12px 18px;}
+  .sc-v{font-size:26px;}
+}
 </style>
 </head>
 <body>
@@ -273,6 +316,12 @@ td{
     </div>
 
     <div class="swipe-hint" id="shint">→ 슬라이드하여 오후 시간대 보기</div>
+  </div>
+</div>
+
+<div id="pc-wrap">
+  <div class="pc-card">
+    <table><thead id="pc-th"></thead><tbody id="pc-tb"></tbody></table>
   </div>
 </div>
 
@@ -354,13 +403,16 @@ vp.addEventListener('touchend',e=>{
 
 /* ── data ── */
 function sr(){return records.filter(r=>r.prodDate===viewDate&&r.shift===viewShift);}
+function adr(){return records.filter(r=>r.prodDate===viewDate);}  // all-day records (both shifts)
 function slotQty(line,proc,slot){return sr().filter(r=>r.line===line&&r.process===proc&&r.slot===slot).reduce((s,r)=>s+(r.qty||0),0);}
 function lineSlotQty(line,slot){return['S1','S2'].reduce((s,p)=>s+slotQty(line,p,slot),0);}
 function lineSlotBreakdown(line,slot){return['S1','S2'].map(p=>({p,q:slotQty(line,p,slot)})).filter(x=>x.q>0);}
 function lineTotal(line,slots){return slots.reduce((s,slot)=>s+lineSlotQty(line,slot),0);}
+function lineTotalAll(line){return adr().filter(r=>r.line===line).reduce((s,r)=>s+(r.qty||0),0);}
+function grandTotalAll(){return LINES.reduce((s,l)=>s+lineTotalAll(l),0);}
 function slotFact(slot){return LINES.reduce((s,l)=>s+lineSlotQty(l,slot),0);}
 function lastModel(line){
-  const recs=sr().filter(r=>r.line===line&&r.modelName);
+  const recs=adr().filter(r=>r.line===line&&r.modelName);
   if(!recs.length)return'';
   return recs.sort((a,b)=>a.slot>b.slot?1:-1).at(-1).modelName;
 }
@@ -400,20 +452,16 @@ function renderAll(){
   document.getElementById('s-el').textContent=el;
   buildSlide('th0','tb0',all.slice(0,6),cur);
   buildSlide('th1','tb1',all.slice(6),cur);
+  buildPC(all,cur);
   refreshSlideLabel();
 }
 
-function buildSlide(thId,tbId,slots,cur){
-  document.getElementById(thId).innerHTML=`<tr>
-    <th class="col-line">라인</th>
-    ${slots.map(s=>`<th class="sh${s===cur?' cur':''}">${slotLbl(s)}</th>`).join('')}
-    <th class="col-tot">합계</th>
-  </tr>`;
+function buildTableRows(slots,cur){
   const rows=[];
   LINES.forEach((line,li)=>{
     const cls=li%2===0?'odd':'even';
     const model=lastModel(line);
-    const tot=lineTotal(line,slots);
+    const tot=lineTotalAll(line);
     let row=`<tr class="${cls}">`;
     row+=`<td class="col-line ln-cell">
       <span class="ln-name">${line}</span>
@@ -437,12 +485,30 @@ function buildSlide(thId,tbId,slots,cur){
     const q=slotFact(slot);
     return`<td class="${slot===cur?'sum-val':''}">${q>0?q.toLocaleString():'—'}</td>`;
   }).join('');
-  const secTot=LINES.reduce((s,l)=>s+lineTotal(l,slots),0);
+  const gTot=grandTotalAll();
   rows.push(`<tr class="sum-row">
     <td class="col-line">전체</td>${sumCells}
-    <td class="sum-val">${secTot>0?secTot.toLocaleString():'—'}</td>
+    <td class="sum-val">${gTot>0?gTot.toLocaleString():'—'}</td>
   </tr>`);
-  document.getElementById(tbId).innerHTML=rows.join('');
+  return rows.join('');
+}
+
+function buildSlide(thId,tbId,slots,cur){
+  document.getElementById(thId).innerHTML=`<tr>
+    <th class="col-line">라인</th>
+    ${slots.map(s=>`<th class="sh${s===cur?' cur':''}">${slotLbl(s)}</th>`).join('')}
+    <th class="col-tot">일일 합계</th>
+  </tr>`;
+  document.getElementById(tbId).innerHTML=buildTableRows(slots,cur);
+}
+
+function buildPC(slots,cur){
+  document.getElementById('pc-th').innerHTML=`<tr>
+    <th class="col-line">라인</th>
+    ${slots.map(s=>`<th class="sh${s===cur?' cur':''}">${slotLbl(s)}</th>`).join('')}
+    <th class="col-tot">일일 합계</th>
+  </tr>`;
+  document.getElementById('pc-tb').innerHTML=buildTableRows(slots,cur);
 }
 
 /* ── WS ── */

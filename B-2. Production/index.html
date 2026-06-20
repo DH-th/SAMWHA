@@ -349,16 +349,16 @@ function sparkline(line){
 /* ─── render dashboard ─── */
 function renderAll(){
   const el=elapsed();
-  const total=sr().reduce((s,r)=>s+(r.qty||0),0);
-  const avg=el>0?Math.round(total/el):0;
-  document.getElementById('s-tot').textContent=total.toLocaleString();
+  const s2total=sr().filter(r=>r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
+  const avg=el>0?Math.round(s2total/el):0;
+  document.getElementById('s-tot').textContent=s2total.toLocaleString();
   document.getElementById('s-avg').textContent=avg.toLocaleString();
 
   const lines=getLines().sort((a,b)=>a.order-b.order);
   const groups=[...new Set(lines.map(l=>l.group))];
-  const prev=prevSlot();
-  const maxPrev=Math.max(...lines.map(l=>{
-    const tot=(l.hasS1?slotQ(l.id,'S1',prev):0)+(l.hasS2?slotQ(l.id,'S2',prev):0);
+  const cur=curSlot();
+  const maxCur=Math.max(...lines.map(l=>{
+    const tot=(l.hasS1?slotQ(l.id,'S1',cur):0)+(l.hasS2?slotQ(l.id,'S2',cur):0);
     return tot;
   }),1);
 
@@ -373,8 +373,8 @@ function renderAll(){
     <div class="card-grid">`;
     gl.forEach(lc=>{
       const {id,name,hasS1,hasS2}=lc;
-      const s1p=hasS1&&prev!=null?slotQ(id,'S1',prev):null;
-      const s2p=hasS2&&prev!=null?slotQ(id,'S2',prev):null;
+      const s1p=hasS1&&cur!=null?slotQ(id,'S1',cur):null;
+      const s2p=hasS2&&cur!=null?slotQ(id,'S2',cur):null;
       const tot=lineTotal(id);
       const active=tot>0;
       const avgH=el>0?Math.round(tot/el):0;
@@ -383,8 +383,8 @@ function renderAll(){
 
       let sRows='';
       if(hasS1&&hasS2){
-        const pct1=s1p!=null?Math.round((s1p/maxPrev)*100):0;
-        const pct2=s2p!=null?Math.round((s2p/maxPrev)*100):0;
+        const pct1=s1p!=null?Math.round((s1p/maxCur)*100):0;
+        const pct2=s2p!=null?Math.round((s2p/maxCur)*100):0;
         sRows=`
           <div class="cs-row">
             <span class="cs-lbl">S1</span>
@@ -397,14 +397,14 @@ function renderAll(){
             <span class="cs-val${!s2p?' dim':''}">${s2p!=null?s2p.toLocaleString():'—'}</span>
           </div>`;
       } else if(hasS2){
-        const pct2=s2p!=null?Math.round((s2p/maxPrev)*100):0;
+        const pct2=s2p!=null?Math.round((s2p/maxCur)*100):0;
         sRows=`<div class="cs-row">
             <span class="cs-lbl">S2</span>
             <div class="cs-bar"><div class="cs-fill cs-fill-2" style="width:${pct2}%"></div></div>
             <span class="cs-val${!s2p?' dim':''}">${s2p!=null?s2p.toLocaleString():'—'}</span>
           </div>`;
       } else if(hasS1){
-        const pct1=s1p!=null?Math.round((s1p/maxPrev)*100):0;
+        const pct1=s1p!=null?Math.round((s1p/maxCur)*100):0;
         sRows=`<div class="cs-row">
             <span class="cs-lbl">S1</span>
             <div class="cs-bar"><div class="cs-fill cs-fill-1" style="width:${pct1}%"></div></div>
@@ -489,25 +489,21 @@ function openModal(lineId){
   let thCols='<th>시간대</th>';
   if(lc.hasS1) thCols+='<th>S1</th>';
   if(lc.hasS2) thCols+='<th>S2</th>';
-  thCols+='<th>합계</th>';
   let tRows='';
-  let grandS1=0,grandS2=0,grandTot=0;
+  let grandS1=0,grandS2=0;
   slots.forEach(sl=>{
     const s1=lc.hasS1?slotQ(lineId,'S1',sl):0;
     const s2=lc.hasS2?slotQ(lineId,'S2',sl):0;
-    const t=s1+s2;
-    grandS1+=s1;grandS2+=s2;grandTot+=t;
+    grandS1+=s1;grandS2+=s2;
     const isCur=sl===cur;
     let tds=`<td style="white-space:nowrap;font-weight:${isCur?'800':'600'};color:${isCur?'var(--amber)':'var(--muted)'}">${slotLbl(sl)}</td>`;
     if(lc.hasS1) tds+=`<td class="hval${!s1?' z':''}">${s1||'—'}</td>`;
     if(lc.hasS2) tds+=`<td class="hval${!s2?' z':''}">${s2||'—'}</td>`;
-    tds+=`<td class="hval${!t?' z':''}">${t||'—'}</td>`;
     tRows+=`<tr class="${isCur?'cur-row':''}">${tds}</tr>`;
   });
   let sumTds='<td style="font-weight:800;color:var(--text2)">합계</td>';
   if(lc.hasS1) sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandS1.toLocaleString()}</td>`;
   if(lc.hasS2) sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandS2.toLocaleString()}</td>`;
-  sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandTot.toLocaleString()}</td>`;
   tRows+=`<tr class="tot-row">${sumTds}</tr>`;
 
   document.getElementById('m-body').innerHTML=`
