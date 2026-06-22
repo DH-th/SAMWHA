@@ -180,20 +180,23 @@ td{
 .tv.z{color:var(--border2);font-size:12px;font-weight:400;}
 .odd .sv,.odd .tv{background:var(--surface);}
 .even .sv,.even .tv{background:var(--surface2);}
-/* ── two-level header ── */
-.th-top th,.th-sub th{padding:4px 2px;font-size:10px;font-weight:700;color:var(--muted);
-  text-align:center;background:var(--surface2);
-  border-bottom:1px solid var(--border);white-space:nowrap;}
-.th-top .col-line{border-bottom:2px solid var(--border2)!important;}
-.th-top .slot-grp{border-bottom:1px solid var(--border);border-left:1px solid var(--border2);}
-.th-top .col-day-hd{border-left:2px solid var(--border2)!important;}
-.th-sub .s1-th{font-size:9px;font-weight:800;color:var(--accent);border-bottom:2px solid var(--border2);}
-.th-sub .s2-th{font-size:9px;font-weight:800;color:var(--teal);background:rgba(26,140,135,.07)!important;border-bottom:2px solid var(--border2);}
-
-.th-sub .tot-th{border-left:2px solid var(--border2)!important;border-bottom:2px solid var(--border2);font-size:9px;font-weight:800;}
-.th-sub .avg-th{border-bottom:2px solid var(--border2);font-size:9px;font-weight:800;}
+/* ── 공정 탭 ── */
+.proc-tabs{display:flex;gap:4px;}
+.ptab{
+  padding:5px 14px;border:1.5px solid var(--border);border-radius:6px;
+  background:var(--surface2);color:var(--muted);font-size:12px;font-weight:800;cursor:pointer;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.ptab.s1{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+.ptab.s2{background:var(--teal-bg);border-color:var(--teal);color:var(--teal);}
+/* 자동 전환 표시 */
+.proc-auto{
+  font-size:10px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.proc-auto .bar-bg{width:32px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.proc-auto .bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;}
 /* ── data cells ── */
-.s2-td{background:rgba(26,140,135,.05)!important;}
 .col-avg{min-width:52px;width:52px;border-left:1px solid var(--border)!important;font-weight:700!important;}
 .sum-row td{
   background:var(--surface3);border-top:2px solid var(--border2);
@@ -304,6 +307,14 @@ td{
     <button class="stab" id="td" onclick="setShift('day')">☀ 주간</button>
     <button class="stab" id="tn" onclick="setShift('night')">🌙 야간</button>
   </div>
+  <div class="proc-tabs">
+    <button class="ptab" id="pp1" onclick="setProc('S1')">S1</button>
+    <button class="ptab" id="pp2" onclick="setProc('S2')">S2</button>
+  </div>
+  <div class="proc-auto" id="proc-auto">
+    <span id="proc-timer-lbl">자동</span>
+    <div class="bar-bg"><div class="bar-fill" id="proc-bar" style="width:100%"></div></div>
+  </div>
   <div class="hdr">
     <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt">연결중</span></div>
     <span id="clock"></span>
@@ -313,10 +324,16 @@ td{
 
 <div class="sumbar">
   <div class="sc sc-tot"><div class="sc-l">총 생산</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
-  <div class="sc sc-s1"><div class="sc-l">S1 합계</div><div class="sc-v" id="s-s1">0</div><div class="sc-s">PCS</div></div>
-  <div class="sc sc-s2"><div class="sc-l">S2 합계</div><div class="sc-v" id="s-s2">0</div><div class="sc-s">PCS</div></div>
-  <div class="sc"><div class="sc-l">S1 평균/h</div><div class="sc-v" id="s-a1">0</div><div class="sc-s">PCS</div></div>
-  <div class="sc"><div class="sc-l">S2 평균/h</div><div class="sc-v" id="s-a2">0</div><div class="sc-s">PCS</div></div>
+  <div class="sc sc-s1">
+    <div class="sc-l">S1 합계</div>
+    <div class="sc-v" id="s-s1">0</div>
+    <div class="sc-s">PCS &nbsp;·&nbsp; 평균 <span id="s-a1" style="font-weight:800">0</span>/h</div>
+  </div>
+  <div class="sc sc-s2">
+    <div class="sc-l">S2 합계</div>
+    <div class="sc-v" id="s-s2">0</div>
+    <div class="sc-s">PCS &nbsp;·&nbsp; 평균 <span id="s-a2" style="font-weight:800">0</span>/h</div>
+  </div>
 </div>
 
 <div class="slide-wrap">
@@ -364,7 +381,7 @@ const DAY_SLOTS  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:0
 const NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 
 let ws,records=[],plants=[];
-let viewDate='',viewShift='day',curSlideIdx=0;
+let viewDate='',viewShift='day',viewProc='S1',curSlideIdx=0;
 
 const p2=n=>String(n).padStart(2,'0');
 const fmtD=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
@@ -468,6 +485,41 @@ function fetchLog(){
     .then(r=>r.json()).then(j=>{records=j.records||[];renderAll();});
 }
 
+/* ── 공정 전환 ── */
+const PROC_INTERVAL=5*60; // seconds
+let procTimer=PROC_INTERVAL;
+let procTimerHandle=null;
+
+function setProc(p,resetTimer=true){
+  viewProc=p;
+  renderProc();
+  renderAll();
+  if(resetTimer){procTimer=PROC_INTERVAL;updateProcBar();}
+}
+function renderProc(){
+  document.getElementById('pp1').className='ptab'+(viewProc==='S1'?' s1':'');
+  document.getElementById('pp2').className='ptab'+(viewProc==='S2'?' s2':'');
+}
+function updateProcBar(){
+  const pct=Math.round((procTimer/PROC_INTERVAL)*100);
+  document.getElementById('proc-bar').style.width=pct+'%';
+  const color=viewProc==='S1'?'var(--accent)':'var(--teal)';
+  document.getElementById('proc-bar').style.background=color;
+  const m=Math.floor(procTimer/60),s=procTimer%60;
+  document.getElementById('proc-timer-lbl').textContent=`자동 ${m}:${String(s).padStart(2,'0')}`;
+}
+function startProcTimer(){
+  if(procTimerHandle)clearInterval(procTimerHandle);
+  procTimerHandle=setInterval(()=>{
+    procTimer--;
+    if(procTimer<=0){
+      procTimer=PROC_INTERVAL;
+      setProc(viewProc==='S1'?'S2':'S1',false);
+    }
+    updateProcBar();
+  },1000);
+}
+
 /* ── render ── */
 function renderAll(){
   const el=elapsed();
@@ -497,61 +549,45 @@ function buildTableRows(slots,cur){
   LINES.forEach((line,li)=>{
     const cls=li%2===0?'odd':'even';
     const model=lastModel(line);
-    const s1tot=adr().filter(r=>r.line===line&&r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
-    const s2tot=adr().filter(r=>r.line===line&&r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
-    const tot=s1tot+s2tot;
-    // 평균은 현재 교대 실적으로만 계산
-    const s1cur=sr().filter(r=>r.line===line&&r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
-    const s2cur=sr().filter(r=>r.line===line&&r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
-    const avg=el>0?Math.round((s1cur+s2cur)/el):0;
+    const tot=adr().filter(r=>r.line===line&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
+    const curTot=sr().filter(r=>r.line===line&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
+    const avg=el>0?Math.round(curTot/el):0;
     let row=`<tr class="${cls}">
       <td class="col-line ln-cell">
         <span class="ln-name">${line}</span>
         ${model?`<span class="ln-model">${model}</span>`:''}
       </td>`;
     slots.forEach(slot=>{
-      const s1=slotQty(line,'S1',slot);const s2=slotQty(line,'S2',slot);const isCur=slot===cur;
-      row+=`<td class="sv s1-td${isCur?' cur':''}"><div class="sv-inner">${s1>0?`<span class="sv-total">${s1.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
-      row+=`<td class="sv s2-td${isCur?' cur':''}"><div class="sv-inner">${s2>0?`<span class="sv-total">${s2.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+      const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
+      row+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
     });
     row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
     row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
     row+=`</tr>`;
     rows.push(row);
   });
-  // Summary row
+  // 전체 합계 행
   let sumRow=`<tr class="sum-row"><td class="col-line">전체</td>`;
-  let gs1=0,gs2=0;
   slots.forEach(slot=>{
-    const s1=LINES.reduce((s,l)=>s+slotQty(l,'S1',slot),0);
-    const s2=LINES.reduce((s,l)=>s+slotQty(l,'S2',slot),0);
+    const q=LINES.reduce((s,l)=>s+slotQty(l,viewProc,slot),0);
     const isCur=slot===cur;
-    sumRow+=`<td class="s1-td${isCur?' cur':''}">${s1>0?s1.toLocaleString():'—'}</td>`;
-    sumRow+=`<td class="s2-td${isCur?' cur':''}">${s2>0?s2.toLocaleString():'—'}</td>`;
+    sumRow+=`<td class="sv${isCur?' cur':''}">${q>0?q.toLocaleString():'—'}</td>`;
   });
-  gs1=adr().filter(r=>LINES.includes(r.line)&&r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
-  gs2=adr().filter(r=>LINES.includes(r.line)&&r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
-  const gtot=gs1+gs2;
-  // 평균은 현재 교대 전체 실적으로 계산
-  const gcur=sr().filter(r=>LINES.includes(r.line)).reduce((s,r)=>s+(r.qty||0),0);
+  const gtot=adr().filter(r=>LINES.includes(r.line)&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
+  const gcur=sr().filter(r=>LINES.includes(r.line)&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
   const gavg=el>0?Math.round(gcur/el):0;
   sumRow+=`<td class="col-tot sum-val">${gtot>0?gtot.toLocaleString():'—'}</td>`;
-  sumRow+=`<td class="col-avg sum-avg">${gavg>0?gavg.toLocaleString():'—'}</td>`;
-  sumRow+=`</tr>`;
+  sumRow+=`<td class="col-avg sum-avg">${gavg>0?gavg.toLocaleString():'—'}</td></tr>`;
   rows.push(sumRow);
   return rows.join('');
 }
 
-const HDR_THEAD=(slots,cur)=>`
-  <tr class="th-top">
-    <th class="col-line" rowspan="2">라인</th>
-    ${slots.map(s=>`<th colspan="2" class="slot-grp${s===cur?' cur':''}">${slotLbl(s)}</th>`).join('')}
-    <th colspan="2" class="col-day-hd">일일 합계</th>
-  </tr>
-  <tr class="th-sub">
-    ${slots.map(s=>`<th class="s1-th${s===cur?' cur':''}">S1</th><th class="s2-th${s===cur?' cur':''}">S2</th>`).join('')}
-    <th class="tot-th">합계</th><th class="avg-th">평균/h</th>
-  </tr>`;
+const HDR_THEAD=(slots,cur)=>`<tr>
+  <th class="col-line">라인</th>
+  ${slots.map(s=>`<th class="sh">${slotLbl(s)}</th>`).join('')}
+  <th class="col-tot">일일 합계</th>
+  <th class="col-avg">평균/h</th>
+</tr>`;
 
 function buildSlide(thId,tbId,slots,cur){
   document.getElementById(thId).innerHTML=HDR_THEAD(slots,cur);
@@ -570,11 +606,8 @@ function equalizeRows(){
   if(!card||!thead||!tbody)return;
   const rows=[...tbody.querySelectorAll('tr')];
   if(!rows.length)return;
-  // reset first so measurements are accurate
   rows.forEach(r=>r.style.height='');
-  const cardH=card.clientHeight;
-  const theadH=thead.offsetHeight;
-  const rowH=Math.floor((cardH-theadH)/rows.length);
+  const rowH=Math.floor((card.clientHeight-thead.offsetHeight)/rows.length);
   rows.forEach(r=>r.style.height=rowH+'px');
 }
 window.addEventListener('resize',equalizeRows);
@@ -644,7 +677,7 @@ function autoShiftCheck(){
 const{date,shift}=calcDS(new Date());
 viewDate=date;viewShift=shift;
 document.getElementById('date-lbl').textContent=viewDate;
-renderTabs();connect();
+renderTabs();renderProc();connect();startProcTimer();
 setInterval(renderAll,60000);
 setInterval(autoShiftCheck,60000);
 autoShiftCheck();
