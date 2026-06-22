@@ -468,6 +468,35 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+  /* ── ZONE BUTTONS ── */
+  .zone-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .zone-btn {
+    padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 20px;
+    background: var(--bg-card2); color: var(--text-dim); font-size: 12px;
+    cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.15s;
+  }
+  .zone-btn:active { transform: scale(0.95); }
+  .zone-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .zone-btn.etc-btn { border-style: dashed; }
+
+  /* ── QR CODE ── */
+  .qr-section { text-align: center; padding: 14px 0 6px; }
+  .qr-canvas-wrap { display: inline-block; background: #fff; padding: 10px; border-radius: 8px; }
+  .qr-code-label { margin-top: 6px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-dim); letter-spacing: 1px; }
+
+  /* ── PRINT LABEL ── */
+  #print-label { display: none; }
+  @media print {
+    body > * { display: none !important; }
+    #print-label {
+      display: flex !important; flex-direction: column; align-items: center; justify-content: center;
+      width: 62mm; padding: 4mm; font-family: sans-serif; color: #000;
+    }
+    .pl-name { font-size: 11pt; font-weight: bold; margin: 3mm 0 1mm; text-align: center; }
+    .pl-code { font-family: monospace; font-size: 16pt; font-weight: bold; margin: 2mm 0; }
+    .pl-zone { font-size: 9pt; color: #555; }
+  }
+
   /* ════════════ MOBILE BREAKPOINT ════════════ */
   @media (max-width: 860px) {
     #sidebar { display: none; }
@@ -669,6 +698,17 @@
           <div class="chip-list" id="lines-chip-list"></div>
         </div>
       </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📍 <span>구역(설비) 리스트</span></div></div>
+        <div class="card-body">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">품목 등록 시 버튼으로 선택. "etc" 항목은 항상 포함됩니다.</div>
+          <div class="cat-input-row">
+            <input class="form-control" id="new-zone" placeholder="새 구역 입력 (예: SMT#1, 조립라인)" onkeydown="if(event.key==='Enter')addZone()">
+            <button class="btn btn-accent" onclick="addZone()">추가</button>
+          </div>
+          <div class="chip-list" id="zones-chip-list"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══ PERSONNEL ═══ -->
@@ -864,18 +904,21 @@
           <input class="form-control" id="item-name" placeholder="품목명 입력">
         </div>
       </div>
-      <div class="form-row cols-2">
+      <div class="form-row">
         <div class="form-group">
-          <label class="form-label" data-i18n="col_cat1">분류 1 <span class="req">*</span></label>
+          <label class="form-label" data-i18n="col_cat1">분류 <span class="req">*</span></label>
           <select class="form-control" id="item-cat1" onchange="onItemCat1Change()">
             <option value="" data-i18n="ph_select_cat">-- 선택 --</option>
           </select>
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
-          <label class="form-label" data-i18n="col_cat2">분류 2 <span class="req">*</span></label>
-          <select class="form-control" id="item-cat2">
-            <option value="" data-i18n="ph_select_cat2_first">-- 분류1을 먼저 선택 --</option>
-          </select>
+          <label class="form-label">구역(설비)</label>
+          <div class="zone-btns" id="item-zone-btns">
+            <button type="button" class="zone-btn etc-btn selected" onclick="selectZone('etc')">etc</button>
+          </div>
+          <input type="hidden" id="item-zone" value="etc">
         </div>
       </div>
       <div class="form-row">
@@ -941,6 +984,13 @@
       <div class="detail-actions">
         <button class="btn btn-ok btn-block" onclick="quickAction('in')">⬇️ <span data-i18n="btn_quick_in">입고</span></button>
         <button class="btn btn-danger btn-block" onclick="quickAction('out')">⬆️ <span data-i18n="btn_quick_out">출고</span></button>
+      </div>
+      <div class="qr-section" id="detail-qr-section">
+        <div class="qr-canvas-wrap"><canvas id="qr-canvas" width="160" height="160"></canvas></div>
+        <div class="qr-code-label" id="detail-qr-label"></div>
+        <div style="margin-top:8px">
+          <button class="btn btn-outline btn-sm" onclick="printLabel()">🖨️ 라벨 인쇄</button>
+        </div>
       </div>
       <div class="card" style="margin-bottom:14px">
         <div class="card-header"><div class="card-title">📈 <span data-i18n="detail_chart_title">월별 입출고 추이</span></div></div>
@@ -1128,8 +1178,17 @@
   </div>
 </div>
 
+<!-- ─── PRINT LABEL ─── -->
+<div id="print-label">
+  <canvas id="print-qr-canvas" width="200" height="200"></canvas>
+  <div class="pl-code" id="pl-code"></div>
+  <div class="pl-name" id="pl-name"></div>
+  <div class="pl-zone" id="pl-zone"></div>
+</div>
+
 <!-- ─── SCRIPTS ─── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
 // ═══════════════════════════════════════════
 //  SERVER CONFIG
@@ -1217,6 +1276,7 @@ function handleServerMessage(msg) {
       categories1 = (msg.data && msg.data.cat1) || [];
       categories2 = (msg.data && msg.data.cat2) || [];
       lines = (msg.data && msg.data.lines) || [];
+      zones = (msg.data && msg.data.zones) || [];
       renderAll();
       break;
     case 'ITEM_UPSERTED': {
@@ -1258,16 +1318,18 @@ function handleServerMessage(msg) {
       categories1 = (msg.data && msg.data.cat1) || [];
       categories2 = (msg.data && msg.data.cat2) || [];
       lines = (msg.data && msg.data.lines) || lines;
+      zones = (msg.data && msg.data.zones) || zones;
       renderAll();
       break;
     case 'CATEGORY_ADDED': {
-      // 사용 라인(lines) 전용 - cat1/cat2는 CATEGORIES_SYNCED로 처리됨
       if (msg.catType === 'lines' && !lines.includes(msg.value)) lines.push(msg.value);
+      if (msg.catType === 'zones' && !zones.includes(msg.value)) zones.push(msg.value);
       renderAll();
       break;
     }
     case 'CATEGORY_DELETED': {
       if (msg.catType === 'lines') lines = lines.filter(c=>c!==msg.value);
+      if (msg.catType === 'zones') zones = zones.filter(c=>c!==msg.value);
       renderAll();
       break;
     }
@@ -1448,8 +1510,9 @@ let inbounds = [];
 let outbounds = [];
 let personnel = [];
 let categories1 = [];   // [{id, name, prefix}]
-let categories2 = [];   // [{id, name, parentId, isEtc}]
+let categories2 = [];   // kept for backward compat, not used in UI
 let lines = [];
+let zones = [];         // 구역(설비) 리스트
 let currentDetailItemId = null;
 let historyTabFilter = 'all';
 let currentPage = 'dashboard';
@@ -1597,12 +1660,10 @@ function renderAll() {
 }
 
 function updateSelects() {
-  // 품목 등록 모달: 분류1 select, 분류2는 선택된 분류1에 종속되어 onItemCat1Change()에서 채움
   const cat1Options = categories1.map(c => ({ value: c.id, label: c.name }));
   fillSelectObjs('item-cat1', cat1Options, t('ph_select_cat'));
-  onItemCat1Change(true); // 현재 선택된 cat1 기준으로 cat2 옵션 갱신 (값 보존)
+  onItemCat1Change(true);
 
-  // 재고 현황 필터의 분류1
   fillSelectObjs('inv-cat1', cat1Options, t('filter_all_cat1'));
 
   // 사용 라인
@@ -1623,18 +1684,7 @@ function getCat1Name(id) { const c = categories1.find(c=>c.id===id); return c ? 
 function getCat2Name(id) { const c = categories2.find(c=>c.id===id); return c ? c.name : ''; }
 function cat2OptionsForCat1(cat1Id) { return categories2.filter(c => c.parentId === cat1Id); }
 
-function onItemCat1Change(preserveCat2) {
-  const cat1Id = document.getElementById('item-cat1').value;
-  const cat2Select = document.getElementById('item-cat2');
-  const prevCat2 = preserveCat2 ? cat2Select.value : '';
-  if (!cat1Id) {
-    cat2Select.innerHTML = `<option value="" data-i18n="ph_select_cat2_first">${t('ph_select_cat2_first')}</option>`;
-    updateItemCodePreview();
-    return;
-  }
-  const opts = cat2OptionsForCat1(cat1Id);
-  cat2Select.innerHTML = `<option value="">${t('ph_select_cat')}</option>` + opts.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
-  if (prevCat2 && opts.some(c => c.id === prevCat2)) cat2Select.value = prevCat2;
+function onItemCat1Change(preserveVal) {
   updateItemCodePreview();
 }
 
@@ -1715,7 +1765,7 @@ function itemCardHtml(item) {
     ? `<img src="${escapeHtml(photoUrl(item.photo))}" alt="">`
     : `🔧`;
   const cat1Name = getCat1Name(item.cat1);
-  const cat2Name = getCat2Name(item.cat2);
+  const zoneName = item.zone && item.zone !== 'etc' ? item.zone : '';
   return `
     <div class="item-card" onclick="openItemDetail('${item.id}')">
       <div class="item-card-photo">${photo}<span class="status-dot ${status}"></span></div>
@@ -1725,7 +1775,7 @@ function itemCardHtml(item) {
       </div>
       <div class="item-card-cats">
         ${cat1Name ? `<span class="chip-sm">${escapeHtml(cat1Name)}</span>` : ''}
-        ${cat2Name ? `<span class="chip-sm">${escapeHtml(cat2Name)}</span>` : ''}
+        ${zoneName ? `<span class="chip-sm">📍${escapeHtml(zoneName)}</span>` : ''}
       </div>
       <div class="item-card-stock-row">
         <div class="stock-bar"><div class="stock-bar-fill ${status}" style="width:${stockPct(item)}%"></div></div>
@@ -1740,7 +1790,7 @@ function itemListRowHtml(item) {
     ? `<img src="${escapeHtml(photoUrl(item.photo))}" alt="">`
     : `🔧`;
   const cat1Name = getCat1Name(item.cat1);
-  const cat2Name = getCat2Name(item.cat2);
+  const zoneName = item.zone && item.zone !== 'etc' ? item.zone : '';
   return `
     <div class="item-list-row" onclick="openItemDetail('${item.id}')">
       <div class="item-list-photo">${photo}<span class="status-dot ${status}"></span></div>
@@ -1749,7 +1799,7 @@ function itemListRowHtml(item) {
         <div class="item-list-meta">
           <span>${escapeHtml(item.code || '-')}</span>
           ${cat1Name ? `<span>· ${escapeHtml(cat1Name)}</span>` : ''}
-          ${cat2Name ? `<span>· ${escapeHtml(cat2Name)}</span>` : ''}
+          ${zoneName ? `<span>· 📍${escapeHtml(zoneName)}</span>` : ''}
         </div>
       </div>
       <div class="item-list-stock">
@@ -1802,6 +1852,26 @@ function renderInventory() {
 function renderCategories() {
   renderCat1Tree();
   renderChipList('lines-chip-list', lines, 'lines');
+  renderZones();
+}
+
+function renderZones() {
+  // Categories page chip list
+  const el = document.getElementById('zones-chip-list');
+  if (el) {
+    el.innerHTML = zones.length
+      ? zones.map(v => `<div class="chip">${escapeHtml(v)}<span class="chip-del" onclick="deleteZone('${escapeHtml(v).replace(/'/g,"\\'")}')">✕</span></div>`).join('')
+      : `<div class="empty-state" style="padding:10px">-</div>`;
+  }
+  // Item modal zone buttons
+  const btns = document.getElementById('item-zone-btns');
+  if (btns) {
+    const cur = document.getElementById('item-zone').value || 'etc';
+    btns.innerHTML = zones.map(v =>
+      `<button type="button" class="zone-btn${cur===v?' selected':''}" onclick="selectZone('${escapeHtml(v).replace(/'/g,"\\'")}'">${escapeHtml(v)}</button>`
+    ).join('') +
+    `<button type="button" class="zone-btn etc-btn${cur==='etc'?' selected':''}" onclick="selectZone('etc')">etc</button>`;
+  }
 }
 
 function renderCat1Tree() {
@@ -1810,33 +1880,20 @@ function renderCat1Tree() {
     tree.innerHTML = `<div class="empty-state" style="padding:10px">-</div>`;
     return;
   }
-  tree.innerHTML = categories1.map(c1 => {
+  tree.innerHTML = categories1.map((c1, idx) => {
     const isEditing = editingCat1Id === c1.id;
+    const prefix = c1.prefix || String.fromCharCode(65 + idx);
     const nameHtml = isEditing
       ? `<input class="cat1-name-input" id="cat1-edit-input-${c1.id}" value="${escapeHtml(c1.name)}" onkeydown="if(event.key==='Enter')saveCat1Edit('${c1.id}')" onblur="saveCat1Edit('${c1.id}')">`
       : `<div class="cat1-name" onclick="startEditCat1('${c1.id}')">${escapeHtml(c1.name)}</div>`;
-    const subCats = cat2OptionsForCat1(c1.id);
-    const chipsHtml = subCats.map(c2 => {
-      const isEditingC2 = editingCat2Id === c2.id;
-      if (isEditingC2) {
-        return `<div class="cat2-chip"><input class="cat2-chip-input" id="cat2-edit-input-${c2.id}" value="${escapeHtml(c2.name)}" onkeydown="if(event.key==='Enter')saveCat2Edit('${c2.id}')" onblur="saveCat2Edit('${c2.id}')"></div>`;
-      }
-      return `<div class="cat2-chip ${c2.isEtc ? 'is-etc' : ''}">
-        <span class="cat2-chip-name" onclick="${c2.isEtc ? '' : `startEditCat2('${c2.id}')`}">${escapeHtml(c2.name)}</span>
-        ${c2.isEtc ? '' : `<span class="chip-del" onclick="deleteCat2('${c2.id}')">✕</span>`}
-      </div>`;
-    }).join('');
+    const itemCount = items.filter(i => i.cat1 === c1.id).length;
     return `
       <div class="cat1-node">
         <div class="cat1-node-head">
-          <div class="cat1-prefix-badge">${escapeHtml(c1.prefix || '?')}</div>
+          <div class="cat1-prefix-badge">${escapeHtml(prefix)}</div>
           ${nameHtml}
+          <span style="font-size:11px;color:var(--text-muted);margin-right:4px">${itemCount}개</span>
           <button class="cat1-del-btn" onclick="deleteCat1('${c1.id}')">✕</button>
-        </div>
-        <div class="cat2-sublist">${chipsHtml}</div>
-        <div class="cat2-add-row">
-          <input class="form-control" id="new-cat2-${c1.id}" placeholder="${t('ph_new_cat2')}" onkeydown="if(event.key==='Enter')addCat2('${c1.id}')">
-          <button class="btn btn-accent btn-sm" onclick="addCat2('${c1.id}')">${t('btn_add')}</button>
         </div>
       </div>`;
   }).join('');
@@ -1934,6 +1991,7 @@ function openItemModal(editId) {
   document.getElementById('item-modal-title').textContent = t('modal_item_title');
   onItemCat1Change(); // cat2 select를 '분류1을 먼저 선택' 상태로 초기화 + 코드 미리보기 초기화
 
+  selectZone('etc');
   if (editId) {
     const item = findItem(editId);
     if (item) {
@@ -1943,13 +2001,13 @@ function openItemModal(editId) {
       document.getElementById('item-name').value = item.name || '';
       document.getElementById('item-cat1').value = item.cat1 || '';
       onItemCat1Change(true);
-      document.getElementById('item-cat2').value = item.cat2 || '';
       document.getElementById('item-brand').value = item.brand || '';
       document.getElementById('item-min').value = item.minQty || 0;
       document.getElementById('item-note').value = item.note || '';
       document.getElementById('item-modal-title').textContent = t('modal_item_edit_title');
       updateItemCodePreview();
       if (item.photo) showPhotoPreview(photoUrl(item.photo));
+      selectZone(item.zone || 'etc');
     }
   }
   openModal('modal-item');
@@ -1987,9 +2045,8 @@ function saveItem() {
   const name = document.getElementById('item-name').value.trim();
   const minQty = parseInt(document.getElementById('item-min').value, 10);
   const cat1 = document.getElementById('item-cat1').value;
-  const cat2 = document.getElementById('item-cat2').value;
   if (!name) { alert(t('msg_enter_item_name')); return; }
-  if (!cat1 || !cat2) { alert(t('msg_select_cat_required')); return; }
+  if (!cat1) { alert('분류를 선택하세요.'); return; }
   if (isNaN(minQty)) { alert(t('msg_required')); return; }
 
   const editId = document.getElementById('item-edit-id').value;
@@ -1998,10 +2055,10 @@ function saveItem() {
 
   const item = {
     id: editId || ('item_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
-    code: document.getElementById('item-code').value.trim(),  // 신규 등록 시 비워두면 서버가 자동 채번
+    code: document.getElementById('item-code').value.trim(),
     name: name,
     cat1: cat1,
-    cat2: cat2,
+    zone: document.getElementById('item-zone').value || 'etc',
     brand: document.getElementById('item-brand').value.trim(),
     minQty: minQty,
     note: document.getElementById('item-note').value.trim(),
@@ -2050,12 +2107,20 @@ function renderItemDetailContent(item) {
 
   const status = getStockStatus(item);
   const cat1Name = getCat1Name(item.cat1);
-  const cat2Name = getCat2Name(item.cat2);
   let badges = statusBadge(status);
   if (item.brand) badges += `<span class="badge badge-info">${escapeHtml(item.brand)}</span>`;
   if (cat1Name) badges += `<span class="badge badge-accent">${escapeHtml(cat1Name)}</span>`;
-  if (cat2Name) badges += `<span class="badge badge-accent">${escapeHtml(cat2Name)}</span>`;
+  if (item.zone && item.zone !== 'etc') badges += `<span class="badge badge-accent">📍${escapeHtml(item.zone)}</span>`;
   document.getElementById('detail-badges').innerHTML = badges;
+
+  // QR code
+  if (item.code) {
+    document.getElementById('detail-qr-label').textContent = item.code;
+    setTimeout(() => generateQR(item.code, 'qr-canvas', 160), 0);
+    document.getElementById('detail-qr-section').style.display = '';
+  } else {
+    document.getElementById('detail-qr-section').style.display = 'none';
+  }
 
   const stockNumEl = document.getElementById('detail-stock-value');
   stockNumEl.textContent = item.stock || 0;
@@ -2216,6 +2281,40 @@ function addCategory(catType) {
 function deleteCategory(catType, value) {
   if (!confirm(t('msg_confirm_delete_cat'))) return;
   sendWS({ type: 'DELETE_CATEGORY', catType, value });
+}
+
+// ── 구역(설비) CRUD ──
+function addZone() {
+  const input = document.getElementById('new-zone');
+  const value = input.value.trim();
+  if (!value) return;
+  if (sendWS({ type: 'ADD_CATEGORY', catType: 'zones', value })) input.value = '';
+}
+function deleteZone(value) {
+  if (!confirm(t('msg_confirm_delete_cat'))) return;
+  sendWS({ type: 'DELETE_CATEGORY', catType: 'zones', value });
+}
+function selectZone(value) {
+  document.getElementById('item-zone').value = value;
+  renderZones();
+}
+
+// ── QR 코드 / 라벨 인쇄 ──
+function generateQR(code, canvasId, size) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !code) return;
+  try {
+    new QRious({ element: canvas, value: code, size: size || 160, background: '#ffffff', foreground: '#000000', level: 'M' });
+  } catch(e) { console.error('QR error', e); }
+}
+function printLabel() {
+  const item = findItem(currentDetailItemId);
+  if (!item || !item.code) return;
+  document.getElementById('pl-code').textContent = item.code;
+  document.getElementById('pl-name').textContent = item.name;
+  document.getElementById('pl-zone').textContent = item.zone && item.zone !== 'etc' ? `구역: ${item.zone}` : '';
+  generateQR(item.code, 'print-qr-canvas', 200);
+  window.print();
 }
 
 // ── 분류1 (대분류) CRUD ──
