@@ -136,11 +136,19 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 .sheet-bg{position:fixed;inset:0;background:rgba(26,22,16,.4);z-index:100;display:none;align-items:flex-end;justify-content:center;}
 .sheet-bg.open{display:flex;}
 .sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.sheet-title{font-size:15px;font-weight:800;}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sheet-back{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:15px;cursor:pointer;padding:5px 11px;font-weight:700;display:none;}
+.sheet-back.on{display:block;}
+.sheet-title{font-size:15px;font-weight:800;flex:1;}
 .sheet-x{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:15px;cursor:pointer;padding:5px 11px;font-weight:700;}
 .sheet-body{overflow-y:auto;flex:1;padding:8px 12px 12px;}
-.plant-group{margin-bottom:4px;}
+/* Plant 선택 */
+.plant-opt{display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:10px;cursor:pointer;transition:background .12s;border:1px solid var(--border);margin-bottom:7px;background:var(--s2);}
+.plant-opt:active{background:var(--accent-bg);}
+.plant-opt-name{font-size:16px;font-weight:800;flex:1;}
+.plant-opt-cnt{font-size:11px;color:var(--muted);font-weight:600;}
+.plant-opt-arrow{font-size:20px;color:var(--border2);}
+/* 모델 선택 */
 .plant-label{font-size:10px;font-weight:800;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;padding:10px 8px 4px;}
 .model-opt{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;cursor:pointer;transition:background .12s;border:1px solid transparent;}
 .model-opt:active{background:var(--accent-bg);}
@@ -253,7 +261,8 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 <div class="sheet-bg" id="sheet-bg" onclick="onSheetBg(event)">
   <div class="sheet">
     <div class="sheet-head">
-      <div class="sheet-title">Plant / 모델 선택</div>
+      <button class="sheet-back" id="sheet-back" onclick="sheetBack()">‹ 뒤로</button>
+      <div class="sheet-title" id="sheet-title">Plant 선택</div>
       <button class="sheet-x" onclick="closeSheet()">✕</button>
     </div>
     <div class="sheet-body" id="sheet-body"></div>
@@ -390,22 +399,40 @@ function cancelEdit(){
   renderQty();renderRecords();
 }
 
-/* ── 모델 시트 ── */
-function openSheet(){renderSheet();document.getElementById('sheet-bg').classList.add('open');}
+/* ── 모델 시트 (2단계: Plant → 모델) ── */
+let sheetStep='plant', sheetPlant=null;
+function openSheet(){sheetStep='plant';sheetPlant=null;renderSheet();document.getElementById('sheet-bg').classList.add('open');}
 function closeSheet(){document.getElementById('sheet-bg').classList.remove('open');}
 function onSheetBg(e){if(e.target===document.getElementById('sheet-bg'))closeSheet();}
+function sheetBack(){sheetStep='plant';sheetPlant=null;renderSheet();}
 function renderSheet(){
   const body=document.getElementById('sheet-body');
-  if(!plants.length){body.innerHTML='<div class="no-plants">등록된 Plant가 없습니다.</div>';return;}
-  body.innerHTML=plants.map(pl=>`
-    <div class="plant-group">
-      <div class="plant-label">${pl.name}</div>
-      ${(pl.models||[]).map(m=>`
-        <div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
-          <div class="model-dot"></div><div class="model-opt-name">${m.name}</div>
-        </div>`).join('')}
-      ${!(pl.models||[]).length?`<div style="padding:8px 12px;font-size:12px;color:var(--muted)">모델 없음</div>`:''}
-    </div>`).join('');
+  const backBtn=document.getElementById('sheet-back');
+  const title=document.getElementById('sheet-title');
+  if(sheetStep==='plant'){
+    backBtn.classList.remove('on');title.textContent='Plant 선택';
+    if(!plants.length){body.innerHTML='<div class="no-plants">등록된 Plant가 없습니다.</div>';return;}
+    body.innerHTML=plants.map(pl=>`
+      <div class="plant-opt" onclick="pickPlant('${pl.id}')">
+        <div class="plant-opt-name">${pl.name}</div>
+        <div class="plant-opt-cnt">${(pl.models||[]).length}개 모델</div>
+        <div class="plant-opt-arrow">›</div>
+      </div>`).join('');
+  } else {
+    const pl=sheetPlant;
+    backBtn.classList.add('on');title.textContent=pl.name+' 모델 선택';
+    const models=pl.models||[];
+    if(!models.length){body.innerHTML='<div class="no-plants">등록된 모델이 없습니다.</div>';return;}
+    body.innerHTML=models.map(m=>`
+      <div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
+        <div class="model-dot"></div><div class="model-opt-name">${m.name}</div>
+      </div>`).join('');
+  }
+}
+function pickPlant(pid){
+  sheetPlant=plants.find(pl=>pl.id===pid);
+  if(!sheetPlant)return;
+  sheetStep='model';renderSheet();
 }
 function pickModel(pid,mid){
   selPlant=plants.find(pl=>pl.id===pid);

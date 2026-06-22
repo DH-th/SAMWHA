@@ -85,6 +85,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .15s,border-color .15s;}
 .ibtn:hover.e{color:var(--accent);border-color:rgba(37,88,212,.4);}
 .ibtn:hover.d{color:var(--red);border-color:rgba(185,28,28,.4);}
+.ibtn.mv{font-size:11px;color:var(--muted);}
+.ibtn.mv:hover{color:var(--text);border-color:var(--border2);}
 .model-list{display:none;padding:0 13px 12px;border-top:1px solid var(--border);}
 .model-list.open{display:block;padding-top:8px;}
 
@@ -262,6 +264,8 @@ function renderPlants(){
         <span class="chevron${open?' open':''}">▶</span>
         <span class="pname" id="pn-${p.id}">${p.name}</span>
         <span class="pcnt">${models.length}개 모델</span>
+        <button class="ibtn mv" onclick="event.stopPropagation();moveP('${p.id}',-1)" title="위로">▲</button>
+        <button class="ibtn mv" onclick="event.stopPropagation();moveP('${p.id}',1)" title="아래로">▼</button>
         <button class="ibtn e" onclick="event.stopPropagation();editP('${p.id}')" title="이름 변경">✏</button>
         <button class="ibtn d" onclick="event.stopPropagation();delP('${p.id}')" title="삭제">🗑</button>
       </div>
@@ -285,6 +289,12 @@ function renderPlants(){
   }).join('');
 }
 function toggleP(id){expanded.has(id)?expanded.delete(id):expanded.add(id);renderPlants();}
+function moveP(id,dir){
+  const i=plants.findIndex(p=>p.id===id);if(i<0)return;
+  const j=i+dir;if(j<0||j>=plants.length)return;
+  [plants[i],plants[j]]=[plants[j],plants[i]];
+  ws.send(JSON.stringify({type:'REORDER_PLANTS',ids:plants.map(p=>p.id)}));
+}
 
 /* ── Plant CRUD ── */
 function addPlant(){
