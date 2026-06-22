@@ -461,43 +461,45 @@ function openModal(lineId){
   document.getElementById('m-title').textContent=lc.name;
   document.getElementById('m-sub').textContent=`${model||'모델 미등록'} · ${viewDate} ${viewShift==='day'?'주간':'야간'}`;
 
-  /* build chart — S2 bars (primary), S1 overlay line */
+  /* build chart — grouped bars: S1(left) + S2(right) per slot */
   const s2vals=slots.map(sl=>lc.hasS2?slotQ(lineId,'S2',sl):0);
   const s1vals=slots.map(sl=>lc.hasS1?slotQ(lineId,'S1',sl):0);
   const mx=Math.max(...s2vals,...s1vals,1);
-  const n=slots.length,BW=26,GAP=4,CH=80,PAD=6;
-  const CW=n*(BW+GAP)-GAP;
+  const n=slots.length,CH=90,PAD=6;
+  const both=lc.hasS1&&lc.hasS2;
+  const BW=both?11:22,IG=both?2:0,SLOT=both?BW*2+IG+6:BW+6;
+  const CW=n*SLOT-6;
   let bars='',labels='';
   slots.forEach((sl,i)=>{
-    const v2=s2vals[i],v1=s1vals[i];
+    const v1=s1vals[i],v2=s2vals[i];
     const isCur=sl===cur;
-    const x=i*(BW+GAP);
-    const h2=Math.max(v2>0?4:0,Math.round((v2/mx)*(CH-PAD)));
+    const x=i*SLOT;
     const h1=Math.max(v1>0?4:0,Math.round((v1/mx)*(CH-PAD)));
-    const col=isCur?'#F59E0B':'var(--accent2)';
-    const col1=isCur?'#FBBF24':'var(--accent)';
-    if(lc.hasS1&&lc.hasS2){
-      bars+=`<rect x="${x}" y="${CH-h2}" width="${BW}" height="${h2}" rx="3" fill="${col}" opacity=".9"/>`;
-      if(h1>0) bars+=`<rect x="${x+2}" y="${CH-h1}" width="${BW-4}" height="3" rx="1.5" fill="${col1}" opacity=".7"/>`;
+    const h2=Math.max(v2>0?4:0,Math.round((v2/mx)*(CH-PAD)));
+    const c1=isCur?'#6EA8FE':'#3B82F6';
+    const c2=isCur?'#F59E0B':'#1A8C87';
+    if(both){
+      if(h1>0) bars+=`<rect x="${x}" y="${CH-h1}" width="${BW}" height="${h1}" rx="2" fill="${c1}" opacity=".9"/>`;
+      if(h2>0) bars+=`<rect x="${x+BW+IG}" y="${CH-h2}" width="${BW}" height="${h2}" rx="2" fill="${c2}" opacity=".9"/>`;
+    } else if(lc.hasS1){
+      if(h1>0) bars+=`<rect x="${x}" y="${CH-h1}" width="${BW}" height="${h1}" rx="2" fill="${c1}" opacity=".9"/>`;
     } else {
-      const hv=lc.hasS2?h2:h1;
-      bars+=`<rect x="${x}" y="${CH-hv}" width="${BW}" height="${hv}" rx="3" fill="${col}" opacity=".9"/>`;
+      if(h2>0) bars+=`<rect x="${x}" y="${CH-h2}" width="${BW}" height="${h2}" rx="2" fill="${c2}" opacity=".9"/>`;
     }
-    if(h2===0&&!lc.hasS2) bars+=``;
-    labels+=`<text x="${x+BW/2}" y="${CH+13}" text-anchor="middle" font-size="9"
+    const lx=both?x+BW+IG/2:x+BW/2;
+    labels+=`<text x="${lx}" y="${CH+13}" text-anchor="middle" font-size="9"
       fill="${isCur?'var(--amber)':'var(--muted)'}" font-weight="${isCur?'800':'500'}">${parseInt(sl)}</text>`;
   });
-  const chart=`<svg viewBox="0 0 ${CW} ${CH+18}" style="width:100%;max-height:120px">
-    <line x1="0" y1="${CH}" x2="${CW}" y2="${CH}" stroke="var(--border)" stroke-width="1.5"/>
+  const chart=`<svg viewBox="0 0 ${CW} ${CH+18}" style="width:100%;max-height:130px">
+    <line x1="0" y1="${CH}" x2="${CW}" y2="${CH}" stroke="var(--border)" stroke-width="1"/>
     ${bars}${labels}
   </svg>`;
 
   let legend='';
-  if(lc.hasS1&&lc.hasS2){
-    legend=`<div style="display:flex;gap:12px;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:8px;align-items:center;">
-      <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:4px;border-radius:2px;background:var(--accent);display:inline-block"></span>S1</span>
-      <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:10px;border-radius:2px;background:var(--accent2);display:inline-block"></span>S2</span>
-      <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:10px;border-radius:2px;background:#F59E0B;display:inline-block"></span>현재</span>
+  if(both){
+    legend=`<div style="display:flex;gap:14px;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:8px;align-items:center;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:12px;border-radius:2px;background:#3B82F6;display:inline-block"></span>S1 (투입)</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:12px;border-radius:2px;background:#1A8C87;display:inline-block"></span>S2 (산출)</span>
     </div>`;
   }
 
@@ -522,12 +524,15 @@ function openModal(lineId){
   if(lc.hasS2) sumTds+=`<td style="font-weight:900;color:var(--accent)">${grandS2.toLocaleString()}</td>`;
   tRows+=`<tr class="tot-row">${sumTds}</tr>`;
 
+  const s1avgH=el>0?Math.round(s1tot/el):0;
+  const s2avgH=el>0?Math.round(s2tot/el):0;
   document.getElementById('m-body').innerHTML=`
-    <div class="stat-row">
+    <div class="stat-row" style="flex-wrap:wrap;gap:6px;">
       <div class="stat-box"><div class="sl">총 생산</div><div class="sv">${tot.toLocaleString()}</div><div class="ss">PCS</div></div>
-      <div class="stat-box"><div class="sl">1H 평균</div><div class="sv">${avgH.toLocaleString()}</div><div class="ss">PCS / h</div></div>
-      ${lc.hasS1&&lc.hasS2?`<div class="stat-box"><div class="sl">S1 합계</div><div class="sv">${s1tot.toLocaleString()}</div><div class="ss">PCS</div></div>
-      <div class="stat-box"><div class="sl">S2 합계</div><div class="sv">${s2tot.toLocaleString()}</div><div class="ss">PCS</div></div>`:''}
+      ${lc.hasS1?`<div class="stat-box" style="border-color:#3B82F6;"><div class="sl" style="color:#3B82F6">S1 합계</div><div class="sv">${s1tot.toLocaleString()}</div><div class="ss">PCS</div></div>`:''}
+      ${lc.hasS2?`<div class="stat-box" style="border-color:#1A8C87;"><div class="sl" style="color:#1A8C87">S2 합계</div><div class="sv">${s2tot.toLocaleString()}</div><div class="ss">PCS</div></div>`:''}
+      ${lc.hasS1?`<div class="stat-box"><div class="sl">S1 평균/h</div><div class="sv">${s1avgH.toLocaleString()}</div><div class="ss">PCS</div></div>`:''}
+      ${lc.hasS2?`<div class="stat-box"><div class="sl">S2 평균/h</div><div class="sv">${s2avgH.toLocaleString()}</div><div class="ss">PCS</div></div>`:''}
     </div>
     <div class="modal-section">
       <div class="ms-title">시간별 생산 현황</div>
