@@ -13,62 +13,64 @@
   --border:#DDD7CB; --border2:#C4BDB0;
   --text:#1A1610; --text2:#3A342C; --muted:#8A8278;
   --accent:#2558D4; --accent-bg:#EBF0FD;
-  --teal:#1A8C87; --teal-bg:#E6F7F7;
-  --green:#146D38; --green-bg:#E6F4ED;
-  --amber:#A8530A;
+  --teal:#1A8C87;
+  --green:#146D38;
+  --amber:#A8530A; --amber-bg:#FEF3C7;
   --red:#B91C1C;
-  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh:0 1px 3px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;}
 html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
 
-/* ── header ── */
-.top{
-  background:var(--surface);border-bottom:1px solid var(--border);
-  padding:14px 16px 12px;
-  padding-top:calc(14px + env(safe-area-inset-top));
+/* ── 오프라인 ── */
+#offline{display:none;position:fixed;top:0;left:0;right:0;z-index:300;
+  background:var(--red);color:#fff;text-align:center;font-size:12px;font-weight:700;
+  padding:8px;padding-top:calc(8px + env(safe-area-inset-top));}
+
+/* ── 헤더: 일체형 두 칸 ── */
+.hdr{
+  display:flex;
+  padding-top:env(safe-area-inset-top);
+  background:var(--surface);
+  border-bottom:2px solid var(--border2);
   box-shadow:var(--sh);
 }
-.top-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
-.line-tag{
-  display:inline-flex;align-items:center;
-  background:var(--accent-bg);border:1px solid var(--accent);
-  border-radius:8px;padding:4px 10px;
-  font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.06em;
+.hdr-cell{
+  flex:1;padding:16px 18px;
+  display:flex;flex-direction:column;gap:6px;
 }
-.line-proc{
-  font-size:11px;font-weight:700;color:var(--muted);
-  background:var(--s2);border:1px solid var(--border);
-  border-radius:6px;padding:3px 9px;
-}
-.line-big{font-size:22px;font-weight:900;letter-spacing:-.02em;color:var(--text);}
-.conn-row{display:flex;align-items:center;gap:6px;margin-top:4px;}
-.cdot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0;}
+.hdr-cell:first-child{border-right:1px solid var(--border2);}
+.hdr-lbl{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+.hdr-val{font-size:34px;font-weight:900;letter-spacing:-.03em;line-height:1;color:var(--text);}
+.hdr-val.proc{color:var(--accent);}
+.conn-row{display:flex;align-items:center;gap:5px;}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0;}
 .cdot.off{background:var(--red);animation:none;}
-.ctxt{font-size:11px;color:var(--muted);font-weight:600;}
+.ctxt{font-size:10px;color:var(--muted);font-weight:600;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* ── production summary bar ── */
-.prod-summary{
-  display:flex;gap:0;
-  background:var(--surface);border-bottom:1px solid var(--border);
+/* ── 생산 요약: S1 | S2 각 칸 ── */
+.summary{
+  display:flex;
+  background:var(--surface);
+  border-bottom:2px solid var(--border2);
 }
-.ps-item{
-  flex:1;padding:10px 14px;border-right:1px solid var(--border);
-  display:flex;flex-direction:column;gap:2px;
+.sum-cell{
+  flex:1;padding:14px 18px;
+  display:flex;flex-direction:column;gap:3px;
 }
-.ps-item:last-child{border-right:none;}
-.ps-lbl{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;}
-.ps-val{font-size:18px;font-weight:900;color:var(--text);letter-spacing:-.02em;line-height:1.1;}
-.ps-val.s2{color:var(--teal);}
-.ps-sub{font-size:9px;color:var(--muted);font-weight:600;}
+.sum-cell:first-child{border-right:1px solid var(--border2);}
+.sum-proc{font-size:11px;font-weight:800;letter-spacing:.08em;}
+.sum-proc.s1{color:var(--accent);}
+.sum-proc.s2{color:var(--teal);}
+.sum-tot{font-size:32px;font-weight:900;letter-spacing:-.03em;line-height:1.1;color:var(--text);}
+.sum-unit{font-size:10px;color:var(--muted);font-weight:600;}
+.sum-avg{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px;}
 
-/* ── model selector ── */
-.model-bar{
-  display:flex;align-items:center;justify-content:space-between;
+/* ── 모델 선택 ── */
+.model-bar{display:flex;align-items:center;justify-content:space-between;
   padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);
-  cursor:pointer;transition:background .15s;
-}
+  cursor:pointer;transition:background .12s;}
 .model-bar:active{background:var(--s2);}
 .mb-left{display:flex;flex-direction:column;gap:2px;}
 .mb-plant{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
@@ -76,161 +78,134 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 .mb-model.empty{color:var(--muted);font-style:italic;font-size:13px;font-weight:600;}
 .mb-arrow{font-size:20px;color:var(--border2);}
 
-/* ── qty section ── */
-.qty-section{padding:16px 16px 10px;}
+/* ── 수량 입력 ── */
+.qty-section{padding:14px 14px 8px;}
 .qty-display{
-  text-align:center;margin-bottom:14px;
-  background:var(--surface);border:1.5px solid var(--border);border-radius:16px;
-  padding:18px 16px;box-shadow:var(--sh);
+  text-align:center;margin-bottom:12px;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:14px;
+  padding:14px 16px;box-shadow:var(--sh);position:relative;
 }
-.qty-num{font-size:60px;font-weight:900;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);}
+.edit-badge{position:absolute;top:8px;right:10px;
+  background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);
+  font-size:10px;font-weight:800;border-radius:6px;padding:2px 7px;display:none;}
+.edit-badge.on{display:block;}
+.qty-num{font-size:56px;font-weight:900;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);}
 .qty-num.zero{color:var(--border2);}
-.qty-unit{font-size:12px;color:var(--muted);margin-top:4px;font-weight:700;letter-spacing:.1em;}
+.qty-unit{font-size:11px;color:var(--muted);margin-top:3px;font-weight:700;letter-spacing:.1em;}
 
 /* ── numpad ── */
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.nk{
-  padding:17px 0;border:1px solid var(--border);border-radius:12px;
+.nk{padding:16px 0;border:1px solid var(--border);border-radius:11px;
   background:var(--surface);font-size:22px;font-weight:700;color:var(--text);
-  cursor:pointer;text-align:center;transition:background .1s,transform .08s;user-select:none;
-  box-shadow:var(--sh);
-}
+  cursor:pointer;text-align:center;transition:background .1s,transform .08s;user-select:none;box-shadow:var(--sh);}
 .nk:active{background:var(--s3);transform:scale(.94);}
 .nk.del{font-size:18px;color:var(--muted);}
 .nk.clr{font-size:13px;font-weight:800;color:var(--red);border-color:rgba(185,28,28,.2);}
 
+/* ── 오늘 기록 ── */
+.records-section{padding:10px 14px 100px;}
+.rec-title{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;}
+.rec-list{display:flex;flex-direction:column;gap:6px;}
+.rec-item{display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:9px 12px;box-shadow:var(--sh);}
+.rec-slot{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;min-width:80px;}
+.rec-model{font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rec-qty{font-size:16px;font-weight:900;color:var(--text);min-width:50px;text-align:right;font-variant-numeric:tabular-nums;}
+.rec-edit{padding:5px 10px;border:1px solid var(--accent);border-radius:7px;
+  background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:800;
+  cursor:pointer;flex-shrink:0;}
+.rec-edit:active{background:var(--accent);color:#fff;}
+.rec-empty{text-align:center;padding:16px;color:var(--muted);font-size:12px;font-weight:600;}
+
 /* ── submit ── */
-.submit-wrap{
-  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+.submit-wrap{position:fixed;bottom:0;left:50%;transform:translateX(-50%);
   width:100%;max-width:480px;
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
-  background:var(--bg);border-top:1px solid var(--border);
-}
-.submit-btn{
-  width:100%;padding:17px;background:var(--accent);color:#fff;
-  border:none;border-radius:14px;font-size:17px;font-weight:900;
-  cursor:pointer;transition:background .15s;letter-spacing:-.01em;
-}
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px;}
+.cancel-btn{padding:16px 20px;border:1px solid var(--border);border-radius:12px;
+  background:var(--s2);font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;display:none;}
+.cancel-btn.on{display:block;}
+.submit-btn{flex:1;padding:16px;background:var(--accent);color:#fff;
+  border:none;border-radius:12px;font-size:17px;font-weight:900;cursor:pointer;transition:background .15s;}
 .submit-btn:active{background:#1D4ED8;}
 .submit-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+.submit-btn.edit-mode{background:var(--amber);}
 
-/* ── bottom sheet ── */
-.sheet-bg{
-  position:fixed;inset:0;background:rgba(26,22,16,.4);z-index:100;
-  display:none;align-items:flex-end;justify-content:center;
-}
+/* ── 시트 ── */
+.sheet-bg{position:fixed;inset:0;background:rgba(26,22,16,.4);z-index:100;display:none;align-items:flex-end;justify-content:center;}
 .sheet-bg.open{display:flex;}
-.sheet{
-  background:var(--surface);border-radius:20px 20px 0 0;
-  width:100%;max-width:480px;max-height:80vh;
-  display:flex;flex-direction:column;
-  box-shadow:0 -6px 30px rgba(0,0,0,.1);
-  padding-bottom:env(safe-area-inset-bottom);
-}
-.sheet-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;
-}
-.sheet-title{font-size:15px;font-weight:800;color:var(--text);}
-.sheet-x{background:var(--s2);border:1px solid var(--border);border-radius:8px;
-  color:var(--muted);font-size:15px;cursor:pointer;padding:5px 11px;font-weight:700;}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sheet-title{font-size:15px;font-weight:800;}
+.sheet-x{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:15px;cursor:pointer;padding:5px 11px;font-weight:700;}
 .sheet-body{overflow-y:auto;flex:1;padding:8px 12px 12px;}
 .plant-group{margin-bottom:4px;}
-.plant-label{
-  font-size:10px;font-weight:800;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;
-  padding:10px 8px 4px;
-}
-.model-opt{
-  display:flex;align-items:center;gap:10px;padding:12px;
-  border-radius:10px;cursor:pointer;transition:background .12s;border:1px solid transparent;
-}
+.plant-label{font-size:10px;font-weight:800;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;padding:10px 8px 4px;}
+.model-opt{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;cursor:pointer;transition:background .12s;border:1px solid transparent;}
 .model-opt:active{background:var(--accent-bg);}
 .model-opt.selected{background:var(--accent-bg);border-color:var(--accent);}
 .model-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;}
 .model-opt.selected .model-dot{background:var(--accent);border-color:var(--accent);}
-.model-opt-name{font-size:14px;font-weight:700;color:var(--text);}
+.model-opt-name{font-size:14px;font-weight:700;}
 .no-plants{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
 
-/* ── confirm sheet ── */
-.cf-sheet{
-  background:var(--surface);border-radius:20px 20px 0 0;
-  width:100%;max-width:480px;padding:20px 20px calc(20px + env(safe-area-inset-bottom));
-  box-shadow:0 -6px 30px rgba(0,0,0,.1);
-}
-.cf-title{font-size:17px;font-weight:900;margin-bottom:3px;color:var(--text);}
+/* ── 확인 시트 ── */
+.cf-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px calc(20px + env(safe-area-inset-bottom));}
+.cf-title{font-size:17px;font-weight:900;margin-bottom:3px;}
 .cf-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
 .cf-rows{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
-.cf-row{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:10px;
-}
+.cf-row{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:10px;}
 .cf-lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
-.cf-val{font-size:13px;font-weight:800;color:var(--text);}
-.slot-sel{
-  background:var(--accent-bg);border:1.5px solid var(--accent);border-radius:7px;
-  padding:5px 8px;color:var(--accent);font-size:13px;font-weight:800;outline:none;
-  font-family:inherit;cursor:pointer;
-}
+.cf-val{font-size:13px;font-weight:800;}
+.slot-sel{background:var(--accent-bg);border:1.5px solid var(--accent);border-radius:7px;padding:5px 8px;color:var(--accent);font-size:13px;font-weight:800;outline:none;font-family:inherit;cursor:pointer;}
 .cf-btns{display:flex;gap:8px;}
-.cf-cancel{flex:1;padding:14px;border:1px solid var(--border);border-radius:12px;
-  background:var(--s2);font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;}
-.cf-ok{flex:2;padding:14px;background:var(--accent);color:#fff;border:none;
-  border-radius:12px;font-size:14px;font-weight:900;cursor:pointer;}
-.cf-ok:active{background:#1D4ED8;}
+.cf-cancel{flex:1;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--s2);font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;}
+.cf-ok{flex:2;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:900;cursor:pointer;}
+.cf-ok.edit-mode{background:var(--amber);}
 
-/* ── success ── */
-#success{display:none;padding:50px 20px 120px;text-align:center;}
-.ok-icon{font-size:56px;margin-bottom:12px;}
-.ok-title{font-size:21px;font-weight:900;margin-bottom:6px;color:var(--text);}
-.ok-sub{font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:28px;}
-.again-btn{padding:15px 36px;background:var(--accent);color:#fff;border:none;
-  border-radius:12px;font-size:15px;font-weight:900;cursor:pointer;}
-
-/* offline */
-#offline{
-  display:none;position:fixed;top:0;left:0;right:0;z-index:200;
-  background:var(--red);color:#fff;text-align:center;font-size:12px;font-weight:700;
-  padding:8px;padding-top:calc(8px + env(safe-area-inset-top));
-}
+/* ── 토스트 ── */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:var(--text);color:#fff;border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:700;z-index:200;
+  opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;}
+#toast.s{opacity:1;}
 </style>
 </head>
 <body>
 
 <div id="offline">서버 연결 끊김 — 재연결 중...</div>
 
-<!-- 헤더 -->
-<div class="top">
-  <div class="top-row1">
-    <div class="line-tag" id="line-tag">라인</div>
-    <div class="line-proc" id="line-proc"></div>
+<!-- 헤더: 일체형 두 칸 -->
+<div class="hdr">
+  <div class="hdr-cell">
+    <div class="hdr-lbl">LINE</div>
+    <div class="hdr-val" id="hb-line">—</div>
+    <div class="conn-row"><span class="cdot" id="cdot"></span><span class="ctxt" id="ctxt">연결 중</span></div>
   </div>
-  <div class="line-big" id="line-big">-</div>
-  <div class="conn-row">
-    <span class="cdot" id="cdot"></span>
-    <span class="ctxt" id="ctxt">연결 중</span>
-  </div>
-</div>
-
-<!-- 생산 요약 -->
-<div class="prod-summary">
-  <div class="ps-item">
-    <div class="ps-lbl">S1</div>
-    <div class="ps-val" id="ps-s1">—</div>
-    <div class="ps-sub">PCS</div>
-  </div>
-  <div class="ps-item">
-    <div class="ps-lbl">S2</div>
-    <div class="ps-val s2" id="ps-s2">—</div>
-    <div class="ps-sub">PCS</div>
-  </div>
-  <div class="ps-item">
-    <div class="ps-lbl">1H 평균 (S2)</div>
-    <div class="ps-val" id="ps-avg">—</div>
-    <div class="ps-sub">PCS / h</div>
+  <div class="hdr-cell">
+    <div class="hdr-lbl">PROCESS</div>
+    <div class="hdr-val proc" id="hb-proc">—</div>
   </div>
 </div>
 
-<!-- 모델 선택 바 -->
+<!-- 생산 요약: S1 | S2 각 칸 -->
+<div class="summary">
+  <div class="sum-cell">
+    <div class="sum-proc s1">S1</div>
+    <div class="sum-tot" id="ps-s1">—</div>
+    <div class="sum-unit">PCS</div>
+    <div class="sum-avg" id="avg-s1"></div>
+  </div>
+  <div class="sum-cell">
+    <div class="sum-proc s2">S2</div>
+    <div class="sum-tot" id="ps-s2">—</div>
+    <div class="sum-unit">PCS</div>
+    <div class="sum-avg" id="avg-s2"></div>
+  </div>
+</div>
+
+<!-- 모델 선택 -->
 <div class="model-bar" id="model-bar" onclick="openSheet()">
   <div class="mb-left">
     <div class="mb-plant" id="mb-plant">Plant</div>
@@ -240,8 +215,9 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 </div>
 
 <!-- 수량 입력 -->
-<div class="qty-section" id="main-area">
+<div class="qty-section">
   <div class="qty-display">
+    <div class="edit-badge" id="edit-badge">수정 중</div>
     <div class="qty-num zero" id="qty-disp">0</div>
     <div class="qty-unit">PCS</div>
   </div>
@@ -261,16 +237,15 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
   </div>
 </div>
 
-<!-- 성공 화면 -->
-<div id="success">
-  <div class="ok-icon">✅</div>
-  <div class="ok-title">등록 완료!</div>
-  <div class="ok-sub" id="ok-sub"></div>
-  <button class="again-btn" onclick="reset()">다시 입력</button>
+<!-- 오늘 기록 -->
+<div class="records-section">
+  <div class="rec-title">오늘 기록</div>
+  <div class="rec-list" id="rec-list"><div class="rec-empty">등록된 기록이 없습니다</div></div>
 </div>
 
-<!-- 하단 등록 버튼 -->
-<div class="submit-wrap" id="submit-wrap">
+<!-- 하단 버튼 -->
+<div class="submit-wrap">
+  <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()">취소</button>
   <button class="submit-btn" id="submit-btn" onclick="openConfirm()" disabled>등록하기</button>
 </div>
 
@@ -288,7 +263,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 <!-- 확인 시트 -->
 <div class="sheet-bg" id="cf-bg" onclick="onCfBg(event)">
   <div class="cf-sheet">
-    <div class="cf-title">등록 확인</div>
+    <div class="cf-title" id="cf-title">등록 확인</div>
     <div class="cf-sub">시간대를 확인하고 등록하세요.</div>
     <div class="cf-rows">
       <div class="cf-row"><span class="cf-lbl">라인 / 공정</span><span class="cf-val" id="cf-line">-</span></div>
@@ -299,10 +274,12 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
     </div>
     <div class="cf-btns">
       <button class="cf-cancel" onclick="closeConfirm()">취소</button>
-      <button class="cf-ok" onclick="submit()">등록</button>
+      <button class="cf-ok" id="cf-ok" onclick="submit()">등록</button>
     </div>
   </div>
 </div>
+
+<div id="toast"></div>
 
 <script>
 const TUNNEL='server.samhwa.cloud';
@@ -312,19 +289,18 @@ const LS_KEY='prod_last_sel';
 
 const params=new URLSearchParams(location.search);
 const LINE=params.get('line')||'', PROC=params.get('process')||'';
-
-document.getElementById('line-tag').textContent=`라인  ${LINE}`;
-document.getElementById('line-proc').textContent=PROC||'공정';
-document.getElementById('line-big').textContent=LINE+(PROC?` — ${PROC}`:'');
+document.getElementById('hb-line').textContent=LINE||'—';
+document.getElementById('hb-proc').textContent=PROC||'—';
 
 let ws, plants=[], selPlant=null, selModel=null, qtyStr='0';
 let records=[], viewDate='';
+let editingId=null;
 
 /* ── 숫자 ── */
-function n(d){if(qtyStr==='0')qtyStr=d;else if(qtyStr.length<6)qtyStr+=d;render();}
-function del(){qtyStr=qtyStr.length<=1?'0':qtyStr.slice(0,-1);render();}
-function clr(){qtyStr='0';render();}
-function render(){
+function n(d){if(qtyStr==='0')qtyStr=d;else if(qtyStr.length<6)qtyStr+=d;renderQty();}
+function del(){qtyStr=qtyStr.length<=1?'0':qtyStr.slice(0,-1);renderQty();}
+function clr(){qtyStr='0';renderQty();}
+function renderQty(){
   const v=parseInt(qtyStr);
   const el=document.getElementById('qty-disp');
   el.textContent=v.toLocaleString();
@@ -356,63 +332,110 @@ function elapsed(){
   else{if(h>=20)return Math.max(1,h-20+1);if(h<8)return Math.max(1,4+h+1);return 12;}
 }
 
-/* ── production summary ── */
+/* ── 생산 요약 ── */
 function updateSummary(){
-  const lineRecs=records.filter(r=>r.line===LINE&&r.prodDate===viewDate);
-  const s1=lineRecs.filter(r=>r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
-  const s2=lineRecs.filter(r=>r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
+  const lr=records.filter(r=>r.line===LINE&&r.prodDate===viewDate);
+  const s1=lr.filter(r=>r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
+  const s2=lr.filter(r=>r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
   const el=elapsed();
-  const avg=el>0?Math.round(s2/el):0;
-  document.getElementById('ps-s2').textContent=s2>0?s2.toLocaleString():'—';
+  const a1=el>0?Math.round(s1/el):0;
+  const a2=el>0?Math.round(s2/el):0;
   document.getElementById('ps-s1').textContent=s1>0?s1.toLocaleString():'—';
-  document.getElementById('ps-avg').textContent=avg>0?avg.toLocaleString():'—';
+  document.getElementById('ps-s2').textContent=s2>0?s2.toLocaleString():'—';
+  document.getElementById('avg-s1').textContent=a1>0?`평균 ${a1}/h`:'';
+  document.getElementById('avg-s2').textContent=a2>0?`평균 ${a2}/h`:'';
+  renderRecords();
+}
+
+/* ── 오늘 기록 ── */
+function renderRecords(){
+  const myRecs=records
+    .filter(r=>r.line===LINE&&r.process===PROC&&r.prodDate===viewDate)
+    .sort((a,b)=>a.slot>b.slot?1:-1);
+  const el=document.getElementById('rec-list');
+  if(!myRecs.length){el.innerHTML='<div class="rec-empty">오늘 등록된 기록이 없습니다</div>';return;}
+  el.innerHTML=myRecs.map(r=>{
+    const nh=(parseInt(r.slot)+1)%24;
+    return`<div class="rec-item">
+      <div class="rec-slot">${r.slot}~${p2(nh)}:00</div>
+      <div class="rec-model">${r.modelName||''}</div>
+      <div class="rec-qty">${(r.qty||0).toLocaleString()}</div>
+      <button class="rec-edit" onclick="startEdit('${r.id}')">${editingId===r.id?'✓':'수정'}</button>
+    </div>`;
+  }).join('');
+}
+
+/* ── 수정 모드 ── */
+function startEdit(id){
+  const rec=records.find(r=>r.id===id);if(!rec)return;
+  editingId=id;qtyStr=String(rec.qty||0);
+  const sp=plants.find(p=>p.id===rec.plantId);
+  const sm=sp?.models?.find(m=>m.id===rec.modelId);
+  if(sp&&sm){selPlant=sp;selModel=sm;
+    document.getElementById('mb-plant').textContent=sp.name;
+    const mEl=document.getElementById('mb-model');mEl.textContent=sm.name;mEl.className='mb-model';}
+  document.getElementById('edit-badge').classList.add('on');
+  document.getElementById('submit-btn').classList.add('edit-mode');
+  document.getElementById('submit-btn').textContent='수정하기';
+  document.getElementById('cancel-btn').classList.add('on');
+  renderQty();renderRecords();
+  window.scrollTo({top:document.querySelector('.qty-section').offsetTop-80,behavior:'smooth'});
+}
+function cancelEdit(){
+  editingId=null;qtyStr='0';
+  document.getElementById('edit-badge').classList.remove('on');
+  document.getElementById('submit-btn').classList.remove('edit-mode');
+  document.getElementById('submit-btn').textContent='등록하기';
+  document.getElementById('cancel-btn').classList.remove('on');
+  renderQty();renderRecords();
 }
 
 /* ── 모델 시트 ── */
 function openSheet(){renderSheet();document.getElementById('sheet-bg').classList.add('open');}
 function closeSheet(){document.getElementById('sheet-bg').classList.remove('open');}
 function onSheetBg(e){if(e.target===document.getElementById('sheet-bg'))closeSheet();}
-
 function renderSheet(){
   const body=document.getElementById('sheet-body');
-  if(!plants.length){body.innerHTML='<div class="no-plants">등록된 Plant가 없습니다.<br>관리자에게 문의하세요.</div>';return;}
+  if(!plants.length){body.innerHTML='<div class="no-plants">등록된 Plant가 없습니다.</div>';return;}
   body.innerHTML=plants.map(pl=>`
     <div class="plant-group">
       <div class="plant-label">${pl.name}</div>
       ${(pl.models||[]).map(m=>`
         <div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
-          <div class="model-dot"></div>
-          <div class="model-opt-name">${m.name}</div>
+          <div class="model-dot"></div><div class="model-opt-name">${m.name}</div>
         </div>`).join('')}
       ${!(pl.models||[]).length?`<div style="padding:8px 12px;font-size:12px;color:var(--muted)">모델 없음</div>`:''}
     </div>`).join('');
 }
-
 function pickModel(pid,mid){
   selPlant=plants.find(pl=>pl.id===pid);
   selModel=selPlant?.models?.find(m=>m.id===mid);
   if(selPlant&&selModel){
     localStorage.setItem(LS_KEY,JSON.stringify({plantId:selPlant.id,modelId:selModel.id}));
     document.getElementById('mb-plant').textContent=selPlant.name;
-    const mEl=document.getElementById('mb-model');
-    mEl.textContent=selModel.name;mEl.className='mb-model';
+    const mEl=document.getElementById('mb-model');mEl.textContent=selModel.name;mEl.className='mb-model';
   }
-  closeSheet();render();
+  closeSheet();renderQty();
 }
 
 /* ── 확인 시트 ── */
 function openConfirm(){
   const now=new Date();
   const{date,shift,slots}=calcDS(now);
-  const sl=autoSlot(now,slots);
+  const isEdit=editingId!==null;
+  document.getElementById('cf-title').textContent=isEdit?'수정 확인':'등록 확인';
+  document.getElementById('cf-ok').textContent=isEdit?'수정':'등록';
+  document.getElementById('cf-ok').className='cf-ok'+(isEdit?' edit-mode':'');
   document.getElementById('cf-line').textContent=`${LINE}${PROC?' / '+PROC:''}`;
   document.getElementById('cf-shift').textContent=shift==='day'?'주간 ☀':'야간 🌙';
   document.getElementById('cf-model').textContent=`${selPlant.name} › ${selModel.name}`;
   document.getElementById('cf-qty').textContent=parseInt(qtyStr).toLocaleString()+' PCS';
+  let defaultSlot=autoSlot(now,slots);
+  if(isEdit){const orig=records.find(r=>r.id===editingId);if(orig)defaultSlot=orig.slot;}
   const sel=document.getElementById('cf-slot');
   sel.innerHTML=slots.map(s=>{
     const nh=(parseInt(s)+1)%24;
-    return`<option value="${s}"${s===sl?' selected':''}>${s} ~ ${p2(nh)}:00</option>`;
+    return`<option value="${s}"${s===defaultSlot?' selected':''}>${s} ~ ${p2(nh)}:00</option>`;
   }).join('');
   document.getElementById('cf-bg').classList.add('open');
 }
@@ -425,32 +448,25 @@ function submit(){
   const now=new Date();
   const{date,shift}=calcDS(now);
   const slot=document.getElementById('cf-slot').value;
+  const isEdit=editingId!==null;
   const rec={
-    id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),
-    prodDate:date,shift,slot,
-    line:LINE,process:PROC,
+    id:isEdit?editingId:(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)),
+    prodDate:date,shift,slot,line:LINE,process:PROC,
     plantId:selPlant.id,plantName:selPlant.name,
     modelId:selModel.id,modelName:selModel.name,
     qty:parseInt(qtyStr),createdAt:now.toISOString(),
   };
   ws.send(JSON.stringify({type:'ADD_PRODUCTION',record:rec}));
-  records.push(rec);
-  updateSummary();
+  const idx=records.findIndex(r=>r.id===rec.id);
+  if(idx>-1)records[idx]=rec;else records.push(rec);
   closeConfirm();
-  const nh=(parseInt(slot)+1)%24;
-  document.getElementById('ok-sub').innerHTML=
-    `<b>${LINE}${PROC?' / '+PROC:''}</b><br>${slot} ~ ${p2(nh)}:00 실적<br><b>${selModel.name}</b> — ${rec.qty.toLocaleString()} PCS`;
-  document.getElementById('main-area').style.display='none';
-  document.getElementById('submit-wrap').style.display='none';
-  document.getElementById('success').style.display='';
-}
-
-function reset(){
-  qtyStr='0';
-  document.getElementById('main-area').style.display='';
-  document.getElementById('submit-wrap').style.display='';
-  document.getElementById('success').style.display='none';
-  render();
+  toast(isEdit?'✓ 수정 완료':'✓ 등록 완료');
+  editingId=null;qtyStr='0';
+  document.getElementById('edit-badge').classList.remove('on');
+  document.getElementById('submit-btn').classList.remove('edit-mode');
+  document.getElementById('submit-btn').textContent='등록하기';
+  document.getElementById('cancel-btn').classList.remove('on');
+  renderQty();updateSummary();
 }
 
 /* ── WS ── */
@@ -470,30 +486,20 @@ function connect(){
         if(saved.plantId&&saved.modelId){
           const sp=plants.find(pl=>pl.id===saved.plantId);
           const sm=sp?.models?.find(m=>m.id===saved.modelId);
-          if(sp&&sm){
-            selPlant=sp;selModel=sm;
+          if(sp&&sm){selPlant=sp;selModel=sm;
             document.getElementById('mb-plant').textContent=sp.name;
-            const mEl=document.getElementById('mb-model');
-            mEl.textContent=sm.name;mEl.className='mb-model';
-            render();
-          }
+            const mEl=document.getElementById('mb-model');mEl.textContent=sm.name;mEl.className='mb-model';
+            renderQty();}
         }
       }catch(_){}
     }
-    else if(msg.type==='INIT_PRODUCTION'){
-      records=msg.data||[];
-      viewDate=msg.prodDate||'';
-      updateSummary();
-    }
+    else if(msg.type==='INIT_PRODUCTION'){records=msg.data||[];viewDate=msg.prodDate||'';updateSummary();}
     else if(msg.type==='PRODUCTION_ADDED'){
       const i=records.findIndex(r=>r.id===msg.record.id);
       if(i>-1)records[i]=msg.record;else records.push(msg.record);
       updateSummary();
     }
-    else if(msg.type==='PRODUCTION_DELETED'){
-      records=records.filter(r=>r.id!==msg.id);
-      updateSummary();
-    }
+    else if(msg.type==='PRODUCTION_DELETED'){records=records.filter(r=>r.id!==msg.id);updateSummary();}
   };
   ws.onclose=()=>{
     document.getElementById('offline').style.display='';
@@ -503,8 +509,9 @@ function connect(){
   };
   ws.onerror=()=>ws.close();
 }
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');setTimeout(()=>t.classList.remove('s'),2200);}
 
-render();connect();
+renderQty();connect();
 </script>
 </body>
 </html>

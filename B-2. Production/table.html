@@ -172,14 +172,29 @@ td{
 .sv-empty{font-size:14px;color:var(--border);}
 .tv{padding:6px 4px;font-size:13px;font-weight:900;color:var(--text);}
 .tv.z{color:var(--border2);font-size:12px;font-weight:400;}
-.odd .sv,.odd .tv{background:var(--surface);}
-.even .sv,.even .tv{background:var(--surface2);}
+.odd .sv,.odd .tv,.odd .proc-lbl{background:var(--surface);}
+.even .sv,.even .tv,.even .proc-lbl{background:var(--surface2);}
 .odd .sv.cur,.even .sv.cur{background:var(--cur)!important;}
+/* proc label column (S1/S2) */
+.col-proc{width:26px;min-width:26px;max-width:26px;padding:0;border-right:1px solid var(--border2)!important;}
+.proc-lbl{
+  width:26px;min-width:26px;
+  font-size:10px;font-weight:800;text-align:center;
+  padding:3px 2px;vertical-align:middle;
+  border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border2)!important;
+}
+.s1-lbl{color:var(--accent);}
+.s2-lbl{color:var(--teal);}
+.ln-cell-span{padding:7px 8px;text-align:left;vertical-align:middle;border-bottom:none;}
+.ln-cell-span .ln-name{font-size:12px;font-weight:800;color:var(--text);display:block;line-height:1.2;}
+.ln-cell-span .ln-model{font-size:9px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px;display:block;}
 .sum-row td{
   background:var(--surface3);border-top:2px solid var(--border2);
   font-size:11px;font-weight:700;padding:5px 4px;color:var(--text2);
 }
 .sum-row .col-line{font-size:11px;font-weight:800;color:var(--text2);}
+.sum-row .proc-lbl{background:var(--surface3)!important;border-top:2px solid var(--border2);}
 .sum-val{color:var(--accent)!important;font-weight:900!important;}
 
 /* ── swipe hint ── */
@@ -234,9 +249,11 @@ td{
 .pc-card .sh.cur{background:var(--cur)!important;color:var(--amber)!important;border-bottom-color:var(--cur-border)!important;}
 .pc-card .col-tot{min-width:80px;border-left:2px solid var(--border2)!important;font-weight:800!important;color:var(--text2)!important;}
 .pc-card td{padding:0;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;}
-.pc-card .ln-cell{padding:10px 12px;text-align:left;}
-.pc-card .ln-name{font-size:15px;font-weight:800;color:var(--text);display:block;}
-.pc-card .ln-model{font-size:10px;color:var(--muted);white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:2px;}
+.pc-card .col-proc{width:32px;min-width:32px;}
+.pc-card .proc-lbl{width:32px;min-width:32px;font-size:11px;padding:4px 3px;}
+.pc-card .ln-cell-span{padding:10px 12px;text-align:left;}
+.pc-card .ln-cell-span .ln-name{font-size:15px;font-weight:800;color:var(--text);display:block;}
+.pc-card .ln-cell-span .ln-model{font-size:10px;color:var(--muted);white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:2px;}
 .pc-card .sv{height:58px;}
 .pc-card .sv-inner{padding:4px 3px;}
 .pc-card .sv-total{font-size:18px;font-weight:800;color:var(--text);}
@@ -329,7 +346,7 @@ td{
 
 <script>
 const TUNNEL='server.samhwa.cloud';
-const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.7_Display','L.9','L.8_IN','L.8_OUT','FGA','Rotary','SDB'];
+const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9','L.8_IN','L.8_OUT'];
 const DAY_SLOTS  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 const NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 
@@ -456,58 +473,66 @@ function renderAll(){
   refreshSlideLabel();
 }
 
+function procSlotQty(line,proc,slot){return slotQty(line,proc,slot);}
 function buildTableRows(slots,cur){
   const rows=[];
   LINES.forEach((line,li)=>{
     const cls=li%2===0?'odd':'even';
     const model=lastModel(line);
-    const tot=lineTotalAll(line);
-    let row=`<tr class="${cls}">`;
-    row+=`<td class="col-line ln-cell">
-      <span class="ln-name">${line}</span>
-      ${model?`<span class="ln-model">${model}</span>`:''}
-    </td>`;
+    const s1tot=adr().filter(r=>r.line===line&&r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
+    const s2tot=adr().filter(r=>r.line===line&&r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
+    // S1 row
+    let r1=`<tr class="${cls}">
+      <td class="col-line ln-cell-span" rowspan="2">
+        <span class="ln-name">${line}</span>
+        ${model?`<span class="ln-model">${model}</span>`:''}
+      </td>
+      <td class="proc-lbl s1-lbl ${cls}">S1</td>`;
     slots.forEach(slot=>{
-      const q=lineSlotQty(line,slot);
-      const bd=lineSlotBreakdown(line,slot);
-      const isCur=slot===cur;
-      const detail=bd.length>1?bd.map(x=>`${x.p}:${x.q}`).join(' '):bd.length===1?`${bd[0].p}:${bd[0].q}`:'';
-      row+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${
-        q>0
-          ?`<span class="sv-total">${q.toLocaleString()}</span>${detail?`<span class="sv-detail">${detail}</span>`:''}`
-          :`<span class="sv-empty">·</span>`
-      }</div></td>`;
+      const q=procSlotQty(line,'S1',slot);const isCur=slot===cur;
+      r1+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
     });
-    row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td></tr>`;
-    rows.push(row);
+    r1+=`<td class="col-tot tv${s1tot===0?' z':''}">${s1tot>0?s1tot.toLocaleString():'—'}</td></tr>`;
+    // S2 row
+    let r2=`<tr class="${cls}"><td class="proc-lbl s2-lbl ${cls}">S2</td>`;
+    slots.forEach(slot=>{
+      const q=procSlotQty(line,'S2',slot);const isCur=slot===cur;
+      r2+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+    });
+    r2+=`<td class="col-tot tv${s2tot===0?' z':''}">${s2tot>0?s2tot.toLocaleString():'—'}</td></tr>`;
+    rows.push(r1+r2);
   });
-  const sumCells=slots.map(slot=>{
-    const q=slotFact(slot);
-    return`<td class="${slot===cur?'sum-val':''}">${q>0?q.toLocaleString():'—'}</td>`;
-  }).join('');
-  const gTot=grandTotalAll();
+  // Summary rows (S1 / S2 각각)
+  const s1sum=slots.map(slot=>{const q=LINES.reduce((s,l)=>s+procSlotQty(l,'S1',slot),0);return`<td class="${slot===cur?'sum-val':''}">${q>0?q.toLocaleString():'—'}</td>`;}).join('');
+  const s2sum=slots.map(slot=>{const q=LINES.reduce((s,l)=>s+procSlotQty(l,'S2',slot),0);return`<td class="${slot===cur?'sum-val':''}">${q>0?q.toLocaleString():'—'}</td>`;}).join('');
+  const s1g=adr().filter(r=>LINES.includes(r.line)&&r.process==='S1').reduce((s,r)=>s+(r.qty||0),0);
+  const s2g=adr().filter(r=>LINES.includes(r.line)&&r.process==='S2').reduce((s,r)=>s+(r.qty||0),0);
   rows.push(`<tr class="sum-row">
-    <td class="col-line">전체</td>${sumCells}
-    <td class="sum-val">${gTot>0?gTot.toLocaleString():'—'}</td>
+    <td class="col-line" rowspan="2" style="vertical-align:middle;font-size:11px;font-weight:800;">전체</td>
+    <td class="proc-lbl s1-lbl sum-proc">S1</td>${s1sum}
+    <td class="sum-val">${s1g>0?s1g.toLocaleString():'—'}</td>
+  </tr>
+  <tr class="sum-row">
+    <td class="proc-lbl s2-lbl sum-proc">S2</td>${s2sum}
+    <td class="sum-val">${s2g>0?s2g.toLocaleString():'—'}</td>
   </tr>`);
   return rows.join('');
 }
 
-function buildSlide(thId,tbId,slots,cur){
-  document.getElementById(thId).innerHTML=`<tr>
+const HDR_THEAD=(slots,cur)=>`<tr>
     <th class="col-line">라인</th>
+    <th class="col-proc">공정</th>
     ${slots.map(s=>`<th class="sh${s===cur?' cur':''}">${slotLbl(s)}</th>`).join('')}
     <th class="col-tot">일일 합계</th>
   </tr>`;
+
+function buildSlide(thId,tbId,slots,cur){
+  document.getElementById(thId).innerHTML=HDR_THEAD(slots,cur);
   document.getElementById(tbId).innerHTML=buildTableRows(slots,cur);
 }
 
 function buildPC(slots,cur){
-  document.getElementById('pc-th').innerHTML=`<tr>
-    <th class="col-line">라인</th>
-    ${slots.map(s=>`<th class="sh${s===cur?' cur':''}">${slotLbl(s)}</th>`).join('')}
-    <th class="col-tot">일일 합계</th>
-  </tr>`;
+  document.getElementById('pc-th').innerHTML=HDR_THEAD(slots,cur);
   document.getElementById('pc-tb').innerHTML=buildTableRows(slots,cur);
 }
 

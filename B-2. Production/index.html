@@ -110,10 +110,10 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
   font-variant-numeric:tabular-nums;}
 .cs-val.dim{color:var(--border2);font-weight:400;}
 /* card row 4 - sparkline + avg */
-.cbot{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;}
-.sparkline{flex:1;}
-.cavg{font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap;text-align:right;}
-.cavg span{display:block;font-size:8px;color:var(--muted);font-weight:600;}
+.cbot{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;margin-top:2px;}
+.sparkline{flex:1;min-width:0;}
+.cavg{font-size:13px;font-weight:900;color:var(--accent);white-space:nowrap;text-align:right;letter-spacing:-.02em;}
+.cavg span{display:block;font-size:9px;color:var(--muted);font-weight:600;margin-top:1px;}
 
 /* ── modal ── */
 .backdrop{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:80;
@@ -334,16 +334,31 @@ function fetchLog(){
 /* ─── sparkline ─── */
 function sparkline(line){
   const slots=allSlots();
-  const vals=slots.map(sl=>lineSlotTotal(line,sl));
-  const mx=Math.max(...vals,1);
-  const W=slots.length*8,H=20;
-  const bars=vals.map((v,i)=>{
-    const h=Math.max(v>0?2:0,Math.round((v/mx)*(H-2)));
-    const cur=slots[i]===curSlot();
-    const fill=cur?'var(--amber)':v>0?'var(--accent)':'var(--border)';
-    return`<rect x="${i*8+1}" y="${H-h}" width="6" height="${h}" rx="1.5" fill="${fill}"/>`;
+  const cur=curSlot();
+  const s1vals=slots.map(sl=>slotQ(line,'S1',sl));
+  const s2vals=slots.map(sl=>slotQ(line,'S2',sl));
+  const totals=slots.map((_,i)=>s1vals[i]+s2vals[i]);
+  const mx=Math.max(...totals,1);
+  const BW=10,GAP=2,H=32,n=slots.length;
+  const W=n*(BW+GAP);
+  const bars=totals.map((v,i)=>{
+    const isCur=slots[i]===cur;
+    const hTot=Math.max(v>0?3:0,Math.round((v/mx)*(H-2)));
+    const s1=s1vals[i],s2=s2vals[i];
+    const hS2=s1+s2>0?Math.round((s2/(s1+s2))*hTot):hTot;
+    const hS1=hTot-hS2;
+    const x=i*(BW+GAP);
+    if(v===0) return`<rect x="${x}" y="${H-2}" width="${BW}" height="2" rx="1" fill="var(--border)"/>`;
+    let out='';
+    if(isCur){
+      out+=`<rect x="${x}" y="${H-hTot}" width="${BW}" height="${hTot}" rx="2" fill="var(--amber)" opacity=".9"/>`;
+    } else {
+      if(hS2>0) out+=`<rect x="${x}" y="${H-hTot}" width="${BW}" height="${hS2}" rx="2" fill="var(--accent2)" opacity=".85"/>`;
+      if(hS1>0) out+=`<rect x="${x}" y="${H-hTot+hS2}" width="${BW}" height="${hS1}" rx="1" fill="var(--accent)" opacity=".85"/>`;
+    }
+    return out;
   }).join('');
-  return`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block">${bars}</svg>`;
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="display:block;max-width:${W}px">${bars}</svg>`;
 }
 
 /* ─── render dashboard ─── */
@@ -446,42 +461,43 @@ function openModal(lineId){
   document.getElementById('m-title').textContent=lc.name;
   document.getElementById('m-sub').textContent=`${model||'모델 미등록'} · ${viewDate} ${viewShift==='day'?'주간':'야간'}`;
 
-  /* build SVG bar chart */
-  const vals=slots.map(sl=>lineSlotTotal(lineId,sl));
-  const mx=Math.max(...vals,1);
-  const CW=480,CH=110,bW=Math.floor((CW-slots.length*2)/slots.length);
-  let chartBars='',chartLabels='',chartVals='';
+  /* build chart — S2 bars (primary), S1 overlay line */
+  const s2vals=slots.map(sl=>lc.hasS2?slotQ(lineId,'S2',sl):0);
+  const s1vals=slots.map(sl=>lc.hasS1?slotQ(lineId,'S1',sl):0);
+  const mx=Math.max(...s2vals,...s1vals,1);
+  const n=slots.length,BW=26,GAP=4,CH=80,PAD=6;
+  const CW=n*(BW+GAP)-GAP;
+  let bars='',labels='';
   slots.forEach((sl,i)=>{
-    const v=vals[i];
-    const s1=lc.hasS1?slotQ(lineId,'S1',sl):0;
-    const s2=lc.hasS2?slotQ(lineId,'S2',sl):0;
-    const hTot=Math.round((v/mx)*(CH-10));
-    const hS1=s1+s2>0?Math.round((s1/(s1+s2))*hTot):0;
-    const hS2=hTot-hS1;
-    const x=i*(bW+2)+1;
+    const v2=s2vals[i],v1=s1vals[i];
     const isCur=sl===cur;
-    chartBars+=`
-      <rect x="${x}" y="${CH-hTot}" width="${bW}" height="${hS2}" rx="2"
-        fill="${isCur?'#FBBF24':lc.hasS2?'var(--accent2)':'var(--accent)'}"/>
-      <rect x="${x}" y="${CH-hTot+hS2}" width="${bW}" height="${hS1}" rx="2"
-        fill="${isCur?'#F59E0B':lc.hasS1?'var(--accent)':'transparent'}"/>`;
-    chartLabels+=`<text x="${x+bW/2}" y="${CH+14}" text-anchor="middle" font-size="8"
-      fill="${isCur?'var(--amber)':'var(--muted)'}" font-weight="${isCur?'800':'600'}">${slotLbl(sl)}</text>`;
-    if(v>0) chartVals+=`<text x="${x+bW/2}" y="${CH-hTot-3}" text-anchor="middle" font-size="8.5"
-      fill="var(--text2)" font-weight="700">${v}</text>`;
+    const x=i*(BW+GAP);
+    const h2=Math.max(v2>0?4:0,Math.round((v2/mx)*(CH-PAD)));
+    const h1=Math.max(v1>0?4:0,Math.round((v1/mx)*(CH-PAD)));
+    const col=isCur?'#F59E0B':'var(--accent2)';
+    const col1=isCur?'#FBBF24':'var(--accent)';
+    if(lc.hasS1&&lc.hasS2){
+      bars+=`<rect x="${x}" y="${CH-h2}" width="${BW}" height="${h2}" rx="3" fill="${col}" opacity=".9"/>`;
+      if(h1>0) bars+=`<rect x="${x+2}" y="${CH-h1}" width="${BW-4}" height="3" rx="1.5" fill="${col1}" opacity=".7"/>`;
+    } else {
+      const hv=lc.hasS2?h2:h1;
+      bars+=`<rect x="${x}" y="${CH-hv}" width="${BW}" height="${hv}" rx="3" fill="${col}" opacity=".9"/>`;
+    }
+    if(h2===0&&!lc.hasS2) bars+=``;
+    labels+=`<text x="${x+BW/2}" y="${CH+13}" text-anchor="middle" font-size="9"
+      fill="${isCur?'var(--amber)':'var(--muted)'}" font-weight="${isCur?'800':'500'}">${parseInt(sl)}</text>`;
   });
-  const chart=`<svg viewBox="0 0 ${CW} ${CH+22}" style="width:100%;min-width:320px">
-    <line x1="0" y1="${CH}" x2="${CW}" y2="${CH}" stroke="var(--border)" stroke-width="1"/>
-    ${chartBars}${chartVals}${chartLabels}
+  const chart=`<svg viewBox="0 0 ${CW} ${CH+18}" style="width:100%;max-height:120px">
+    <line x1="0" y1="${CH}" x2="${CW}" y2="${CH}" stroke="var(--border)" stroke-width="1.5"/>
+    ${bars}${labels}
   </svg>`;
 
-  /* legend */
   let legend='';
   if(lc.hasS1&&lc.hasS2){
-    legend=`<div style="display:flex;gap:14px;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:10px;">
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px;vertical-align:middle"></span>S1</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent2);margin-right:4px;vertical-align:middle"></span>S2</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#FBBF24;margin-right:4px;vertical-align:middle"></span>현재 시간대</span>
+    legend=`<div style="display:flex;gap:12px;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:8px;align-items:center;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:4px;border-radius:2px;background:var(--accent);display:inline-block"></span>S1</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:10px;border-radius:2px;background:var(--accent2);display:inline-block"></span>S2</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:10px;border-radius:2px;background:#F59E0B;display:inline-block"></span>현재</span>
     </div>`;
   }
 
