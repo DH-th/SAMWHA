@@ -620,11 +620,11 @@
       <span class="icon">👤</span><span data-i18n="nav_personnel">담당자 관리</span>
     </div>
     <div class="nav-section" data-i18n="nav_report">리포트</div>
-    <div class="nav-item" data-page="history" onclick="showPage('history')">
-      <span class="icon">📋</span><span data-i18n="nav_history">입출고 이력</span>
-    </div>
     <div class="nav-item" data-page="report" onclick="showPage('report')">
       <span class="icon">📈</span><span data-i18n="nav_report_monthly">월간 리포트</span>
+    </div>
+    <div class="nav-item" data-page="history" onclick="showPage('history')">
+      <span class="icon">📋</span><span data-i18n="nav_history">입출고 이력</span>
     </div>
   </nav>
   <div class="lang-switcher">
@@ -696,12 +696,16 @@
 
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><div class="card-title" data-i18n="chart_monthly">월별 입출고 현황</div></div>
-          <div class="card-body"><canvas id="chart-monthly" height="180"></canvas></div>
+          <div class="card-header"><div class="card-title">⬇️ 최근 입고</div></div>
+          <div class="card-body" style="padding:0">
+            <div id="dash-recent-in"></div>
+          </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title" data-i18n="chart_cat">분류별 재고 비율</div></div>
-          <div class="card-body"><canvas id="chart-pie" height="180"></canvas></div>
+          <div class="card-header"><div class="card-title">⬆️ 최근 출고</div></div>
+          <div class="card-body" style="padding:0">
+            <div id="dash-recent-out"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -899,8 +903,8 @@
       </div>
       <div class="tabbar-scan-label">스캔</div>
     </div>
-    <div class="tabbar-item" data-page="history" onclick="showPage('history')">
-      <span class="icon">📋</span><span data-i18n="nav_history">이력</span>
+    <div class="tabbar-item" id="tab-register" onclick="openModal('modal-item')">
+      <span class="icon">➕</span><span>등록</span>
     </div>
     <div class="tabbar-item" data-page="more" onclick="openMoreMenu()">
       <span class="icon">☰</span><span data-i18n="nav_more">더보기</span>
@@ -923,6 +927,9 @@
     </div>
     <div class="modal-body">
       <div class="nav-section" style="padding:0 0 6px;margin-bottom:4px">리포트</div>
+      <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');showPage('history')">
+        <span class="icon">📋</span><span data-i18n="nav_history">입출고 이력</span>
+      </div>
       <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');showPage('report')">
         <span class="icon">📈</span><span data-i18n="nav_report_monthly">월간 리포트</span>
       </div>
@@ -952,26 +959,27 @@
       <div class="modal-title">📷 QR 스캔</div>
       <button class="modal-close" onclick="closeScanModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="scan-wrap" style="margin-bottom:14px">
+    <div class="modal-body" style="padding:0;overflow:hidden;border-radius:0 0 16px 16px">
+      <!-- 카메라 뷰 + 오버레이 버튼 -->
+      <div class="scan-wrap" style="border-radius:0;aspect-ratio:unset;height:68vw;max-height:380px">
         <video id="scan-fab-video" playsinline muted></video>
         <canvas id="scan-fab-canvas" style="display:none"></canvas>
         <div class="scan-overlay">
           <div class="scan-box"></div>
           <div class="scan-line"></div>
         </div>
-      </div>
-      <div class="scan-result" id="scan-fab-result" style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:14px">카메라로 QR코드를 스캔하세요</div>
-      <!-- 스캔 후 품목 정보 & 입고/출고 선택 -->
-      <div id="scan-fab-item-info" style="display:none">
-        <div class="auto-field" id="scan-fab-item-display" style="margin-bottom:16px;font-size:13px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <button class="btn btn-ok btn-block" onclick="scanFabGoInbound()">⬇️ 입고</button>
-          <button class="btn btn-danger btn-block" onclick="scanFabGoOutbound()">⬆️ 출고</button>
+        <!-- 스캔 결과 텍스트 (카메라 위) -->
+        <div id="scan-fab-result" style="position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7);pointer-events:none;z-index:2">QR코드를 화면 중앙에 맞춰주세요</div>
+        <!-- 스캔된 품목 정보 (카메라 위) -->
+        <div id="scan-fab-item-info" style="display:none;position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,.65);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;z-index:2">
+          <div id="scan-fab-item-display"></div>
+          <button onclick="restartScanFab()" style="margin-top:6px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer">🔄 다시 스캔</button>
         </div>
-      </div>
-      <div id="scan-fab-retry-row" style="display:none;margin-top:10px;text-align:center">
-        <button class="btn btn-outline btn-sm" onclick="restartScanFab()">🔄 다시 스캔</button>
+        <!-- 하단 입고/출고 버튼 (항상 표시) -->
+        <div style="position:absolute;bottom:0;left:0;right:0;display:grid;grid-template-columns:1fr 1fr;z-index:3">
+          <button onclick="scanFabGoInbound()" style="padding:16px;background:rgba(22,163,74,.88);color:#fff;font-size:15px;font-weight:800;border:none;border-right:1px solid rgba(255,255,255,.2);cursor:pointer">⬇️ 입고</button>
+          <button onclick="scanFabGoOutbound()" style="padding:16px;background:rgba(220,38,38,.88);color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer">⬆️ 출고</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1132,45 +1140,12 @@
       <button class="modal-close" onclick="closeModal('modal-inbound')">✕</button>
     </div>
     <div class="modal-body">
-      <!-- 품목 선택 방식 탭 -->
-      <div class="out-method-tabs" style="margin-bottom:14px">
-        <div class="out-method-tab active" id="in-tab-direct" onclick="setInMethod('direct')">📋 직접 선택</div>
-        <div class="out-method-tab" id="in-tab-scan" onclick="setInMethod('scan')">📷 QR 스캔</div>
-      </div>
-      <!-- 직접 선택 섹션 -->
-      <div id="in-direct-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" data-i18n="col_item">품목 <span class="req">*</span></label>
-            <select class="form-control" id="in-item" onchange="updateInStock()">
-              <option value="" data-i18n="ph_select_item">-- 품목 선택 --</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <!-- QR 스캔 섹션 -->
-      <div id="in-scan-section" style="display:none;margin-bottom:12px">
-        <div class="scan-wrap">
-          <video id="in-qr-video" playsinline muted></video>
-          <canvas id="in-qr-canvas" style="display:none"></canvas>
-          <div class="scan-overlay">
-            <div class="scan-box"></div>
-            <div class="scan-line"></div>
-          </div>
-        </div>
-        <div class="scan-result" id="in-scan-result-text" style="text-align:center;font-size:12px;padding:8px 0;color:var(--muted)">카메라로 QR코드를 스캔하세요</div>
-      </div>
-      <!-- 스캔으로 선택된 품목 정보 -->
-      <div class="form-row" id="in-item-info-row" style="display:none">
-        <div class="form-group">
-          <label class="form-label">품목</label>
-          <div class="auto-field" id="in-item-info-display">-</div>
-        </div>
-      </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" data-i18n="col_datetime_auto">등록 일시</label>
-          <div class="auto-field">🕒 <span id="in-datetime-display">-</span></div>
+          <label class="form-label" data-i18n="col_item">품목 <span class="req">*</span></label>
+          <select class="form-control" id="in-item" onchange="updateInStock()">
+            <option value="" data-i18n="ph_select_item">-- 품목 선택 --</option>
+          </select>
         </div>
       </div>
       <div class="form-row">
@@ -1231,49 +1206,10 @@
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" data-i18n="col_datetime_auto">등록 일시</label>
-          <div class="auto-field">🕒 <span id="out-datetime-display">-</span></div>
-        </div>
-      </div>
-
-      <!-- 출고 방법 선택 탭 -->
-      <div class="out-method-tabs">
-        <div class="out-method-tab active" id="out-tab-direct" onclick="setOutMethod('direct')">📋 직접 선택</div>
-        <div class="out-method-tab" id="out-tab-scan" onclick="setOutMethod('scan')">📷 QR 스캔</div>
-      </div>
-
-      <!-- 직접 선택 섹션 -->
-      <div id="out-direct-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" data-i18n="col_item">품목 <span class="req">*</span></label>
-            <select class="form-control" id="out-item" onchange="updateOutStock()">
-              <option value="" data-i18n="ph_select_item">-- 품목 선택 --</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- QR 스캔 섹션 -->
-      <div id="out-scan-section" style="display:none">
-        <div class="scan-wrap">
-          <video id="qr-video" playsinline muted></video>
-          <canvas id="qr-scan-canvas" style="display:none"></canvas>
-          <div class="scan-overlay">
-            <div style="position:relative;width:52%;aspect-ratio:1">
-              <div class="scan-box"></div>
-              <div class="scan-line"></div>
-            </div>
-          </div>
-        </div>
-        <div class="scan-result" id="scan-result-text">카메라로 QR코드를 스캔하세요</div>
-      </div>
-
-      <!-- 공통: 선택된 품목 표시 -->
-      <div class="form-row" id="out-item-info-row" style="display:none">
-        <div class="form-group">
-          <label class="form-label">선택된 품목</label>
-          <div class="auto-field" id="out-item-info-display" style="gap:10px">-</div>
+          <label class="form-label" data-i18n="col_item">품목 <span class="req">*</span></label>
+          <select class="form-control" id="out-item" onchange="updateOutStock()">
+            <option value="" data-i18n="ph_select_item">-- 품목 선택 --</option>
+          </select>
         </div>
       </div>
 
@@ -1732,12 +1668,13 @@ let zones = [];         // 구역(설비) 리스트
 let currentDetailItemId = null;
 let historyTabFilter = 'all';
 let currentPage = 'dashboard';
-let inventoryViewMode = 'card';
+let inventoryViewMode = 'list';
 let editingCat1Id = null;
 let editingCat2Id = null;
 let editingPersonId = null;
 
 let chartMonthly = null, chartPie = null, chartReportTrend = null, chartItemDetail = null;
+// chart-monthly / chart-pie canvas는 대시보드에서 제거됨 — drawMonthlyChart/drawPieChart는 if(!ctx)return으로 안전
 
 function getStockStatus(item) {
   const stock = item.stock || 0;
@@ -1805,35 +1742,24 @@ function openModal(id) {
   document.getElementById(id).classList.add('open');
   if (id === 'modal-inbound') {
     resetManual('in-person');
-    document.getElementById('in-datetime-display').textContent = nowDisplay();
     document.getElementById('in-qty').value = 0;
     document.getElementById('in-note').value = '';
     document.getElementById('in-item').value = '';
     document.getElementById('in-current-stock').value = '';
-    document.getElementById('in-item-info-row').style.display = 'none';
-    scannedInItemId = null;
-    setInMethod('direct');
     setTimeout(() => applyLastPerson('in-person'), 0);
   }
   if (id === 'modal-outbound') {
     resetManual('out-person'); resetManual('out-line');
-    document.getElementById('out-datetime-display').textContent = nowDisplay();
     document.getElementById('out-qty').value = 0;
     document.getElementById('out-note').value = '';
     document.getElementById('out-item').value = '';
     document.getElementById('out-current-stock').value = '';
     document.getElementById('out-qty-warning').textContent = '';
-    document.getElementById('out-item-info-row').style.display = 'none';
-    scannedOutItemId = null;
-    // 직접 선택 탭으로 초기화
-    setOutMethod('direct');
     setTimeout(() => applyLastPerson('out-person'), 0);
   }
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
-  if (id === 'modal-outbound') stopQRScan();
-  if (id === 'modal-inbound') stopInQRScan();
 }
 
 function nowDisplay() {
@@ -1985,8 +1911,37 @@ function renderDashboard() {
     ? alertItems.map(itemCardHtml).join('')
     : `<div class="empty-state">✅ ${t('all_normal')}</div>`;
 
-  drawMonthlyChart();
-  drawPieChart();
+  renderRecentTransactions();
+}
+
+function renderRecentTransactions() {
+  function rows(records, type) {
+    if (!records.length) return `<div class="empty-state" style="padding:14px;font-size:12px">-</div>`;
+    return `<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">코드</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">품목명</th>
+        <th style="padding:7px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">수량</th>
+      </tr></thead>
+      <tbody>${records.slice(0,5).map(r => {
+        const item = findItem(r.itemId);
+        const code = item ? (item.code||'-') : '-';
+        const name = item ? item.name : '(삭제된 품목)';
+        const color = type==='in' ? 'var(--ok)' : 'var(--danger)';
+        return `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 10px;font-family:monospace;font-size:11px;color:var(--accent)">${escapeHtml(code)}</td>
+          <td style="padding:8px 10px;font-weight:600;color:var(--text)">${escapeHtml(name)}</td>
+          <td style="padding:8px 10px;text-align:right;font-weight:800;color:${color}">${r.qty}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+  const recentIn  = [...inbounds].sort((a,b) => b.ts - a.ts);
+  const recentOut = [...outbounds].sort((a,b) => b.ts - a.ts);
+  const inEl  = document.getElementById('dash-recent-in');
+  const outEl = document.getElementById('dash-recent-out');
+  if (inEl)  inEl.innerHTML  = rows(recentIn,  'in');
+  if (outEl) outEl.innerHTML = rows(recentOut, 'out');
 }
 
 function itemCardHtml(item) {
@@ -2431,9 +2386,7 @@ function bumpQty(prefix, amount) {
   if (prefix === 'out') checkOutQty();
 }
 function checkOutQty() {
-  const itemId = currentOutMethod === 'scan'
-    ? scannedOutItemId
-    : document.getElementById('out-item').value;
+  const itemId = document.getElementById('out-item').value;
   const item = findItem(itemId);
   const qty = parseInt(document.getElementById('out-qty').value, 10) || 0;
   const warnEl = document.getElementById('out-qty-warning');
@@ -2445,11 +2398,11 @@ function checkOutQty() {
 }
 
 function saveInbound() {
-  const itemId = currentInMethod === 'scan' ? scannedInItemId : document.getElementById('in-item').value;
+  const itemId = document.getElementById('in-item').value;
   const qty = parseInt(document.getElementById('in-qty').value, 10) || 0;
   const person = getPersonValue('in-person');
 
-  if (!itemId) { alert(currentInMethod === 'scan' ? 'QR코드를 먼저 스캔하세요.' : t('msg_required')); return; }
+  if (!itemId) { alert(t('msg_required')); return; }
   if (qty <= 0) { alert(t('msg_qty_zero')); return; }
   if (!person) { alert(t('msg_enter_name')); return; }
 
@@ -2461,12 +2414,12 @@ function saveInbound() {
 }
 
 function saveOutbound() {
-  const itemId = currentOutMethod === 'scan' ? scannedOutItemId : document.getElementById('out-item').value;
+  const itemId = document.getElementById('out-item').value;
   const qty = parseInt(document.getElementById('out-qty').value, 10) || 0;
   const person = getPersonValue('out-person');
   const line = getLineValue('out-line');
 
-  if (!itemId) { alert(currentOutMethod === 'scan' ? 'QR코드를 먼저 스캔하세요.' : t('msg_required')); return; }
+  if (!itemId) { alert(t('msg_required')); return; }
   if (qty <= 0) { alert(t('msg_qty_zero')); return; }
   if (!person) { alert(t('msg_enter_name')); return; }
   if (!line) { alert(t('msg_required')); return; }
@@ -2834,77 +2787,6 @@ function closeLightbox() {
 // ═══════════════════════════════════════════
 //  입고 QR 스캔
 // ═══════════════════════════════════════════
-let inQrScanRAF = null;
-let inQrStream = null;
-let currentInMethod = 'direct';
-let scannedInItemId = null;
-
-function setInMethod(method) {
-  currentInMethod = method;
-  document.getElementById('in-tab-direct').classList.toggle('active', method === 'direct');
-  document.getElementById('in-tab-scan').classList.toggle('active', method === 'scan');
-  document.getElementById('in-direct-section').style.display = method === 'direct' ? '' : 'none';
-  document.getElementById('in-scan-section').style.display = method === 'scan' ? '' : 'none';
-  if (method === 'scan') {
-    startInQRScan();
-  } else {
-    stopInQRScan();
-    scannedInItemId = null;
-    document.getElementById('in-item-info-row').style.display = 'none';
-    document.getElementById('in-current-stock').value = '';
-  }
-}
-
-function startInQRScan() {
-  const video = document.getElementById('in-qr-video');
-  const resultEl = document.getElementById('in-scan-result-text');
-  resultEl.textContent = '카메라 연결 중...';
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(stream => {
-      inQrStream = stream;
-      video.srcObject = stream; video.play();
-      video.onloadedmetadata = () => { scanInFrame(); };
-      resultEl.textContent = 'QR코드를 화면 중앙에 맞춰주세요';
-    })
-    .catch(() => { resultEl.textContent = '⚠️ 카메라 접근 권한이 필요합니다'; });
-}
-
-function stopInQRScan() {
-  if (inQrScanRAF) { cancelAnimationFrame(inQrScanRAF); inQrScanRAF = null; }
-  if (inQrStream) { inQrStream.getTracks().forEach(t => t.stop()); inQrStream = null; }
-  const v = document.getElementById('in-qr-video');
-  if (v) v.srcObject = null;
-}
-
-function scanInFrame() {
-  const video = document.getElementById('in-qr-video');
-  const canvas = document.getElementById('in-qr-canvas');
-  if (!video || !canvas || !inQrStream) return;
-  const ctx = canvas.getContext('2d');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-  if (code) {
-    const found = items.find(i => i.code === code.data);
-    if (found) { stopInQRScan(); onInScanSuccess(found); return; }
-    else { document.getElementById('in-scan-result-text').textContent = `⚠️ 등록되지 않은 코드: ${code.data}`; }
-  }
-  inQrScanRAF = requestAnimationFrame(scanInFrame);
-}
-
-function onInScanSuccess(item) {
-  scannedInItemId = item.id;
-  const statusMap = { ok:'정상', warn:'주의', danger:'위험' };
-  const status = getStockStatus(item);
-  document.getElementById('in-item-info-display').innerHTML =
-    `<strong>${escapeHtml(item.code)}</strong> ${escapeHtml(item.name)} <span class="badge badge-${status}">${statusMap[status]}</span>`;
-  document.getElementById('in-item-info-row').style.display = '';
-  document.getElementById('in-current-stock').value = item.stock || 0;
-  document.getElementById('in-scan-result-text').textContent = `✅ 스캔 완료: ${item.name}`;
-}
-
-// ═══════════════════════════════════════════
 //  센터 스캔 FAB
 // ═══════════════════════════════════════════
 let fabQrScanRAF = null;
@@ -2914,8 +2796,7 @@ let scannedFabItem = null;
 function openScanModal() {
   scannedFabItem = null;
   document.getElementById('scan-fab-item-info').style.display = 'none';
-  document.getElementById('scan-fab-retry-row').style.display = 'none';
-  document.getElementById('scan-fab-result').textContent = '카메라로 QR코드를 스캔하세요';
+  document.getElementById('scan-fab-result').textContent = 'QR코드를 화면 중앙에 맞춰주세요';
   document.getElementById('modal-scan').classList.add('open');
   startFabQRScan();
 }
@@ -2968,132 +2849,40 @@ function onFabScanSuccess(item) {
   const statusMap = { ok:'정상', warn:'주의', danger:'위험' };
   const status = getStockStatus(item);
   document.getElementById('scan-fab-item-display').innerHTML =
-    `<strong>${escapeHtml(item.code)}</strong> ${escapeHtml(item.name)} · 재고 <strong>${item.stock||0}</strong> <span class="badge badge-${status}">${statusMap[status]}</span>`;
-  document.getElementById('scan-fab-result').textContent = `✅ 스캔 완료: ${item.name}`;
+    `<strong>${escapeHtml(item.code)}</strong> ${escapeHtml(item.name)}<br><span style="opacity:.8">재고 ${item.stock||0} · ${statusMap[status]}</span>`;
+  document.getElementById('scan-fab-result').textContent = '✅ 스캔 완료 — 입고 또는 출고를 선택하세요';
   document.getElementById('scan-fab-item-info').style.display = '';
-  document.getElementById('scan-fab-retry-row').style.display = '';
 }
 
 function restartScanFab() {
   scannedFabItem = null;
   document.getElementById('scan-fab-item-info').style.display = 'none';
-  document.getElementById('scan-fab-retry-row').style.display = 'none';
-  document.getElementById('scan-fab-result').textContent = '카메라로 QR코드를 스캔하세요';
+  document.getElementById('scan-fab-result').textContent = 'QR코드를 화면 중앙에 맞춰주세요';
   startFabQRScan();
 }
 
 function scanFabGoInbound() {
-  if (!scannedFabItem) return;
   const item = scannedFabItem;
   closeScanModal();
   openModal('modal-inbound');
-  setTimeout(() => {
-    setInMethod('direct');
-    document.getElementById('in-item').value = item.id;
-    updateInStock();
-  }, 100);
+  if (item) {
+    setTimeout(() => {
+      document.getElementById('in-item').value = item.id;
+      updateInStock();
+    }, 100);
+  }
 }
 
 function scanFabGoOutbound() {
-  if (!scannedFabItem) return;
   const item = scannedFabItem;
   closeScanModal();
   openModal('modal-outbound');
-  setTimeout(() => {
-    setOutMethod('direct');
-    document.getElementById('out-item').value = item.id;
-    updateOutStock();
-  }, 100);
-}
-
-// ═══════════════════════════════════════════
-//  출고 방법 선택 (직접 / QR 스캔)
-// ═══════════════════════════════════════════
-let qrScanRAF = null;
-let qrStream = null;
-let currentOutMethod = 'direct';
-let scannedOutItemId = null;
-
-function setOutMethod(method) {
-  currentOutMethod = method;
-  document.getElementById('out-tab-direct').classList.toggle('active', method === 'direct');
-  document.getElementById('out-tab-scan').classList.toggle('active', method === 'scan');
-  document.getElementById('out-direct-section').style.display = method === 'direct' ? '' : 'none';
-  document.getElementById('out-scan-section').style.display = method === 'scan' ? '' : 'none';
-
-  if (method === 'scan') {
-    startQRScan();
-  } else {
-    stopQRScan();
-    // 스캔으로 선택한 품목 초기화
-    scannedOutItemId = null;
-    document.getElementById('out-item-info-row').style.display = 'none';
-    document.getElementById('out-current-stock').value = '';
-    document.getElementById('out-qty-warning').textContent = '';
+  if (item) {
+    setTimeout(() => {
+      document.getElementById('out-item').value = item.id;
+      updateOutStock();
+    }, 100);
   }
-}
-
-function startQRScan() {
-  const video = document.getElementById('qr-video');
-  const resultEl = document.getElementById('scan-result-text');
-  resultEl.textContent = '카메라 연결 중...';
-
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(stream => {
-      qrStream = stream;
-      video.srcObject = stream;
-      video.play();
-      video.onloadedmetadata = () => { scanFrame(); };
-      resultEl.textContent = 'QR코드를 화면 중앙에 맞춰주세요';
-    })
-    .catch(() => {
-      resultEl.textContent = '⚠️ 카메라 접근 권한이 필요합니다';
-    });
-}
-
-function stopQRScan() {
-  if (qrScanRAF) { cancelAnimationFrame(qrScanRAF); qrScanRAF = null; }
-  if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
-  const video = document.getElementById('qr-video');
-  if (video) { video.srcObject = null; }
-}
-
-function scanFrame() {
-  const video = document.getElementById('qr-video');
-  const canvas = document.getElementById('qr-scan-canvas');
-  if (!video || !canvas || !qrStream) return;
-
-  const ctx = canvas.getContext('2d');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-
-  if (code) {
-    const found = items.find(i => i.code === code.data);
-    if (found) {
-      stopQRScan();
-      onScanSuccess(found);
-      return;
-    } else {
-      document.getElementById('scan-result-text').textContent = `⚠️ 등록되지 않은 코드: ${code.data}`;
-    }
-  }
-  qrScanRAF = requestAnimationFrame(scanFrame);
-}
-
-function onScanSuccess(item) {
-  scannedOutItemId = item.id;
-  const statusMap = { ok:'정상', warn:'주의', danger:'위험' };
-  const status = getStockStatus(item);
-  document.getElementById('out-item-info-display').innerHTML =
-    `<strong>${escapeHtml(item.code)}</strong> ${escapeHtml(item.name)} <span class="badge badge-${status}">${statusMap[status]}</span>`;
-  document.getElementById('out-item-info-row').style.display = '';
-  document.getElementById('out-current-stock').value = item.stock || 0;
-  document.getElementById('scan-result-text').textContent = `✅ 스캔 완료: ${item.name}`;
-  checkOutQty();
 }
 
 // ═══════════════════════════════════════════
