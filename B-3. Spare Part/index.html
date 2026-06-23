@@ -592,19 +592,32 @@
   }
 
   /* ── 설비 관리 ── */
-  .eq-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
-  @media (min-width: 600px) { .eq-grid { grid-template-columns: repeat(3,1fr); } }
-  .eq-card {
-    background: var(--surface); border-radius: 14px; overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,.07); cursor: pointer;
-    border: 1.5px solid var(--border); transition: transform .15s, box-shadow .15s;
+  .eq-list { display: flex; flex-direction: column; gap: 0; }
+  .eq-section-header {
+    padding: 6px 4px 4px; font-size: 11px; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1.5px solid var(--border); margin-top: 10px;
   }
-  .eq-card:active { transform: scale(.97); box-shadow: none; }
-  .eq-card-photo { width:100%; aspect-ratio:4/3; object-fit:cover; background:var(--surface2); display:block; }
-  .eq-card-nophoto { width:100%; aspect-ratio:4/3; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:36px; }
-  .eq-card-body { padding:10px 12px 12px; }
-  .eq-card-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:3px; }
-  .eq-card-sub { font-size:11px; color:var(--muted); }
+  .eq-section-header:first-child { margin-top: 0; }
+  .eq-list-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 4px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .12s;
+  }
+  .eq-list-item:active { background: var(--surface2); }
+  .eq-list-thumb {
+    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
+    flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border);
+  }
+  .eq-list-nophoto {
+    width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .eq-list-info { flex: 1; min-width: 0; }
+  .eq-list-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .eq-list-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .eq-list-line { font-size: 12px; font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 36px; text-align: right; }
   .eq-photos-wrap { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
   .eq-photo-thumb { width:72px; height:72px; object-fit:cover; border-radius:8px; border:1.5px solid var(--border); cursor:pointer; }
   .eq-photo-add { width:72px; height:72px; border-radius:8px; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--muted); cursor:pointer; background:var(--surface2); flex-shrink:0; }
@@ -948,7 +961,7 @@
           <button class="btn btn-outline btn-sm" onclick="openEqCatSettings()" style="flex-shrink:0" title="분류 관리">⚙️</button>
         </div>
       </div>
-      <div class="eq-grid" id="eq-grid"></div>
+      <div class="eq-list" id="eq-list"></div>
     </div>
 
   </div><!-- /content -->
@@ -3300,29 +3313,53 @@ function renderEquipment() {
     return matchSearch && matchCat1 && matchCat2;
   });
 
-  const grid = document.getElementById('eq-grid');
-  if (!grid) return;
+  // 정렬: 1차분류 순 → 2차분류 순 → 라인 순(lines 배열 인덱스) → 이름
+  const cat1Order = Object.fromEntries((eqCategories.cat1||[]).map((c,i)=>[c.id,i]));
+  const cat2Order = Object.fromEntries((eqCategories.cat2||[]).map((c,i)=>[c.id,i]));
+  const lineOrder = Object.fromEntries(lines.map((l,i)=>[l,i]));
+  filtered.sort((a,b) => {
+    const c1 = (cat1Order[a.cat1]??999) - (cat1Order[b.cat1]??999); if(c1) return c1;
+    const c2 = (cat2Order[a.cat2]??999) - (cat2Order[b.cat2]??999); if(c2) return c2;
+    const lc = (lineOrder[a.line]??999) - (lineOrder[b.line]??999);  if(lc) return lc;
+    return (a.name||'').localeCompare(b.name||'');
+  });
+
+  const el = document.getElementById('eq-list');
+  if (!el) return;
   if (!filtered.length) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:40px">등록된 설비가 없습니다</div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:40px">등록된 설비가 없습니다</div>`;
     return;
   }
-  grid.innerHTML = filtered.map(eq => {
-    const photo = eq.photos && eq.photos[0];
-    const photoHtml = photo
-      ? `<img class="eq-card-photo" src="${EQ_HTTP}${escapeHtml(photo)}" alt="">`
-      : `<div class="eq-card-nophoto">🏭</div>`;
+
+  // 분류별 그룹 헤더 + 아이템
+  let html = '';
+  let lastKey = null;
+  for (const eq of filtered) {
     const c1 = eqCat1Name(eq.cat1);
     const c2 = eq.cat2 ? eqCat2Name(eq.cat2) : '';
-    const catLabel = c2 && c2!=='-' ? `${c1} · ${c2}` : c1;
-    return `<div class="eq-card" onclick="openEqDetail('${escapeHtml(eq.id)}')">
-      ${photoHtml}
-      <div class="eq-card-body">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">${escapeHtml(catLabel)}</div>
-        <div class="eq-card-name">${escapeHtml(eq.name)}</div>
-        <div class="eq-card-sub">${eq.line ? '라인: '+escapeHtml(eq.line)+' · ' : ''}S/N: ${escapeHtml(eq.serial||'-')}</div>
+    const groupKey = eq.cat1 + '|' + (eq.cat2||'');
+    const catLabel = c2 && c2 !== '-' ? `${c1}  ›  ${c2}` : c1;
+    if (groupKey !== lastKey) {
+      html += `<div class="eq-section-header">${escapeHtml(catLabel)}</div>`;
+      lastKey = groupKey;
+    }
+    const photo = eq.photos && eq.photos[0];
+    const thumbHtml = photo
+      ? `<img class="eq-list-thumb" src="${EQ_HTTP}${escapeHtml(photo)}" alt="">`
+      : `<div class="eq-list-nophoto">🏭</div>`;
+    const serial = eq.serial ? `S/N: ${escapeHtml(eq.serial)}` : '';
+    const sub = [serial].filter(Boolean).join(' · ');
+    const lineLabel = eq.line ? escapeHtml(eq.line) : '';
+    html += `<div class="eq-list-item" onclick="openEqDetail('${escapeHtml(eq.id)}')">
+      ${thumbHtml}
+      <div class="eq-list-info">
+        <div class="eq-list-name">${escapeHtml(eq.name)}</div>
+        ${sub ? `<div class="eq-list-sub">${sub}</div>` : ''}
       </div>
+      ${lineLabel ? `<div class="eq-list-line">${lineLabel}</div>` : ''}
     </div>`;
-  }).join('');
+  }
+  el.innerHTML = html;
 }
 
 // ── 렌더: 필터 1차 분류 셀렉트 ──
