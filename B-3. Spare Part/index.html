@@ -1354,7 +1354,7 @@
       <button class="modal-close" onclick="closeModal('modal-print-settings')">✕</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">설정은 이 기기에 저장됩니다. 라벨 크기는 사용하는 프린터의 라벨 규격에 맞게 입력하세요.</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">라벨 크기는 사용하는 프린터의 라벨 규격에 맞게 입력하세요. 설정은 이 기기에 저장됩니다.</div>
       <div class="form-row cols-2">
         <div class="form-group">
           <label class="form-label">라벨 너비 (mm)</label>
@@ -1384,10 +1384,6 @@
           <label class="form-label">품목명 글자 크기 (pt)</label>
           <input class="form-control" type="number" id="ps-name-pt" min="6" max="20" value="9">
         </div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--muted);margin-top:4px">
-        💡 <strong>라벨 프린터 사용 팁:</strong><br>
-        인쇄 버튼 클릭 → 브라우저 인쇄 대화상자에서 <strong>프린터를 라벨 프린터로 선택</strong> → 용지 크기를 커스텀으로 설정하여 위 규격과 일치시키세요.
       </div>
     </div>
     <div class="modal-footer">
@@ -3116,19 +3112,21 @@ function getLabelSettings() {
       codePt:  saved.codePt  || 13,
       namePt:  saved.namePt  || 9,
     };
-  } catch { return { width:62, height:40, margin:2, qrMm:24, codePt:13, namePt:9 }; }
+  } catch { return { printer:'', width:62, height:40, margin:2, qrMm:24, codePt:13, namePt:9 }; }
 }
 
 function saveLabelSettings() {
   const s = {
-    width:  parseInt(document.getElementById('ps-width').value)   || 62,
-    height: parseInt(document.getElementById('ps-height').value)  || 40,
-    margin: parseInt(document.getElementById('ps-margin').value)  || 2,
-    qrMm:   parseInt(document.getElementById('ps-qr-mm').value)   || 24,
-    codePt: parseInt(document.getElementById('ps-code-pt').value) || 13,
-    namePt: parseInt(document.getElementById('ps-name-pt').value) || 9,
+    printer: document.getElementById('ps-printer').value || '',
+    width:   parseInt(document.getElementById('ps-width').value)   || 62,
+    height:  parseInt(document.getElementById('ps-height').value)  || 40,
+    margin:  parseInt(document.getElementById('ps-margin').value)  || 2,
+    qrMm:    parseInt(document.getElementById('ps-qr-mm').value)   || 24,
+    codePt:  parseInt(document.getElementById('ps-code-pt').value) || 13,
+    namePt:  parseInt(document.getElementById('ps-name-pt').value) || 9,
   };
   localStorage.setItem(LS_LABEL, JSON.stringify(s));
+  showToast('💾 프린터 설정이 저장됐습니다.');
   closeModal('modal-print-settings');
 }
 
@@ -3140,7 +3138,8 @@ function openPrintSettings() {
   document.getElementById('ps-qr-mm').value   = s.qrMm;
   document.getElementById('ps-code-pt').value = s.codePt;
   document.getElementById('ps-name-pt').value = s.namePt;
-  openModal('modal-print-settings');
+  document.getElementById('modal-print-settings').classList.add('open');
+  fetchPrinterList(s.printer);
 }
 
 function printLabel() {
@@ -3148,13 +3147,12 @@ function printLabel() {
   if (!item || !item.code) { alert('품목 코드가 없습니다.'); return; }
 
   const s = getLabelSettings();
-  const qrPx = 200;
   const tmpCanvas = document.createElement('canvas');
-  new QRious({ element: tmpCanvas, value: item.code, size: qrPx, background: '#ffffff', foreground: '#000000', level: 'M' });
+  new QRious({ element: tmpCanvas, value: item.code, size: 200, background: '#ffffff', foreground: '#000000', level: 'M' });
   const qrDataUrl = tmpCanvas.toDataURL('image/png');
 
   const zoneLine = item.zone && item.zone !== 'etc'
-    ? `<div class="zone">📍 ${escapeHtml(item.zone)}</div>` : '';
+    ? `<div class="zone">${escapeHtml(item.zone)}</div>` : '';
 
   const win = window.open('', '_blank', `width=${Math.round(s.width*3.78)},height=${Math.round(s.height*3.78)}`);
   if (!win) { alert('팝업 차단을 해제해 주세요.'); return; }
@@ -3165,24 +3163,27 @@ function printLabel() {
   body {
     width: ${s.width}mm; height: ${s.height}mm;
     padding: ${s.margin}mm;
-    font-family: 'Noto Sans KR', Arial, sans-serif;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #fff; color: #000;
+    font-family: Arial, sans-serif;
+    display: flex; flex-direction: row; align-items: center;
+    background: #fff; color: #000; gap: ${s.margin}mm;
   }
-  img.qr { width: ${s.qrMm}mm; height: ${s.qrMm}mm; display: block; }
-  .code { font-family: monospace; font-size: ${s.codePt}pt; font-weight: 900; margin: 1mm 0 0.5mm; letter-spacing: 1px; }
-  .name { font-size: ${s.namePt}pt; font-weight: 700; text-align: center; word-break: break-word; }
-  .zone { font-size: ${Math.max(s.namePt-1,6)}pt; color: #555; margin-top: 0.5mm; }
+  img.qr { width: ${s.qrMm}mm; height: ${s.qrMm}mm; flex-shrink: 0; }
+  .info { display: flex; flex-direction: column; justify-content: center; gap: 1mm; overflow: hidden; }
+  .code { font-family: monospace; font-size: ${s.codePt}pt; font-weight: 900; letter-spacing: 1px; }
+  .name { font-size: ${s.namePt}pt; font-weight: 700; word-break: break-word; }
+  .zone { font-size: ${Math.max(s.namePt-1,6)}pt; color: #555; }
 </style>
 </head><body>
 <img class="qr" src="${qrDataUrl}">
-<div class="code">${escapeHtml(item.code)}</div>
-<div class="name">${escapeHtml(item.name)}</div>
-${zoneLine}
+<div class="info">
+  <div class="code">${escapeHtml(item.code)}</div>
+  <div class="name">${escapeHtml(item.name)}</div>
+  ${zoneLine}
+</div>
 </body></html>`);
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); }, 300);
+  setTimeout(() => { win.print(); win.close(); }, 400);
 }
 
 // ═══════════════════════════════════════════
