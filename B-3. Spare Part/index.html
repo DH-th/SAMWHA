@@ -712,28 +712,32 @@
 
     <!-- ═══ INVENTORY ═══ -->
     <div id="page-inventory" class="page">
-      <div class="filter-bar">
-        <div class="search-wrap" style="flex:1;min-width:140px">
-          <span class="search-icon">🔍</span>
-          <input class="form-control" style="width:100%" placeholder="품목명 / 코드 검색" id="inv-search" oninput="renderInventory()" data-i18n-ph="search_ph">
+      <div class="filter-bar" style="flex-direction:column;gap:6px">
+        <div style="display:flex;gap:8px;align-items:center;width:100%">
+          <div class="search-wrap" style="flex:1;min-width:0">
+            <span class="search-icon">🔍</span>
+            <input class="form-control" style="width:100%" placeholder="품목명 / 코드 검색" id="inv-search" oninput="renderInventory()" data-i18n-ph="search_ph">
+          </div>
+          <div class="view-toggle">
+            <button class="view-toggle-btn" id="view-btn-card" onclick="setInventoryView('card')" title="카드형">▦</button>
+            <button class="view-toggle-btn active" id="view-btn-list" onclick="setInventoryView('list')" title="리스트형">☰</button>
+          </div>
         </div>
-        <select class="form-control" id="inv-cat1" onchange="renderInventory()" style="width:120px">
-          <option value="" data-i18n="filter_all_cat1">전체 분류1</option>
-        </select>
-        <select class="form-control" id="inv-status-filter" onchange="renderInventory()" style="width:110px">
-          <option value="" data-i18n="filter_all_status">전체 상태</option>
-          <option value="ok" data-i18n="filter_ok">정상</option>
-          <option value="warn" data-i18n="filter_warn">주의</option>
-          <option value="danger" data-i18n="filter_danger">위험</option>
-        </select>
-        <div class="view-toggle">
-          <button class="view-toggle-btn active" id="view-btn-card" onclick="setInventoryView('card')" title="카드형">▦</button>
-          <button class="view-toggle-btn" id="view-btn-list" onclick="setInventoryView('list')" title="리스트형">☰</button>
+        <div style="display:flex;gap:8px;align-items:center;width:100%">
+          <select class="form-control" id="inv-cat1" onchange="renderInventory()" style="flex:1;min-width:0">
+            <option value="" data-i18n="filter_all_cat1">전체 분류1</option>
+          </select>
+          <select class="form-control" id="inv-status-filter" onchange="renderInventory()" style="flex:1;min-width:0">
+            <option value="" data-i18n="filter_all_status">전체 상태</option>
+            <option value="ok" data-i18n="filter_ok">정상</option>
+            <option value="warn" data-i18n="filter_warn">주의</option>
+            <option value="danger" data-i18n="filter_danger">위험</option>
+          </select>
+          <button class="btn btn-accent btn-sm" onclick="openItemModal()" style="white-space:nowrap;flex-shrink:0">+ <span data-i18n="btn_add_item">품목 등록</span></button>
         </div>
-        <button class="btn btn-accent btn-sm" onclick="openItemModal()">+ <span data-i18n="btn_add_item">품목 등록</span></button>
       </div>
-      <div class="item-grid" id="inventory-grid"></div>
-      <div class="item-list" id="inventory-list" style="display:none"></div>
+      <div class="item-grid" id="inventory-grid" style="display:none"></div>
+      <div class="item-list" id="inventory-list"></div>
     </div>
 
     <!-- ═══ CATEGORIES ═══ -->
@@ -859,6 +863,14 @@
         <div class="tab" onclick="switchHistoryTab('in')" data-i18n="tab_inbound">입고</div>
         <div class="tab" onclick="switchHistoryTab('out')" data-i18n="tab_outbound">출고</div>
       </div>
+      <div style="padding:8px 0 2px;display:flex;gap:8px;align-items:center">
+        <select id="history-cat-filter" class="form-control" style="flex:1;font-size:13px;padding:6px 10px" onchange="document.getElementById('history-item-filter').value='';renderHistory()">
+          <option value="">전체 분류</option>
+        </select>
+        <select id="history-item-filter" class="form-control" style="flex:1;font-size:13px;padding:6px 10px" onchange="renderHistory()">
+          <option value="">전체 품목</option>
+        </select>
+      </div>
       <div class="card">
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
@@ -971,9 +983,12 @@
         <!-- 스캔 결과 텍스트 (카메라 위) -->
         <div id="scan-fab-result" style="position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7);pointer-events:none;z-index:2">QR코드를 화면 중앙에 맞춰주세요</div>
         <!-- 스캔된 품목 정보 (카메라 위) -->
-        <div id="scan-fab-item-info" style="display:none;position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,.65);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;z-index:2">
-          <div id="scan-fab-item-display"></div>
-          <button onclick="restartScanFab()" style="margin-top:6px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer">🔄 다시 스캔</button>
+        <div id="scan-fab-item-info" style="display:none;position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,.72);border-radius:10px;padding:10px 12px;color:#fff;z-index:2">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img id="scan-fab-item-photo" src="" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1.5px solid rgba(255,255,255,.3);flex-shrink:0;display:none">
+            <div id="scan-fab-item-display" style="flex:1;font-size:13px;line-height:1.5"></div>
+          </div>
+          <button onclick="restartScanFab()" style="margin-top:8px;width:100%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px;padding:5px 0;border-radius:6px;cursor:pointer;font-weight:600">🔄 재스캔</button>
         </div>
         <!-- 하단 입고/출고 버튼 (항상 표시) -->
         <div style="position:absolute;bottom:0;left:0;right:0;display:grid;grid-template-columns:1fr 1fr;z-index:3">
@@ -1739,6 +1754,7 @@ function openMoreMenu() { openModal('modal-more'); }
 // ═══════════════════════════════════════════
 function openModal(id) {
   if (id === 'modal-print-settings') { openPrintSettings(); return; }
+  if (id === 'modal-item') { openItemModal(); return; }
   document.getElementById(id).classList.add('open');
   if (id === 'modal-inbound') {
     resetManual('in-person');
@@ -2144,13 +2160,36 @@ function switchHistoryTab(tab) {
   });
   renderHistory();
 }
+function populateHistoryFilters() {
+  const catSel = document.getElementById('history-cat-filter');
+  const itemSel = document.getElementById('history-item-filter');
+  if (!catSel || !itemSel) return;
+  const prevCat = catSel.value;
+  const prevItem = itemSel.value;
+  const cats = [...new Set(items.map(i => i.cat1).filter(Boolean))].sort();
+  catSel.innerHTML = '<option value="">전체 분류</option>' +
+    cats.map(c => `<option value="${escapeHtml(c)}"${c===prevCat?' selected':''}>${escapeHtml(c)}</option>`).join('');
+  const filteredItems = prevCat ? items.filter(i => i.cat1 === prevCat) : items;
+  itemSel.innerHTML = '<option value="">전체 품목</option>' +
+    filteredItems.map(i => `<option value="${escapeHtml(i.id)}"${i.id===prevItem?' selected':''}>${escapeHtml(i.name)}</option>`).join('');
+}
+
 function renderHistory() {
+  populateHistoryFilters();
+  const catFilter = (document.getElementById('history-cat-filter')||{}).value || '';
+  const itemFilter = (document.getElementById('history-item-filter')||{}).value || '';
   let rows = [];
   if (historyTabFilter !== 'out') {
     rows = rows.concat(inbounds.map(r => ({...r, _type:'in'})));
   }
   if (historyTabFilter !== 'in') {
     rows = rows.concat(outbounds.map(r => ({...r, _type:'out'})));
+  }
+  if (catFilter) {
+    rows = rows.filter(r => { const it = findItem(r.itemId); return it && it.cat1 === catFilter; });
+  }
+  if (itemFilter) {
+    rows = rows.filter(r => r.itemId === itemFilter);
   }
   rows.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
 
@@ -2847,9 +2886,19 @@ function scanFabFrame() {
 function onFabScanSuccess(item) {
   scannedFabItem = item;
   const statusMap = { ok:'정상', warn:'주의', danger:'위험' };
+  const statusColor = { ok:'#4ade80', warn:'#fbbf24', danger:'#f87171' };
   const status = getStockStatus(item);
+  const photoEl = document.getElementById('scan-fab-item-photo');
+  if (item.photo) {
+    photoEl.src = photoUrl(item.photo);
+    photoEl.style.display = '';
+  } else {
+    photoEl.style.display = 'none';
+  }
   document.getElementById('scan-fab-item-display').innerHTML =
-    `<strong>${escapeHtml(item.code)}</strong> ${escapeHtml(item.name)}<br><span style="opacity:.8">재고 ${item.stock||0} · ${statusMap[status]}</span>`;
+    `<div style="font-size:11px;opacity:.7;margin-bottom:2px">${escapeHtml(item.code||'-')}</div>`+
+    `<div style="font-size:14px;font-weight:700;line-height:1.3">${escapeHtml(item.name)}</div>`+
+    `<div style="margin-top:3px;font-size:12px">재고 <strong>${item.stock||0}</strong> <span style="color:${statusColor[status]};margin-left:4px">● ${statusMap[status]}</span></div>`;
   document.getElementById('scan-fab-result').textContent = '✅ 스캔 완료 — 입고 또는 출고를 선택하세요';
   document.getElementById('scan-fab-item-info').style.display = '';
 }
