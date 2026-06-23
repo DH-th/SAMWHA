@@ -618,6 +618,11 @@
   .eq-list-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .eq-list-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .eq-list-line { font-size: 12px; font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 36px; text-align: right; }
+  .eq-status-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; color: #fff; margin-top: 3px; }
+  .eq-status-active { background: #22c55e; }
+  .eq-status-spare  { background: #eab308; }
+  .eq-status-repair { background: #f97316; }
+  .eq-status-ng     { background: #ef4444; }
   .eq-photos-wrap { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
   .eq-photo-thumb { width:72px; height:72px; object-fit:cover; border-radius:8px; border:1.5px solid var(--border); cursor:pointer; }
   .eq-photo-add { width:72px; height:72px; border-radius:8px; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--muted); cursor:pointer; background:var(--surface2); flex-shrink:0; }
@@ -1005,10 +1010,22 @@
         <!-- 라인 -->
         <div class="form-group">
           <label class="form-label">라인</label>
-          <select class="form-control" id="eq-line">
+          <select class="form-control" id="eq-line" onchange="onEqLineChange()">
             <option value="">-- 선택 --</option>
           </select>
         </div>
+        <!-- 상태 -->
+        <div class="form-group">
+          <label class="form-label">상태</label>
+          <select class="form-control" id="eq-status">
+            <option value="active">사용중</option>
+            <option value="spare">Spare</option>
+            <option value="repair">Repair</option>
+            <option value="ng">NG</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
         <!-- 명판 / 시리얼 -->
         <div class="form-group">
           <label class="form-label">명판 / 시리얼</label>
@@ -3339,13 +3356,17 @@ function renderEquipment() {
       ? `<img class="eq-list-thumb" src="${EQ_HTTP}${escapeHtml(photo)}" alt="">`
       : `<div class="eq-list-nophoto">🏭</div>`;
     const serial = eq.serial ? `S/N: ${escapeHtml(eq.serial)}` : '';
-    const sub = [serial].filter(Boolean).join(' · ');
     const lineLabel = eq.line ? escapeHtml(eq.line) : '';
+    const statusMap = { active:'사용중', spare:'Spare', repair:'Repair', ng:'NG' };
+    const status = eq.status || (eq.line ? 'active' : 'spare');
+    const statusLabel = statusMap[status] || status;
+    const badgeHtml = `<span class="eq-status-badge eq-status-${status}">${statusLabel}</span>`;
     html += `<div class="eq-list-item" onclick="openEqDetail('${escapeHtml(eq.id)}')">
       ${thumbHtml}
       <div class="eq-list-info">
         <div class="eq-list-name">${escapeHtml(eq.name)}</div>
-        ${sub ? `<div class="eq-list-sub">${sub}</div>` : ''}
+        ${serial ? `<div class="eq-list-sub">${serial}</div>` : ''}
+        ${badgeHtml}
       </div>
       ${lineLabel ? `<div class="eq-list-line">${lineLabel}</div>` : ''}
     </div>`;
@@ -3412,8 +3433,9 @@ function openEqModal(editId) {
         document.getElementById('eq-cat1').value = eq.cat1 || '';
         onEqCat1Change();
         setTimeout(() => {
-          document.getElementById('eq-cat2').value = eq.cat2 || '';
-          document.getElementById('eq-line').value = eq.line || '';
+          document.getElementById('eq-cat2').value   = eq.cat2   || '';
+          document.getElementById('eq-line').value   = eq.line   || '';
+          document.getElementById('eq-status').value = eq.status || (eq.line ? 'active' : 'spare');
         }, 0);
       }, 0);
     }
@@ -3462,6 +3484,11 @@ function removeEqPhoto(idx) {
 }
 
 // ── 저장 ──
+function onEqLineChange() {
+  const line = document.getElementById('eq-line').value;
+  if (line) document.getElementById('eq-status').value = 'active';
+}
+
 function saveEq() {
   const name = document.getElementById('eq-name').value.trim();
   const cat1 = document.getElementById('eq-cat1').value;
@@ -3474,6 +3501,7 @@ function saveEq() {
     cat2:   document.getElementById('eq-cat2').value,
     name,
     line:   document.getElementById('eq-line').value,
+    status: document.getElementById('eq-status').value || 'spare',
     serial: document.getElementById('eq-serial').value.trim(),
     note:   document.getElementById('eq-note').value.trim(),
     photos: eqPhotos,
