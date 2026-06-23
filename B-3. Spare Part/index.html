@@ -590,6 +590,38 @@
     .grid-4 { grid-template-columns: repeat(2,1fr); }
     .stat-value { font-size: 21px; }
   }
+
+  /* ── 설비 관리 ── */
+  .eq-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+  @media (min-width: 600px) { .eq-grid { grid-template-columns: repeat(3,1fr); } }
+  .eq-card {
+    background: var(--surface); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07); cursor: pointer;
+    border: 1.5px solid var(--border); transition: transform .15s, box-shadow .15s;
+  }
+  .eq-card:active { transform: scale(.97); box-shadow: none; }
+  .eq-card-photo { width:100%; aspect-ratio:4/3; object-fit:cover; background:var(--surface2); display:block; }
+  .eq-card-nophoto { width:100%; aspect-ratio:4/3; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:36px; }
+  .eq-card-body { padding:10px 12px 12px; }
+  .eq-card-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:3px; }
+  .eq-card-sub { font-size:11px; color:var(--muted); }
+  .eq-photos-wrap { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .eq-photo-thumb { width:72px; height:72px; object-fit:cover; border-radius:8px; border:1.5px solid var(--border); cursor:pointer; }
+  .eq-photo-add { width:72px; height:72px; border-radius:8px; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--muted); cursor:pointer; background:var(--surface2); flex-shrink:0; }
+  .eq-photo-add:hover { border-color:var(--accent); color:var(--accent); }
+  .eq-detail-gallery { position:relative; background:#000; aspect-ratio:16/9; overflow:hidden; border-radius:12px; margin-bottom:14px; }
+  .eq-detail-gallery img { width:100%; height:100%; object-fit:contain; }
+  .eq-gallery-nav { position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,.45); border:none; color:#fff; font-size:20px; padding:6px 10px; cursor:pointer; border-radius:6px; }
+  .eq-gallery-nav.prev { left:6px; }
+  .eq-gallery-nav.next { right:6px; }
+  .eq-gallery-dots { display:flex; gap:5px; justify-content:center; margin-bottom:10px; }
+  .eq-gallery-dot { width:7px; height:7px; border-radius:50%; background:var(--border); cursor:pointer; }
+  .eq-gallery-dot.active { background:var(--accent); }
+  .eq-info-row { display:flex; gap:8px; border-bottom:1px solid var(--border); padding:9px 0; align-items:flex-start; }
+  .eq-info-label { font-size:11px; font-weight:700; color:var(--muted); min-width:72px; text-transform:uppercase; letter-spacing:.3px; padding-top:1px; }
+  .eq-info-value { font-size:13px; color:var(--text); flex:1; word-break:break-all; }
+  .eq-cat-chip { display:inline-block; padding:3px 10px; border-radius:20px; background:var(--surface2); border:1px solid var(--border); font-size:12px; cursor:pointer; font-weight:600; color:var(--muted); margin:3px 3px 0 0; }
+  .eq-cat-chip:hover { border-color:var(--accent); color:var(--accent); }
 </style>
 </head>
 <body>
@@ -611,6 +643,9 @@
     </div>
     <div class="nav-item" data-page="inventory" onclick="showPage('inventory')">
       <span class="icon">📦</span><span data-i18n="nav_inventory">재고 현황</span>
+    </div>
+    <div class="nav-item" data-page="equipment" onclick="showPage('equipment')">
+      <span class="icon">🏭</span><span>설비 관리</span>
     </div>
     <div class="nav-section" data-i18n="nav_manage">관리</div>
     <div class="nav-item" data-page="categories" onclick="showPage('categories')">
@@ -893,9 +928,142 @@
       </div>
     </div>
 
+    <!-- ═══ EQUIPMENT ═══ -->
+    <div id="page-equipment" class="page">
+      <div class="filter-bar" style="flex-direction:column;gap:6px">
+        <div style="display:flex;gap:8px;align-items:center;width:100%">
+          <div class="search-wrap" style="flex:1;min-width:0">
+            <span class="search-icon">🔍</span>
+            <input class="form-control" style="width:100%" id="eq-search" placeholder="설비명 / 시리얼 검색" oninput="renderEquipment()">
+          </div>
+          <button class="btn btn-accent btn-sm" onclick="openEqModal()" style="white-space:nowrap;flex-shrink:0">+ 설비 등록</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;width:100%">
+          <select class="form-control" id="eq-cat1-filter" onchange="onEqCat1FilterChange()" style="flex:1;min-width:0">
+            <option value="">전체 1차</option>
+          </select>
+          <select class="form-control" id="eq-cat2-filter" onchange="renderEquipment()" style="flex:1;min-width:0">
+            <option value="">전체 2차</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="openEqCatSettings()" style="flex-shrink:0" title="분류 관리">⚙️</button>
+        </div>
+      </div>
+      <div class="eq-grid" id="eq-grid"></div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- ─────────── EQUIPMENT MODALS ─────────── -->
+
+<!-- 설비 등록/수정 -->
+<div class="modal-bg" id="modal-equipment">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="eq-modal-title">설비 등록</div>
+      <button class="modal-close" onclick="closeModal('modal-equipment')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eq-edit-id">
+      <!-- 1차 / 2차 분류 -->
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">1차 분류 <span class="req">*</span></label>
+          <select class="form-control" id="eq-cat1" onchange="onEqCat1Change()">
+            <option value="">-- 선택 --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">2차 분류</label>
+          <select class="form-control" id="eq-cat2">
+            <option value="">-- 선택 --</option>
+          </select>
+        </div>
+      </div>
+      <!-- 설비명 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">설비명 <span class="req">*</span></label>
+          <input class="form-control" id="eq-name" placeholder="예: 컨베이어 1호기">
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <!-- 라인 -->
+        <div class="form-group">
+          <label class="form-label">라인</label>
+          <select class="form-control" id="eq-line">
+            <option value="">-- 선택 --</option>
+          </select>
+        </div>
+        <!-- 명판 / 시리얼 -->
+        <div class="form-group">
+          <label class="form-label">명판 / 시리얼</label>
+          <input class="form-control" id="eq-serial" placeholder="S/N 또는 명판번호">
+        </div>
+      </div>
+      <!-- 사진 (최대 5장) -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">사진 <span style="font-weight:400;text-transform:none;color:var(--text-muted)">(최대 5장)</span></label>
+          <div class="eq-photos-wrap" id="eq-photo-wrap"></div>
+          <input type="file" id="eq-photo-input" accept="image/*" capture="environment" style="display:none" onchange="addEqPhoto(this)">
+        </div>
+      </div>
+      <!-- 비고 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">비고</label>
+          <input class="form-control" id="eq-note" placeholder="추가 메모">
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-outline btn-block" onclick="closeModal('modal-equipment')">취소</button>
+        <button class="btn btn-accent btn-block" onclick="saveEq()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 설비 상세 -->
+<div class="modal-bg" id="modal-eq-detail">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="eq-detail-title">설비 상세</div>
+      <button class="modal-close" onclick="closeModal('modal-eq-detail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 사진 갤러리 -->
+      <div id="eq-detail-gallery-wrap"></div>
+      <!-- 정보 -->
+      <div id="eq-detail-info"></div>
+      <!-- 액션 버튼 -->
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-outline btn-block" onclick="editEqFromDetail()">✏️ 수정</button>
+        <button class="btn btn-block" style="background:var(--danger-bg);color:var(--danger);border:1.5px solid var(--danger)" onclick="deleteEqFromDetail()">🗑️ 삭제</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 설비 분류 관리 -->
+<div class="modal-bg" id="modal-eq-cat">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ 설비 분류 관리</div>
+      <button class="modal-close" onclick="closeModal('modal-eq-cat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 1차 분류 추가 -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">1차 분류</div>
+      <div class="cat-input-row" style="margin-bottom:12px">
+        <input class="form-control" id="new-eq-cat1" placeholder="1차 분류 입력" onkeydown="if(event.key==='Enter')addEqCat1()">
+        <button class="btn btn-accent" onclick="addEqCat1()">추가</button>
+      </div>
+      <div id="eq-cat-tree"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ─────────── BOTTOM TAB BAR (mobile) ─────────── -->
 <div id="tabbar">
@@ -915,8 +1083,8 @@
       </div>
       <div class="tabbar-scan-label">스캔</div>
     </div>
-    <div class="tabbar-item" id="tab-register" onclick="openItemModal()">
-      <span class="icon">➕</span><span>등록</span>
+    <div class="tabbar-item" data-page="equipment" onclick="showPage('equipment')">
+      <span class="icon">🏭</span><span>설비</span>
     </div>
     <div class="tabbar-item" data-page="more" onclick="openMoreMenu()">
       <span class="icon">☰</span><span data-i18n="nav_more">더보기</span>
@@ -938,7 +1106,10 @@
       <button class="modal-close" onclick="closeModal('modal-more')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="nav-section" style="padding:0 0 6px;margin-bottom:4px">리포트</div>
+      <div class="nav-section" style="padding:0 0 6px;margin-bottom:4px">재고</div>
+      <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');openItemModal()">
+        <span class="icon">➕</span><span>품목 등록</span>
+      </div>
       <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');showPage('history')">
         <span class="icon">📋</span><span data-i18n="nav_history">입출고 이력</span>
       </div>
@@ -1305,7 +1476,18 @@
       <button class="modal-close" onclick="closeModal('modal-print-settings')">✕</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">라벨 크기는 사용하는 프린터의 라벨 규격에 맞게 입력하세요. 설정은 이 기기에 저장됩니다.</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">설정은 이 기기에 저장됩니다. 인쇄는 서버가 직접 프린터로 전송합니다.</div>
+      <!-- 프린터 선택 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">프린터</label>
+          <div style="display:flex;gap:6px">
+            <select class="form-control" id="ps-printer" style="flex:1"></select>
+            <button class="btn btn-outline btn-sm" onclick="fetchPrinterList()" style="flex-shrink:0">↻ 새로고침</button>
+          </div>
+          <div id="ps-printer-status" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
+      </div>
       <div class="form-row cols-2">
         <div class="form-group">
           <label class="form-label">라벨 너비 (mm)</label>
@@ -1732,13 +1914,18 @@ function showPage(page) {
 
   const titles = {
     dashboard:'nav_dashboard', inventory:'nav_inventory', categories:'nav_categories',
-    personnel:'nav_personnel', report:'nav_report_monthly', history:'nav_history'
+    personnel:'nav_personnel', report:'nav_report_monthly', history:'nav_history',
+    equipment:'설비 관리'
   };
   const titleEl = document.getElementById('page-title');
-  if (titleEl && titles[page]) titleEl.textContent = t(titles[page]);
+  if (titleEl) {
+    if (page === 'equipment') titleEl.textContent = '설비 관리';
+    else if (titles[page]) titleEl.textContent = t(titles[page]);
+  }
 
   if (page === 'report') generateReport();
   if (page === 'inventory') renderInventory();
+  if (page === 'equipment') renderEquipment();
 }
 
 function goToInventory(status) {
@@ -2948,6 +3135,7 @@ function getLabelSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(LS_LABEL) || '{}');
     return {
+      printer: saved.printer || '',
       width:   saved.width   || 62,
       height:  saved.height  || 40,
       margin:  saved.margin  || 2,
@@ -2985,48 +3173,393 @@ function openPrintSettings() {
   fetchPrinterList(s.printer);
 }
 
-function printLabel() {
+async function fetchPrinterList(selectName) {
+  const sel = document.getElementById('ps-printer');
+  const status = document.getElementById('ps-printer-status');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">불러오는 중...</option>';
+  if (status) status.textContent = '';
+  try {
+    const res = await fetch(`${HTTP_BASE}/api/inventory/printers`);
+    const data = await res.json();
+    if (data.error) {
+      sel.innerHTML = '<option value="">프린터 목록 조회 실패</option>';
+      if (status) status.textContent = '⚠️ ' + data.error;
+      return;
+    }
+    const printers = data.printers || [];
+    const target = selectName || data.default || '';
+    sel.innerHTML = '<option value="">-- 프린터 선택 --</option>' +
+      printers.map(p => `<option value="${escapeHtml(p)}"${p===target?' selected':''}>${escapeHtml(p)}</option>`).join('');
+    if (status) status.textContent = printers.length ? `${printers.length}개 프린터 감지됨` : '설치된 프린터 없음';
+  } catch(e) {
+    sel.innerHTML = '<option value="">서버 연결 오류</option>';
+    if (status) status.textContent = '⚠️ 서버에 연결할 수 없습니다';
+  }
+}
+
+async function printLabel() {
   const item = findItem(currentDetailItemId);
   if (!item || !item.code) { alert('품목 코드가 없습니다.'); return; }
-
   const s = getLabelSettings();
-  const tmpCanvas = document.createElement('canvas');
-  new QRious({ element: tmpCanvas, value: item.code, size: 200, background: '#ffffff', foreground: '#000000', level: 'M' });
-  const qrDataUrl = tmpCanvas.toDataURL('image/png');
-
-  const zoneLine = item.zone && item.zone !== 'etc'
-    ? `<div class="zone">${escapeHtml(item.zone)}</div>` : '';
-
-  const win = window.open('', '_blank', `width=${Math.round(s.width*3.78)},height=${Math.round(s.height*3.78)}`);
-  if (!win) { alert('팝업 차단을 해제해 주세요.'); return; }
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  @page { size: ${s.width}mm ${s.height}mm; margin: 0; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    width: ${s.width}mm; height: ${s.height}mm;
-    padding: ${s.margin}mm;
-    font-family: Arial, sans-serif;
-    display: flex; flex-direction: row; align-items: center;
-    background: #fff; color: #000; gap: ${s.margin}mm;
+  if (!s.printer) {
+    alert('프린터가 설정되어 있지 않습니다.\n⚙️ 프린터 설정에서 프린터를 선택하고 저장하세요.');
+    return;
   }
-  img.qr { width: ${s.qrMm}mm; height: ${s.qrMm}mm; flex-shrink: 0; }
-  .info { display: flex; flex-direction: column; justify-content: center; gap: 1mm; overflow: hidden; }
-  .code { font-family: monospace; font-size: ${s.codePt}pt; font-weight: 900; letter-spacing: 1px; }
-  .name { font-size: ${s.namePt}pt; font-weight: 700; word-break: break-word; }
-  .zone { font-size: ${Math.max(s.namePt-1,6)}pt; color: #555; }
-</style>
-</head><body>
-<img class="qr" src="${qrDataUrl}">
-<div class="info">
-  <div class="code">${escapeHtml(item.code)}</div>
-  <div class="name">${escapeHtml(item.name)}</div>
-  ${zoneLine}
-</div>
-</body></html>`);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { win.print(); win.close(); }, 400);
+  const zone = (item.zone || '').split(',').filter(z => z && z !== 'etc').join(', ');
+  showToast('🖨️ 인쇄 중...');
+  try {
+    const res = await fetch(`${HTTP_BASE}/api/inventory/print-label`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code:    item.code,
+        name:    item.name,
+        zone:    zone,
+        printer: s.printer,
+        width:   s.width,
+        height:  s.height,
+        margin:  s.margin,
+        qrMm:    s.qrMm,
+        codePt:  s.codePt,
+        namePt:  s.namePt,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(`✅ "${s.printer}" 인쇄 완료`);
+    } else {
+      alert('인쇄 오류: ' + (data.error || '알 수 없는 오류'));
+    }
+  } catch(e) {
+    alert('서버 연결 오류: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  EQUIPMENT MODULE
+// ═══════════════════════════════════════════
+const EQ_WS_URL = WS_URL.replace('/ws/inventory', '/ws/equipment');
+const EQ_HTTP   = HTTP_BASE;
+
+let eqItems      = [];
+let eqCategories = { cat1: [], cat2: [] };
+let eqWS         = null;
+let currentEqId  = null;
+let eqPhotos     = [];
+let eqGalleryIdx = 0;
+
+// ── WebSocket ──
+function connectEqWS() {
+  eqWS = new WebSocket(EQ_WS_URL);
+  eqWS.onopen = () => console.log('[EQ] WS connected');
+  eqWS.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'INIT_EQ_ITEMS') {
+      eqItems = msg.data; renderEquipment();
+    } else if (msg.type === 'INIT_EQ_CATEGORIES') {
+      eqCategories = msg.data || { cat1:[], cat2:[] };
+      renderEqCat1Selects(); renderEqCatTree();
+    } else if (msg.type === 'EQ_UPSERTED') {
+      const idx = eqItems.findIndex(x=>x.id===msg.item.id);
+      if (idx>-1) eqItems[idx]=msg.item; else eqItems.push(msg.item);
+      renderEquipment();
+    } else if (msg.type === 'EQ_DELETED') {
+      eqItems = eqItems.filter(x=>x.id!==msg.id);
+      renderEquipment();
+      if (currentEqId===msg.id) closeModal('modal-eq-detail');
+    } else if (msg.type === 'EQ_CAT_UPDATED') {
+      eqCategories = msg.data || { cat1:[], cat2:[] };
+      renderEqCat1Selects(); renderEqCatTree(); renderEquipment();
+    }
+  };
+  eqWS.onclose = () => setTimeout(connectEqWS, 3000);
+}
+
+function sendEqWS(msg) {
+  if (eqWS && eqWS.readyState === WebSocket.OPEN) { eqWS.send(JSON.stringify(msg)); return true; }
+  alert('서버 연결 중입니다. 잠시 후 다시 시도해주세요.');
+  return false;
+}
+
+// ── helpers ──
+function eqCat1Name(id) { return (eqCategories.cat1.find(c=>c.id===id)||{}).name || '-'; }
+function eqCat2Name(id) { return (eqCategories.cat2.find(c=>c.id===id)||{}).name || '-'; }
+
+// ── 렌더: 설비 목록 ──
+function renderEquipment() {
+  const search = (document.getElementById('eq-search')||{}).value||'';
+  const cat1F  = (document.getElementById('eq-cat1-filter')||{}).value||'';
+  const cat2F  = (document.getElementById('eq-cat2-filter')||{}).value||'';
+
+  let filtered = eqItems.filter(eq => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || eq.name.toLowerCase().includes(q) || (eq.serial||'').toLowerCase().includes(q);
+    const matchCat1 = !cat1F || eq.cat1 === cat1F;
+    const matchCat2 = !cat2F || eq.cat2 === cat2F;
+    return matchSearch && matchCat1 && matchCat2;
+  });
+
+  const grid = document.getElementById('eq-grid');
+  if (!grid) return;
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:40px">등록된 설비가 없습니다</div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(eq => {
+    const photo = eq.photos && eq.photos[0];
+    const photoHtml = photo
+      ? `<img class="eq-card-photo" src="${EQ_HTTP}${escapeHtml(photo)}" alt="">`
+      : `<div class="eq-card-nophoto">🏭</div>`;
+    const c1 = eqCat1Name(eq.cat1);
+    const c2 = eq.cat2 ? eqCat2Name(eq.cat2) : '';
+    const catLabel = c2 && c2!=='-' ? `${c1} · ${c2}` : c1;
+    return `<div class="eq-card" onclick="openEqDetail('${escapeHtml(eq.id)}')">
+      ${photoHtml}
+      <div class="eq-card-body">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">${escapeHtml(catLabel)}</div>
+        <div class="eq-card-name">${escapeHtml(eq.name)}</div>
+        <div class="eq-card-sub">${eq.line ? '라인: '+escapeHtml(eq.line)+' · ' : ''}S/N: ${escapeHtml(eq.serial||'-')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── 렌더: 필터 1차 분류 셀렉트 ──
+function renderEqCat1Selects() {
+  const cat1s = eqCategories.cat1 || [];
+  ['eq-cat1-filter','eq-cat1'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = sel.value;
+    const ph = id.includes('filter') ? '<option value="">전체 1차</option>' : '<option value="">-- 선택 --</option>';
+    sel.innerHTML = ph + cat1s.map(c=>`<option value="${escapeHtml(c.id)}"${c.id===prev?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  });
+  onEqCat1FilterChange();
+  onEqCat1Change();
+}
+
+function onEqCat1FilterChange() {
+  const cat1Id = (document.getElementById('eq-cat1-filter')||{}).value||'';
+  const sel = document.getElementById('eq-cat2-filter');
+  if (!sel) return;
+  const prev = sel.value;
+  const cat2s = (eqCategories.cat2||[]).filter(c=>!cat1Id||c.parentId===cat1Id);
+  sel.innerHTML = '<option value="">전체 2차</option>' +
+    cat2s.map(c=>`<option value="${escapeHtml(c.id)}"${c.id===prev?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  renderEquipment();
+}
+
+function onEqCat1Change() {
+  const cat1Id = (document.getElementById('eq-cat1')||{}).value||'';
+  const sel = document.getElementById('eq-cat2');
+  if (!sel) return;
+  const prev = sel.value;
+  const cat2s = (eqCategories.cat2||[]).filter(c=>c.parentId===cat1Id);
+  sel.innerHTML = '<option value="">-- 선택 --</option>' +
+    cat2s.map(c=>`<option value="${escapeHtml(c.id)}"${c.id===prev?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
+}
+
+// ── 등록/수정 모달 ──
+function openEqModal(editId) {
+  currentEqId = editId || null;
+  eqPhotos = [];
+  document.getElementById('eq-edit-id').value = editId || '';
+  document.getElementById('eq-name').value    = '';
+  document.getElementById('eq-serial').value  = '';
+  document.getElementById('eq-note').value    = '';
+  renderEqCat1Selects();
+  renderEqLineSelect();
+  document.getElementById('eq-modal-title').textContent = '설비 등록';
+
+  if (editId) {
+    const eq = eqItems.find(x=>x.id===editId);
+    if (eq) {
+      document.getElementById('eq-modal-title').textContent = '설비 수정';
+      document.getElementById('eq-name').value   = eq.name   || '';
+      document.getElementById('eq-serial').value = eq.serial || '';
+      document.getElementById('eq-note').value   = eq.note   || '';
+      eqPhotos = [...(eq.photos||[])];
+      setTimeout(() => {
+        document.getElementById('eq-cat1').value = eq.cat1 || '';
+        onEqCat1Change();
+        setTimeout(() => {
+          document.getElementById('eq-cat2').value = eq.cat2 || '';
+          document.getElementById('eq-line').value = eq.line || '';
+        }, 0);
+      }, 0);
+    }
+  }
+  renderEqPhotoWrap();
+  document.getElementById('modal-equipment').classList.add('open');
+}
+
+function renderEqLineSelect() {
+  const sel = document.getElementById('eq-line');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- 선택 --</option>' +
+    lines.map(l=>`<option value="${escapeHtml(l)}"${l===prev?' selected':''}>${escapeHtml(l)}</option>`).join('');
+}
+
+// ── 사진 관리 ──
+function renderEqPhotoWrap() {
+  const wrap = document.getElementById('eq-photo-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = eqPhotos.map((p,i) => {
+    const src = p.startsWith('data:') ? p : `${EQ_HTTP}${p}`;
+    return `<div style="position:relative;display:inline-block">
+      <img class="eq-photo-thumb" src="${src}" title="탭하여 삭제">
+      <div style="position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1" onclick="removeEqPhoto(${i})">✕</div>
+    </div>`;
+  }).join('');
+  if (eqPhotos.length < 5) {
+    wrap.innerHTML += `<div class="eq-photo-add" onclick="document.getElementById('eq-photo-input').click()">＋</div>`;
+  }
+}
+
+function addEqPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (eqPhotos.length >= 5) { alert('사진은 최대 5장까지 등록 가능합니다.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => { eqPhotos.push(e.target.result); renderEqPhotoWrap(); };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removeEqPhoto(idx) {
+  eqPhotos.splice(idx, 1);
+  renderEqPhotoWrap();
+}
+
+// ── 저장 ──
+function saveEq() {
+  const name = document.getElementById('eq-name').value.trim();
+  const cat1 = document.getElementById('eq-cat1').value;
+  if (!name) { alert('설비명을 입력하세요.'); return; }
+  if (!cat1) { alert('1차 분류를 선택하세요.'); return; }
+  const editId = document.getElementById('eq-edit-id').value;
+  const eq = {
+    id:     editId || ('eq_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)),
+    cat1,
+    cat2:   document.getElementById('eq-cat2').value,
+    name,
+    line:   document.getElementById('eq-line').value,
+    serial: document.getElementById('eq-serial').value.trim(),
+    note:   document.getElementById('eq-note').value.trim(),
+    photos: eqPhotos,
+    ts:     Date.now(),
+  };
+  if (sendEqWS({ type:'UPSERT_EQ', item: eq })) closeModal('modal-equipment');
+}
+
+// ── 상세 모달 ──
+function openEqDetail(id) {
+  const eq = eqItems.find(x=>x.id===id);
+  if (!eq) return;
+  currentEqId = id;
+  eqGalleryIdx = 0;
+  renderEqDetail(eq);
+  document.getElementById('modal-eq-detail').classList.add('open');
+}
+
+function renderEqDetail(eq) {
+  document.getElementById('eq-detail-title').textContent = eq.name;
+  const photos = eq.photos || [];
+  const galleryWrap = document.getElementById('eq-detail-gallery-wrap');
+  if (photos.length) {
+    galleryWrap.innerHTML = `
+      <div class="eq-detail-gallery">
+        <img id="eq-gallery-img" src="${EQ_HTTP}${escapeHtml(photos[eqGalleryIdx])}" alt="">
+        ${photos.length>1?`<button class="eq-gallery-nav prev" onclick="moveEqGallery(-1)">‹</button><button class="eq-gallery-nav next" onclick="moveEqGallery(1)">›</button>`:''}
+      </div>
+      ${photos.length>1?`<div class="eq-gallery-dots">${photos.map((_,i)=>`<div class="eq-gallery-dot${i===eqGalleryIdx?' active':''}" onclick="setEqGallery(${i})"></div>`).join('')}</div>`:''}`;
+  } else {
+    galleryWrap.innerHTML = `<div style="aspect-ratio:16/9;background:var(--surface2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:14px">🏭</div>`;
+  }
+  const c2name = eq.cat2 ? eqCat2Name(eq.cat2) : '-';
+  const rows = [
+    ['1차 분류', escapeHtml(eqCat1Name(eq.cat1))],
+    ['2차 분류', escapeHtml(c2name)],
+    ['라인',     escapeHtml(eq.line||'-')],
+    ['명판/S/N', escapeHtml(eq.serial||'-')],
+    ['비고',     escapeHtml(eq.note||'-')],
+  ];
+  document.getElementById('eq-detail-info').innerHTML =
+    rows.map(([l,v])=>`<div class="eq-info-row"><span class="eq-info-label">${l}</span><span class="eq-info-value">${v}</span></div>`).join('');
+}
+
+function moveEqGallery(dir) {
+  const eq = eqItems.find(x=>x.id===currentEqId);
+  if (!eq||!eq.photos) return;
+  eqGalleryIdx = (eqGalleryIdx + dir + eq.photos.length) % eq.photos.length;
+  renderEqDetail(eq);
+}
+function setEqGallery(idx) { eqGalleryIdx=idx; const eq=eqItems.find(x=>x.id===currentEqId); if(eq) renderEqDetail(eq); }
+
+function editEqFromDetail() { closeModal('modal-eq-detail'); openEqModal(currentEqId); }
+function deleteEqFromDetail() {
+  if (!confirm('설비를 삭제하시겠습니까?')) return;
+  sendEqWS({ type:'DELETE_EQ', id: currentEqId });
+  closeModal('modal-eq-detail');
+}
+
+// ── 분류 관리 ──
+function openEqCatSettings() {
+  renderEqCatTree();
+  document.getElementById('modal-eq-cat').classList.add('open');
+}
+
+function renderEqCatTree() {
+  const el = document.getElementById('eq-cat-tree');
+  if (!el) return;
+  const cat1s = eqCategories.cat1 || [];
+  if (!cat1s.length) { el.innerHTML=`<div class="empty-state" style="padding:10px">분류가 없습니다</div>`; return; }
+  el.innerHTML = cat1s.map(c1 => {
+    const cat2s = (eqCategories.cat2||[]).filter(c=>c.parentId===c1.id);
+    const c2html = cat2s.map(c2=>`
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0 5px 16px;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;flex:1;color:var(--muted)">└ ${escapeHtml(c2.name)}</span>
+        <button class="btn btn-outline btn-sm" onclick="deleteEqCat2('${c2.id}')">삭제</button>
+      </div>`).join('');
+    const addC2Row = `
+      <div style="padding:5px 0 5px 16px;display:flex;gap:6px">
+        <input class="form-control" id="new-eq-cat2-${c1.id}" placeholder="2차 분류 입력" style="font-size:12px;padding:5px 8px" onkeydown="if(event.key==='Enter')addEqCat2('${c1.id}')">
+        <button class="btn btn-accent btn-sm" onclick="addEqCat2('${c1.id}')">추가</button>
+      </div>`;
+    return `<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface2)">
+        <span style="font-size:14px;font-weight:700;flex:1">${escapeHtml(c1.name)}</span>
+        <button class="btn btn-outline btn-sm" onclick="deleteEqCat1('${c1.id}')">삭제</button>
+      </div>
+      ${c2html}${addC2Row}
+    </div>`;
+  }).join('');
+}
+
+function addEqCat1() {
+  const input = document.getElementById('new-eq-cat1');
+  const name = input.value.trim();
+  if (!name) return;
+  sendEqWS({ type:'ADD_EQ_CAT1', name });
+  input.value = '';
+}
+function deleteEqCat1(id) {
+  if (!confirm('1차 분류를 삭제하면 하위 2차 분류도 모두 삭제됩니다.')) return;
+  sendEqWS({ type:'DELETE_EQ_CAT1', id });
+}
+function addEqCat2(parentId) {
+  const input = document.getElementById(`new-eq-cat2-${parentId}`);
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
+  sendEqWS({ type:'ADD_EQ_CAT2', name, parentId });
+  input.value = '';
+}
+function deleteEqCat2(id) {
+  if (!confirm('2차 분류를 삭제하시겠습니까?')) return;
+  sendEqWS({ type:'DELETE_EQ_CAT2', id });
 }
 
 // ═══════════════════════════════════════════
@@ -3036,6 +3569,7 @@ window.addEventListener('DOMContentLoaded', () => {
   applyI18n();
   renderAll();
   connectWS();
+  connectEqWS();
 });
 </script>
 </body>
