@@ -915,7 +915,7 @@
       </div>
       <div class="tabbar-scan-label">스캔</div>
     </div>
-    <div class="tabbar-item" id="tab-register" onclick="openModal('modal-item')">
+    <div class="tabbar-item" id="tab-register" onclick="openItemModal()">
       <span class="icon">➕</span><span>등록</span>
     </div>
     <div class="tabbar-item" data-page="more" onclick="openMoreMenu()">
@@ -1754,7 +1754,6 @@ function openMoreMenu() { openModal('modal-more'); }
 // ═══════════════════════════════════════════
 function openModal(id) {
   if (id === 'modal-print-settings') { openPrintSettings(); return; }
-  if (id === 'modal-item') { openItemModal(); return; }
   document.getElementById(id).classList.add('open');
   if (id === 'modal-inbound') {
     resetManual('in-person');
@@ -2078,11 +2077,12 @@ function renderZones() {
   // Item modal zone buttons
   const btns = document.getElementById('item-zone-btns');
   if (btns) {
-    const cur = document.getElementById('item-zone').value || 'etc';
+    const raw = document.getElementById('item-zone').value || '';
+    const sel = new Set(raw ? raw.split(',') : []);
     btns.innerHTML = zones.map(v =>
-      `<button type="button" class="zone-btn${cur===v?' selected':''}" onclick="selectZone('${escapeHtml(v).replace(/'/g,"\\'")}'">${escapeHtml(v)}</button>`
+      `<button type="button" class="zone-btn${sel.has(v)?' selected':''}" onclick="selectZone('${escapeHtml(v).replace(/'/g,"\\'")}'">${escapeHtml(v)}</button>`
     ).join('') +
-    `<button type="button" class="zone-btn etc-btn${cur==='etc'?' selected':''}" onclick="selectZone('etc')">etc</button>`;
+    `<button type="button" class="zone-btn etc-btn${sel.has('etc')?' selected':''}" onclick="selectZone('etc')">etc</button>`;
   }
 }
 
@@ -2226,7 +2226,8 @@ function openItemModal(editId) {
   document.getElementById('item-modal-title').textContent = t('modal_item_title');
   onItemCat1Change(); // cat2 select를 '분류1을 먼저 선택' 상태로 초기화 + 코드 미리보기 초기화
 
-  selectZone('etc');
+  document.getElementById('item-zone').value = '';
+  renderZones();
   if (editId) {
     const item = findItem(editId);
     if (item) {
@@ -2242,7 +2243,8 @@ function openItemModal(editId) {
       document.getElementById('item-modal-title').textContent = t('modal_item_edit_title');
       updateItemCodePreview();
       if (item.photo) showPhotoPreview(photoUrl(item.photo));
-      selectZone(item.zone || 'etc');
+      document.getElementById('item-zone').value = item.zone || '';
+      renderZones();
     }
   }
   openModal('modal-item');
@@ -2537,7 +2539,10 @@ function deleteZone(value) {
   sendWS({ type: 'DELETE_CATEGORY', catType: 'zones', value });
 }
 function selectZone(value) {
-  document.getElementById('item-zone').value = value;
+  const input = document.getElementById('item-zone');
+  const cur = new Set(input.value ? input.value.split(',') : []);
+  if (cur.has(value)) { cur.delete(value); } else { cur.add(value); }
+  input.value = [...cur].join(',');
   renderZones();
 }
 
