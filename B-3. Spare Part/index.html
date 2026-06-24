@@ -3497,7 +3497,8 @@ function renderEqLineSelect() {
   if (!sel) return;
   const prev = sel.value;
   sel.innerHTML = '<option value="">-- 선택 --</option>' +
-    lines.map(l=>`<option value="${escapeHtml(l)}"${l===prev?' selected':''}>${escapeHtml(l)}</option>`).join('');
+    lines.map(l=>`<option value="${escapeHtml(l)}"${l===prev?' selected':''}>${escapeHtml(l)}</option>`).join('') +
+    `<option value="etc"${prev==='etc'?' selected':''}>etc</option>`;
 }
 
 // ── 사진 관리 ──
