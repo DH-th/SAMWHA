@@ -598,11 +598,15 @@
   .eq-table col.col-name  { width: 28%; }
   .eq-table col.col-sn    { width: 22%; }
   @media (max-width: 600px) {
-    .eq-table col.col-sn { width: 0; }
-    .eq-table .col-sn-hide { display: none; }
-    .eq-table-sn-mobile { font-size: 10px; color: var(--muted); margin-top: 2px; display: none; }
+    .eq-table col.col-sn   { width: 0; }
+    .eq-table col.col-qty  { width: 0; }
+    .eq-table col.col-line { width: 0; }
+    .col-sn-hide, .col-qty-hide, .col-line-hide { display: none; }
+    .eq-table-sn-mobile   { display: block; }
+    .eq-table-line-mobile { display: flex; }
   }
-  @media (max-width: 600px) { .eq-table-sn-mobile { display: block; } }
+  .eq-table-sn-mobile   { font-size: 10px; color: var(--muted); margin-top: 2px; display: none; }
+  .eq-table-line-mobile { font-size: 11px; font-weight: 700; color: var(--accent); margin-top: 3px; gap: 6px; align-items: center; display: none; }
   .eq-table col.col-qty   { width: 40px; }
   .eq-table col.col-line  { width: 56px; }
   .eq-table col.col-state { width: 64px; }
@@ -3404,10 +3408,11 @@ function renderEquipment() {
       <td class="left">
         <div class="eq-table-name">${escapeHtml(nameMain)}</div>
         <div class="eq-table-sn-mobile">S/N: ${escapeHtml(eq.serial||'-')}</div>
+        <div class="eq-table-line-mobile">${lineLabel ? `<span>${lineLabel}</span>` : ''}<span style="color:var(--muted);font-weight:400">×${eq.qty||1}</span></div>
       </td>
       <td class="left col-sn-hide" style="font-size:11px;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
-      <td style="font-weight:700">${eq.qty||1}</td>
-      <td style="font-weight:700;color:var(--accent)">${escapeHtml(eq.line||'-')}</td>
+      <td class="col-qty-hide" style="font-weight:700">${eq.qty||1}</td>
+      <td class="col-line-hide" style="font-weight:700;color:var(--accent)">${escapeHtml(eq.line||'-')}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
@@ -3422,8 +3427,8 @@ function renderEquipment() {
       <th>${t('eq_col_photo')}</th>
       <th class="left">Name</th>
       <th class="left col-sn-hide">S/N</th>
-      <th>Qty</th>
-      <th>Line</th>
+      <th class="col-qty-hide">Qty</th>
+      <th class="col-line-hide">Line</th>
       <th>${t('eq_col_status')}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
