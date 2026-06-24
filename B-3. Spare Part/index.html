@@ -66,10 +66,10 @@
   }
   .logo-icon {
     width: 36px; height: 36px; background: var(--accent); border-radius: 9px;
-    display: flex; align-items: center; justify-content: center; font-weight: 900;
-    font-size: 15px; color: #fff; letter-spacing: -1px; flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(37,88,212,0.3);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(37,88,212,0.3); overflow: hidden; padding: 4px;
   }
+  .logo-icon img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(1); }
   .logo-text { font-size: 13px; font-weight: 800; color: var(--text); line-height: 1.3; }
   .logo-sub { font-size: 10px; color: var(--muted); font-weight: 400; }
   nav { flex: 1; padding: 10px 0; overflow-y: auto; }
@@ -592,33 +592,29 @@
   }
 
   /* ── 설비 관리 ── */
-  .eq-list { display: flex; flex-direction: column; gap: 0; }
-  .eq-section-header {
-    padding: 6px 4px 4px; font-size: 11px; font-weight: 700;
-    color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
-    border-bottom: 1.5px solid var(--border); margin-top: 10px;
+  .eq-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  .eq-table col.col-no    { width: 30px; }
+  .eq-table col.col-photo { width: 76px; }
+  .eq-table col.col-name  { width: 28%; }
+  .eq-table col.col-sn    { width: 22%; }
+  .eq-table col.col-qty   { width: 40px; }
+  .eq-table col.col-line  { width: 56px; }
+  .eq-table col.col-state { width: 64px; }
+  .eq-table th {
+    background: var(--surface2); color: var(--muted); font-weight: 700;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .4px;
+    padding: 6px 6px; border-bottom: 2px solid var(--border); text-align: center; white-space: nowrap;
   }
-  .eq-section-header:first-child { margin-top: 0; }
-  .eq-list-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 4px; border-bottom: 1px solid var(--border);
-    cursor: pointer; transition: background .12s;
-  }
-  .eq-list-item:active { background: var(--surface2); }
-  .eq-list-thumb {
-    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
-    flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border);
-  }
-  .eq-list-nophoto {
-    width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
-    background: var(--surface2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 22px;
-  }
-  .eq-list-info { flex: 1; min-width: 0; }
-  .eq-list-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .eq-list-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .eq-list-line { font-size: 12px; font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 36px; text-align: right; }
-  .eq-status-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; color: #fff; margin-top: 3px; }
+  .eq-table th.left { text-align: left; padding-left: 8px; }
+  .eq-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; text-align: center; overflow: hidden; }
+  .eq-table td.left { text-align: left; padding-left: 8px; }
+  .eq-table tr { cursor: pointer; transition: background .1s; }
+  .eq-table tr:active { background: var(--surface2); }
+  .eq-table-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: var(--surface2); border: 1px solid var(--border); display: block; margin: 0 auto; }
+  .eq-table-nophoto { width: 60px; height: 60px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto; }
+  .eq-table-name { font-size: 13px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eq-table-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .eq-status-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; color: #fff; }
   .eq-status-active { background: #22c55e; }
   .eq-status-spare  { background: #eab308; }
   .eq-status-repair { background: #f97316; }
@@ -648,7 +644,7 @@
 <!-- ─────────── SIDEBAR (desktop) ─────────── -->
 <aside id="sidebar">
   <div class="logo-area">
-    <div class="logo-icon">SW</div>
+    <div class="logo-icon"><img src="SAMHWA Logo (No background).png" alt="SW"></div>
     <div class="logo-text">
       SAMHWA<br>
       <span class="logo-sub" data-i18n="sys_name">재고 관리 시스템</span>
@@ -663,7 +659,7 @@
       <span class="icon">📦</span><span data-i18n="nav_inventory">재고 현황</span>
     </div>
     <div class="nav-item" data-page="equipment" onclick="showPage('equipment')">
-      <span class="icon">🏭</span><span>설비 관리</span>
+      <span class="icon">🏭</span><span>JIG&amp;Fixture</span>
     </div>
     <div class="nav-section" data-i18n="nav_manage">관리</div>
     <div class="nav-item" data-page="categories" onclick="showPage('categories')">
@@ -952,21 +948,21 @@
         <div style="display:flex;gap:8px;align-items:center;width:100%">
           <div class="search-wrap" style="flex:1;min-width:0">
             <span class="search-icon">🔍</span>
-            <input class="form-control" style="width:100%" id="eq-search" placeholder="설비명 / 시리얼 검색" oninput="renderEquipment()">
+            <input class="form-control" style="width:100%" id="eq-search" data-i18n-ph="eq_search_ph" placeholder="설비명 / 시리얼 검색" oninput="renderEquipment()">
           </div>
-          <button class="btn btn-accent btn-sm" onclick="openEqModal()" style="white-space:nowrap;flex-shrink:0">+ 설비 등록</button>
+          <button class="btn btn-accent btn-sm" onclick="openEqModal()" style="white-space:nowrap;flex-shrink:0">+ <span data-i18n="eq_add_btn">설비 등록</span></button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;width:100%">
           <select class="form-control" id="eq-cat1-filter" onchange="onEqCat1FilterChange()" style="flex:1;min-width:0">
-            <option value="">전체 1차</option>
+            <option value="" data-i18n="eq_filter_cat1">전체 1차</option>
           </select>
           <select class="form-control" id="eq-cat2-filter" onchange="renderEquipment()" style="flex:1;min-width:0">
-            <option value="">전체 2차</option>
+            <option value="" data-i18n="eq_filter_cat2">전체 2차</option>
           </select>
           <button class="btn btn-outline btn-sm" onclick="openEqCatSettings()" style="flex-shrink:0" title="분류 관리">⚙️</button>
         </div>
       </div>
-      <div class="eq-list" id="eq-list"></div>
+      <div id="eq-table-wrap" style="overflow-x:auto"></div>
     </div>
 
   </div><!-- /content -->
@@ -979,7 +975,7 @@
 <div class="modal-bg" id="modal-equipment">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <div class="modal-title" id="eq-modal-title">설비 등록</div>
+      <div class="modal-title" id="eq-modal-title" data-i18n="eq_modal_title">설비 등록</div>
       <button class="modal-close" onclick="closeModal('modal-equipment')">✕</button>
     </div>
     <div class="modal-body">
@@ -987,55 +983,60 @@
       <!-- 1차 / 2차 분류 -->
       <div class="form-row cols-2">
         <div class="form-group">
-          <label class="form-label">1차 분류 <span class="req">*</span></label>
+          <label class="form-label"><span data-i18n="eq_lbl_cat1">1차 분류</span> <span class="req">*</span></label>
           <select class="form-control" id="eq-cat1" onchange="onEqCat1Change()">
-            <option value="">-- 선택 --</option>
+            <option value="" data-i18n="ph_select_cat">-- 선택 --</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">2차 분류</label>
+          <label class="form-label" data-i18n="eq_lbl_cat2">2차 분류</label>
           <select class="form-control" id="eq-cat2">
-            <option value="">-- 선택 --</option>
+            <option value="" data-i18n="ph_select_cat">-- 선택 --</option>
           </select>
         </div>
       </div>
       <!-- 설비명 -->
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">설비명 <span class="req">*</span></label>
-          <input class="form-control" id="eq-name" placeholder="예: 컨베이어 1호기">
+          <label class="form-label"><span data-i18n="eq_lbl_name">설비명</span> <span class="req">*</span></label>
+          <input class="form-control" id="eq-name" data-i18n-ph="eq_ph_name" placeholder="예: 컨베이어 1호기">
         </div>
       </div>
       <div class="form-row cols-2">
         <!-- 라인 -->
         <div class="form-group">
-          <label class="form-label">라인</label>
+          <label class="form-label" data-i18n="eq_lbl_line">라인</label>
           <select class="form-control" id="eq-line" onchange="onEqLineChange()">
-            <option value="">-- 선택 --</option>
+            <option value="" data-i18n="ph_select_line">-- 선택 --</option>
           </select>
         </div>
         <!-- 상태 -->
         <div class="form-group">
-          <label class="form-label">상태</label>
+          <label class="form-label" data-i18n="eq_lbl_status">상태</label>
           <select class="form-control" id="eq-status">
-            <option value="active">사용중</option>
+            <option value="active" data-i18n="eq_status_active">사용중</option>
             <option value="spare">Spare</option>
             <option value="repair">Repair</option>
             <option value="ng">NG</option>
           </select>
         </div>
       </div>
-      <div class="form-row">
+      <div class="form-row cols-2">
         <!-- 명판 / 시리얼 -->
         <div class="form-group">
-          <label class="form-label">명판 / 시리얼</label>
-          <input class="form-control" id="eq-serial" placeholder="S/N 또는 명판번호">
+          <label class="form-label" data-i18n="eq_lbl_serial">명판 / 시리얼</label>
+          <input class="form-control" id="eq-serial" data-i18n-ph="eq_ph_serial" placeholder="S/N 또는 명판번호">
+        </div>
+        <!-- 수량 -->
+        <div class="form-group">
+          <label class="form-label" data-i18n="eq_lbl_qty">수량 (Qty)</label>
+          <input class="form-control" type="number" id="eq-qty" min="1" value="1">
         </div>
       </div>
-      <!-- 사진 (최대 5장) -->
+      <!-- 사진 -->
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">사진 <span style="font-weight:400;text-transform:none;color:var(--text-muted)">(최대 5장)</span></label>
+          <label class="form-label"><span data-i18n="eq_lbl_photos">사진</span> <span style="font-weight:400;text-transform:none;color:var(--text-muted)" data-i18n="eq_photos_hint">(최대 5장)</span></label>
           <div class="eq-photos-wrap" id="eq-photo-wrap"></div>
           <input type="file" id="eq-photo-input" accept="image/*" capture="environment" style="display:none" onchange="addEqPhoto(this)">
         </div>
@@ -1043,8 +1044,8 @@
       <!-- 비고 -->
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">비고</label>
-          <input class="form-control" id="eq-note" placeholder="추가 메모">
+          <label class="form-label" data-i18n="eq_lbl_note">비고</label>
+          <input class="form-control" id="eq-note" data-i18n-ph="eq_ph_note" placeholder="추가 메모">
         </div>
       </div>
       <div style="margin-top:14px;display:flex;gap:8px">
@@ -1059,7 +1060,7 @@
 <div class="modal-bg" id="modal-eq-detail">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <div class="modal-title" id="eq-detail-title">설비 상세</div>
+      <div class="modal-title" id="eq-detail-title" data-i18n="eq_detail_title">설비 상세</div>
       <button class="modal-close" onclick="closeModal('modal-eq-detail')">✕</button>
     </div>
     <div class="modal-body">
@@ -1069,8 +1070,8 @@
       <div id="eq-detail-info"></div>
       <!-- 액션 버튼 -->
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button class="btn btn-outline btn-block" onclick="editEqFromDetail()">✏️ 수정</button>
-        <button class="btn btn-block" style="background:var(--danger-bg);color:var(--danger);border:1.5px solid var(--danger)" onclick="deleteEqFromDetail()">🗑️ 삭제</button>
+        <button class="btn btn-outline btn-block" onclick="editEqFromDetail()">✏️ <span data-i18n="eq_btn_edit">수정</span></button>
+        <button class="btn btn-block" style="background:var(--danger-bg);color:var(--danger);border:1.5px solid var(--danger)" onclick="deleteEqFromDetail()">🗑️ <span data-i18n="eq_btn_delete">삭제</span></button>
       </div>
     </div>
   </div>
@@ -1080,15 +1081,15 @@
 <div class="modal-bg" id="modal-eq-cat">
   <div class="modal" style="max-width:440px">
     <div class="modal-header">
-      <div class="modal-title">⚙️ 설비 분류 관리</div>
+      <div class="modal-title">⚙️ <span data-i18n="eq_cat_mgmt_title">설비 분류 관리</span></div>
       <button class="modal-close" onclick="closeModal('modal-eq-cat')">✕</button>
     </div>
     <div class="modal-body">
       <!-- 1차 분류 추가 -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">1차 분류</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px" data-i18n="eq_cat1_label">1차 분류</div>
       <div class="cat-input-row" style="margin-bottom:12px">
-        <input class="form-control" id="new-eq-cat1" placeholder="1차 분류 입력" onkeydown="if(event.key==='Enter')addEqCat1()">
-        <button class="btn btn-accent" onclick="addEqCat1()">추가</button>
+        <input class="form-control" id="new-eq-cat1" data-i18n-ph="eq_ph_cat1" placeholder="1차 분류 입력" onkeydown="if(event.key==='Enter')addEqCat1()">
+        <button class="btn btn-accent" data-i18n="btn_add" onclick="addEqCat1()">추가</button>
       </div>
       <div id="eq-cat-tree"></div>
     </div>
@@ -1114,7 +1115,7 @@
       <div class="tabbar-scan-label">스캔</div>
     </div>
     <div class="tabbar-item" data-page="equipment" onclick="showPage('equipment')">
-      <span class="icon">🏭</span><span>설비</span>
+      <span class="icon">🏭</span><span data-i18n="nav_equipment">설비</span>
     </div>
     <div class="tabbar-item" data-page="more" onclick="openMoreMenu()">
       <span class="icon">☰</span><span data-i18n="nav_more">더보기</span>
@@ -1761,7 +1762,19 @@ const i18n = {
     msg_enter_item_name:'품목명을 입력하세요.', msg_enter_name:'이름을 입력하세요.',
     msg_confirm_delete_item:'품목을 삭제하시겠습니까?', msg_confirm_delete_person:'담당자를 삭제하시겠습니까?',
     msg_confirm_delete_cat:'이 항목을 삭제하시겠습니까?', msg_qty_zero:'수량을 입력하세요.',
-    months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
+    months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+    nav_equipment:'JIG&Fixture',
+    eq_add_btn:'설비 등록', eq_filter_cat1:'1st Total', eq_filter_cat2:'2nd Total',
+    eq_search_ph:'설비명 / 시리얼 검색',
+    eq_modal_title:'설비 등록', eq_modal_edit_title:'설비 수정',
+    eq_lbl_cat1:'1차 분류', eq_lbl_cat2:'2차 분류', eq_lbl_name:'설비명',
+    eq_lbl_line:'라인', eq_lbl_status:'상태', eq_lbl_serial:'명판 / 시리얼',
+    eq_lbl_qty:'수량 (Qty)', eq_lbl_photos:'사진', eq_photos_hint:'(최대 5장)', eq_lbl_note:'비고',
+    eq_ph_name:'예: 컨베이어 1호기', eq_ph_serial:'S/N 또는 명판번호', eq_ph_note:'추가 메모',
+    eq_status_active:'사용중',
+    eq_detail_title:'설비 상세', eq_btn_edit:'수정', eq_btn_delete:'삭제',
+    eq_cat_mgmt_title:'설비 분류 관리', eq_cat1_label:'1차 분류', eq_ph_cat1:'1차 분류 입력',
+    eq_col_photo:'사진', eq_col_status:'상태', eq_empty:'등록된 설비가 없습니다'
   },
   en: {
     sys_name:'Inventory System', nav_main:'MAIN', nav_dashboard:'Dashboard', nav_inventory:'Inventory',
@@ -1806,7 +1819,19 @@ const i18n = {
     msg_enter_item_name:'Please enter item name.', msg_enter_name:'Please enter a name.',
     msg_confirm_delete_item:'Delete this item?', msg_confirm_delete_person:'Delete this person?',
     msg_confirm_delete_cat:'Delete this entry?', msg_qty_zero:'Please enter a quantity.',
-    months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    nav_equipment:'JIG&Fixture',
+    eq_add_btn:'Add Equipment', eq_filter_cat1:'1st Total', eq_filter_cat2:'2nd Total',
+    eq_search_ph:'Search equipment / serial',
+    eq_modal_title:'Register Equipment', eq_modal_edit_title:'Edit Equipment',
+    eq_lbl_cat1:'Category 1', eq_lbl_cat2:'Category 2', eq_lbl_name:'Equipment Name',
+    eq_lbl_line:'Line', eq_lbl_status:'Status', eq_lbl_serial:'Nameplate / Serial',
+    eq_lbl_qty:'Quantity (Qty)', eq_lbl_photos:'Photos', eq_photos_hint:'(max 5)', eq_lbl_note:'Note',
+    eq_ph_name:'e.g. Conveyor #1', eq_ph_serial:'S/N or nameplate no.', eq_ph_note:'Additional notes',
+    eq_status_active:'In Use',
+    eq_detail_title:'Equipment Detail', eq_btn_edit:'Edit', eq_btn_delete:'Delete',
+    eq_cat_mgmt_title:'Category Management', eq_cat1_label:'Category 1', eq_ph_cat1:'Enter category 1',
+    eq_col_photo:'Photo', eq_col_status:'Status', eq_empty:'No equipment registered'
   },
   th: {
     sys_name:'ระบบจัดการสินค้าคงคลัง', nav_main:'หลัก', nav_dashboard:'แดชบอร์ด', nav_inventory:'สินค้าคงคลัง',
@@ -1851,7 +1876,19 @@ const i18n = {
     msg_enter_item_name:'กรุณาระบุชื่อสินค้า', msg_enter_name:'กรุณาระบุชื่อ',
     msg_confirm_delete_item:'ต้องการลบสินค้านี้หรือไม่?', msg_confirm_delete_person:'ต้องการลบผู้รับผิดชอบนี้หรือไม่?',
     msg_confirm_delete_cat:'ต้องการลบรายการนี้หรือไม่?', msg_qty_zero:'กรุณาระบุจำนวน',
-    months:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+    months:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
+    nav_equipment:'JIG&Fixture',
+    eq_add_btn:'เพิ่มอุปกรณ์', eq_filter_cat1:'1st Total', eq_filter_cat2:'2nd Total',
+    eq_search_ph:'ค้นหาอุปกรณ์ / ซีเรียล',
+    eq_modal_title:'ลงทะเบียนอุปกรณ์', eq_modal_edit_title:'แก้ไขอุปกรณ์',
+    eq_lbl_cat1:'ประเภท 1', eq_lbl_cat2:'ประเภท 2', eq_lbl_name:'ชื่ออุปกรณ์',
+    eq_lbl_line:'ไลน์', eq_lbl_status:'สถานะ', eq_lbl_serial:'แผ่นป้าย / ซีเรียล',
+    eq_lbl_qty:'จำนวน (Qty)', eq_lbl_photos:'รูปภาพ', eq_photos_hint:'(สูงสุด 5 รูป)', eq_lbl_note:'หมายเหตุ',
+    eq_ph_name:'เช่น สายพาน #1', eq_ph_serial:'หมายเลข S/N หรือแผ่นป้าย', eq_ph_note:'หมายเหตุเพิ่มเติม',
+    eq_status_active:'กำลังใช้งาน',
+    eq_detail_title:'รายละเอียดอุปกรณ์', eq_btn_edit:'แก้ไข', eq_btn_delete:'ลบ',
+    eq_cat_mgmt_title:'จัดการประเภท', eq_cat1_label:'ประเภท 1', eq_ph_cat1:'ป้อนประเภท 1',
+    eq_col_photo:'รูป', eq_col_status:'สถานะ', eq_empty:'ไม่มีอุปกรณ์ที่ลงทะเบียน'
   }
 };
 let currentLang = 'ko';
@@ -1944,11 +1981,11 @@ function showPage(page) {
   const titles = {
     dashboard:'nav_dashboard', inventory:'nav_inventory', categories:'nav_categories',
     personnel:'nav_personnel', report:'nav_report_monthly', history:'nav_history',
-    equipment:'설비 관리'
+    equipment:'JIG&Fixture'
   };
   const titleEl = document.getElementById('page-title');
   if (titleEl) {
-    if (page === 'equipment') titleEl.textContent = '설비 관리';
+    if (page === 'equipment') titleEl.textContent = 'JIG&Fixture';
     else if (titles[page]) titleEl.textContent = t(titles[page]);
   }
 
@@ -2043,6 +2080,7 @@ function renderAll() {
   renderCategories();
   renderPersonnel();
   renderHistory();
+  renderEquipment();
   if (currentPage === 'report') generateReport();
 }
 
@@ -3315,63 +3353,72 @@ function renderEquipment() {
 
   let filtered = eqItems.filter(eq => {
     const q = search.toLowerCase();
-    const matchSearch = !q || eq.name.toLowerCase().includes(q) || (eq.serial||'').toLowerCase().includes(q);
+    const c1n = eqCat1Name(eq.cat1).toLowerCase();
+    const c2n = eq.cat2 ? eqCat2Name(eq.cat2).toLowerCase() : '';
+    const matchSearch = !q || c1n.includes(q) || c2n.includes(q) || (eq.name||'').toLowerCase().includes(q) || (eq.serial||'').toLowerCase().includes(q);
     const matchCat1 = !cat1F || eq.cat1 === cat1F;
     const matchCat2 = !cat2F || eq.cat2 === cat2F;
     return matchSearch && matchCat1 && matchCat2;
   });
 
-  // 정렬: 1차분류 순 → 2차분류 순 → 라인 순(lines 배열 인덱스) → 이름
+  // 정렬: 상태 순 → 1차분류 → 2차분류 → 라인 순
+  const statusOrder = { active:0, spare:1, repair:2, ng:3 };
   const cat1Order = Object.fromEntries((eqCategories.cat1||[]).map((c,i)=>[c.id,i]));
   const cat2Order = Object.fromEntries((eqCategories.cat2||[]).map((c,i)=>[c.id,i]));
   const lineOrder = Object.fromEntries(lines.map((l,i)=>[l,i]));
   filtered.sort((a,b) => {
+    const sa = a.status||(a.line?'active':'spare'), sb = b.status||(b.line?'active':'spare');
+    const sc = (statusOrder[sa]??9) - (statusOrder[sb]??9); if(sc) return sc;
     const c1 = (cat1Order[a.cat1]??999) - (cat1Order[b.cat1]??999); if(c1) return c1;
     const c2 = (cat2Order[a.cat2]??999) - (cat2Order[b.cat2]??999); if(c2) return c2;
-    const lc = (lineOrder[a.line]??999) - (lineOrder[b.line]??999);  if(lc) return lc;
-    return (a.name||'').localeCompare(b.name||'');
+    return (lineOrder[a.line]??999) - (lineOrder[b.line]??999);
   });
 
-  const el = document.getElementById('eq-list');
-  if (!el) return;
+  const wrap = document.getElementById('eq-table-wrap');
+  if (!wrap) return;
   if (!filtered.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:40px">등록된 설비가 없습니다</div>`;
+    wrap.innerHTML = `<div class="empty-state" style="padding:40px">${t('eq_empty')}</div>`;
     return;
   }
 
-  // 분류별 그룹 헤더 + 아이템
-  let html = '';
-  let lastKey = null;
-  for (const eq of filtered) {
-    const c1 = eqCat1Name(eq.cat1);
-    const c2 = eq.cat2 ? eqCat2Name(eq.cat2) : '';
-    const groupKey = eq.cat1 + '|' + (eq.cat2||'');
-    const catLabel = c2 && c2 !== '-' ? `${c1}  ›  ${c2}` : c1;
-    if (groupKey !== lastKey) {
-      html += `<div class="eq-section-header">${escapeHtml(catLabel)}</div>`;
-      lastKey = groupKey;
-    }
+  const statusMap = { active:'사용중', spare:'Spare', repair:'Repair', ng:'NG' };
+  const rows = filtered.map((eq, i) => {
+    const c1  = eqCat1Name(eq.cat1);
+    const c2  = eq.cat2 ? eqCat2Name(eq.cat2) : '';
+    const nameMain = c2 && c2 !== '-' ? `${c1} · ${c2}` : c1;
     const photo = eq.photos && eq.photos[0];
-    const thumbHtml = photo
-      ? `<img class="eq-list-thumb" src="${EQ_HTTP}${escapeHtml(photo)}" alt="">`
-      : `<div class="eq-list-nophoto">🏭</div>`;
-    const serial = eq.serial ? `S/N: ${escapeHtml(eq.serial)}` : '';
-    const lineLabel = eq.line ? escapeHtml(eq.line) : '';
-    const statusMap = { active:'사용중', spare:'Spare', repair:'Repair', ng:'NG' };
+    const thumb = photo
+      ? `<img class="eq-table-thumb" src="${EQ_HTTP}${escapeHtml(photo)}" alt="">`
+      : `<div class="eq-table-nophoto">🏭</div>`;
     const status = eq.status || (eq.line ? 'active' : 'spare');
-    const statusLabel = statusMap[status] || status;
-    const badgeHtml = `<span class="eq-status-badge eq-status-${status}">${statusLabel}</span>`;
-    html += `<div class="eq-list-item" onclick="openEqDetail('${escapeHtml(eq.id)}')">
-      ${thumbHtml}
-      <div class="eq-list-info">
-        <div class="eq-list-name">${escapeHtml(eq.name)}</div>
-        ${serial ? `<div class="eq-list-sub">${serial}</div>` : ''}
-        ${badgeHtml}
-      </div>
-      ${lineLabel ? `<div class="eq-list-line">${lineLabel}</div>` : ''}
-    </div>`;
-  }
-  el.innerHTML = html;
+    const badge  = `<span class="eq-status-badge eq-status-${status}">${statusMap[status]||status}</span>`;
+    return `<tr onclick="openEqDetail('${escapeHtml(eq.id)}')">
+      <td>${i+1}</td>
+      <td>${thumb}</td>
+      <td class="left"><div class="eq-table-name">${escapeHtml(nameMain)}</div></td>
+      <td class="left" style="font-size:11px;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
+      <td style="font-weight:700">${eq.qty||1}</td>
+      <td style="font-weight:700;color:var(--accent)">${escapeHtml(eq.line||'-')}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="eq-table">
+    <colgroup>
+      <col class="col-no"><col class="col-photo"><col class="col-name">
+      <col class="col-sn"><col class="col-qty"><col class="col-line"><col class="col-state">
+    </colgroup>
+    <thead><tr>
+      <th>No.</th>
+      <th>${t('eq_col_photo')}</th>
+      <th class="left">Name</th>
+      <th class="left">S/N</th>
+      <th>Qty</th>
+      <th>Line</th>
+      <th>${t('eq_col_status')}</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 // ── 렌더: 필터 1차 분류 셀렉트 ──
@@ -3436,6 +3483,7 @@ function openEqModal(editId) {
           document.getElementById('eq-cat2').value   = eq.cat2   || '';
           document.getElementById('eq-line').value   = eq.line   || '';
           document.getElementById('eq-status').value = eq.status || (eq.line ? 'active' : 'spare');
+          document.getElementById('eq-qty').value    = eq.qty    || 1;
         }, 0);
       }, 0);
     }
@@ -3503,6 +3551,7 @@ function saveEq() {
     line:   document.getElementById('eq-line').value,
     status: document.getElementById('eq-status').value || 'spare',
     serial: document.getElementById('eq-serial').value.trim(),
+    qty:    parseInt(document.getElementById('eq-qty').value) || 1,
     note:   document.getElementById('eq-note').value.trim(),
     photos: eqPhotos,
     ts:     Date.now(),
@@ -3536,11 +3585,11 @@ function renderEqDetail(eq) {
   }
   const c2name = eq.cat2 ? eqCat2Name(eq.cat2) : '-';
   const rows = [
-    ['1차 분류', escapeHtml(eqCat1Name(eq.cat1))],
-    ['2차 분류', escapeHtml(c2name)],
-    ['라인',     escapeHtml(eq.line||'-')],
-    ['명판/S/N', escapeHtml(eq.serial||'-')],
-    ['비고',     escapeHtml(eq.note||'-')],
+    [t('eq_lbl_cat1'), escapeHtml(eqCat1Name(eq.cat1))],
+    [t('eq_lbl_cat2'), escapeHtml(c2name)],
+    ['Line',     escapeHtml(eq.line||'-')],
+    ['S/N',      escapeHtml(eq.serial||'-')],
+    ['Remark',   escapeHtml(eq.note||'-')],
   ];
   document.getElementById('eq-detail-info').innerHTML =
     rows.map(([l,v])=>`<div class="eq-info-row"><span class="eq-info-label">${l}</span><span class="eq-info-value">${v}</span></div>`).join('');
