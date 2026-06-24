@@ -217,7 +217,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 /* ── 라인 모달 ── */
 .lm-backdrop{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:200;display:none;}
 .lm-backdrop.on{display:block;}
-.lm-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:min(400px,90vw);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;z-index:201;}
+.lm-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:min(400px,90vw);max-height:80vh;display:none;flex-direction:column;overflow:hidden;z-index:201;}
 .lm-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);}
 .lm-title{font-size:16px;font-weight:900;}
 .lm-cls{width:28px;height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
@@ -316,7 +316,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 <div id="ov"><div class="sp"></div><p>서버 연결 중...</p></div>
 
 <header>
-  <a href="index.html" class="back">← 대시보드</a>
+  <a href="../index.html" class="back">← 홈</a>
   <span class="ptitle">Production</span>
   <div class="date-nav">
     <button onclick="changeDate(-1)">◀</button>
@@ -339,6 +339,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
   <div class="hdr">
     <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt">연결중</span></div>
     <span id="clock"></span>
+    <a href="print-qr.html" class="adm">🖨️ QR</a>
     <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer">📥 Excel</button>
     <a href="admin.html" class="adm">⚙ 관리</a>
   </div>
