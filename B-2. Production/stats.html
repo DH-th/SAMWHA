@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생산 통계 — Production</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<style>
+:root{
+  --bg:#F0EBE1;--surface:#FFFFFF;--s2:#F7F3EC;--s3:#EDE8DF;
+  --border:#DDD7CB;--border2:#C4BDB0;
+  --text:#1A1610;--text2:#3A342C;--muted:#8A8278;
+  --accent:#2558D4;--accent-bg:#EBF0FD;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;}
+.back{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;
+  font-weight:600;color:var(--muted);text-decoration:none;background:var(--s2);}
+h1{font-size:16px;font-weight:900;}
+
+/* ── 컨트롤 ── */
+.ctrl{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.period-tabs{display:flex;gap:4px;}
+.ptab{padding:5px 14px;border:1px solid var(--border);border-radius:6px;
+  background:var(--s2);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;}
+.ptab.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.date-nav{display:flex;align-items:center;gap:4px;}
+.dnbtn{padding:5px 8px;border:1px solid var(--border);border-radius:6px;
+  background:var(--s2);font-size:12px;cursor:pointer;color:var(--text2);}
+.dnbtn.today{background:var(--accent);color:#fff;border-color:var(--accent);}
+#range-lbl{font-size:12px;font-weight:700;min-width:160px;text-align:center;}
+
+/* ── 전체 요약 ── */
+.summary{display:flex;gap:10px;padding:12px 16px;flex-wrap:wrap;}
+.sum-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:10px 16px;box-shadow:var(--sh);min-width:120px;}
+.sum-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
+.sum-val{font-size:22px;font-weight:900;letter-spacing:-.02em;}
+.sum-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* ── 그리드 ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:0 16px 32px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:16px;box-shadow:var(--sh);}
+.card-title{font-size:14px;font-weight:900;margin-bottom:12px;color:var(--text);}
+.card-inner{display:flex;align-items:flex-start;gap:14px;}
+.chart-wrap{width:140px;height:140px;flex-shrink:0;}
+.legend{flex:1;display:flex;flex-direction:column;gap:5px;overflow:hidden;}
+.leg-row{display:flex;align-items:center;gap:6px;}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.leg-name{font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.leg-pct{font-size:11px;font-weight:800;color:var(--text2);min-width:36px;text-align:right;}
+.leg-qty{font-size:10px;color:var(--muted);min-width:42px;text-align:right;}
+.card-empty{text-align:center;padding:30px;color:var(--muted);font-size:12px;}
+.card-total{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+.card-total strong{color:var(--text);font-weight:800;}
+
+/* ── 로딩 ── */
+#ov{position:fixed;inset:0;background:rgba(240,235,225,.9);z-index:300;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+.sp{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+#ov.h{display:none;}
+</style>
+</head>
+<body>
+<div id="ov"><div class="sp"></div><p style="font-size:13px;color:var(--muted);font-weight:600">데이터 로딩 중...</p></div>
+
+<header>
+  <a href="table.html" class="back">← 생산 현황</a>
+  <h1>생산 통계</h1>
+</header>
+
+<div class="ctrl">
+  <div class="period-tabs">
+    <button class="ptab on" onclick="setPeriod('day')">일간</button>
+    <button class="ptab" onclick="setPeriod('week')">주간</button>
+    <button class="ptab" onclick="setPeriod('month')">월간</button>
+  </div>
+  <div class="date-nav">
+    <button class="dnbtn" onclick="move(-1)">◀</button>
+    <span id="range-lbl">—</span>
+    <button class="dnbtn" onclick="move(1)">▶</button>
+    <button class="dnbtn today" onclick="goToday()">오늘</button>
+  </div>
+</div>
+
+<div class="summary" id="summary"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const TUNNEL='server.samhwa.cloud';
+const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9','L.8_IN','L.8_OUT'];
+const PALETTE=[
+  '#2558D4','#5FD0C9','#F59E0B','#EF4444','#8B5CF6',
+  '#10B981','#F97316','#3B82F6','#EC4899','#6366F1',
+  '#84CC16','#14B8A6','#F43F5E','#A855F7','#0EA5E9',
+];
+
+const p2=n=>String(n).padStart(2,'0');
+const fmtD=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+
+let period='day', anchor=new Date();
+const chartInstances={};
+
+/* ── 기간 계산 ── */
+function getDates(){
+  const a=new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate());
+  if(period==='day') return[fmtD(a)];
+  if(period==='week'){
+    const dow=a.getDay()||7;
+    const mon=addDays(a,1-dow);
+    return Array.from({length:7},(_,i)=>fmtD(addDays(mon,i)));
+  }
+  // month
+  const y=a.getFullYear(),m=a.getMonth();
+  const days=new Date(y,m+1,0).getDate();
+  return Array.from({length:days},(_,i)=>fmtD(new Date(y,m,i+1)));
+}
+
+function getRangeLabel(){
+  const dates=getDates();
+  if(period==='day') return dates[0];
+  if(period==='week') return`${dates[0]} ~ ${dates[6]}`;
+  const a=new Date(anchor);
+  return`${a.getFullYear()}년 ${a.getMonth()+1}월`;
+}
+
+/* ── 이동 ── */
+function move(d){
+  if(period==='day') anchor=addDays(anchor,d);
+  else if(period==='week') anchor=addDays(anchor,d*7);
+  else{anchor=new Date(anchor.getFullYear(),anchor.getMonth()+d,1);}
+  load();
+}
+function goToday(){anchor=new Date();load();}
+function setPeriod(p){
+  period=p;
+  document.querySelectorAll('.ptab').forEach((b,i)=>{
+    b.classList.toggle('on',['day','week','month'][i]===p);
+  });
+  load();
+}
+
+/* ── 데이터 로드 ── */
+async function load(){
+  document.getElementById('ov').classList.remove('h');
+  document.getElementById('range-lbl').textContent=getRangeLabel();
+
+  const dates=getDates();
+  const all=[];
+  await Promise.all(dates.map(async d=>{
+    try{
+      const r=await fetch(`https://${TUNNEL}/api/production/log?date=${d}`);
+      const j=await r.json();
+      (j.records||[]).forEach(rec=>all.push(rec));
+    }catch{}
+  }));
+
+  render(all);
+  document.getElementById('ov').classList.add('h');
+}
+
+/* ── 렌더 ── */
+function render(recs){
+  // 전체 요약
+  const totalQty=recs.reduce((s,r)=>s+(r.qty||0),0);
+  const modelSet=new Set(recs.map(r=>r.modelName).filter(Boolean));
+  const activeLines=new Set(recs.map(r=>r.line).filter(Boolean));
+  document.getElementById('summary').innerHTML=`
+    <div class="sum-box"><div class="sum-lbl">총 생산</div><div class="sum-val">${totalQty.toLocaleString()}</div><div class="sum-sub">PCS</div></div>
+    <div class="sum-box"><div class="sum-lbl">가동 라인</div><div class="sum-val">${activeLines.size}</div><div class="sum-sub">/ ${LINES.length}</div></div>
+    <div class="sum-box"><div class="sum-lbl">모델 수</div><div class="sum-val">${modelSet.size}</div><div class="sum-sub">종류</div></div>
+  `;
+
+  // 라인별 카드
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  // 기존 차트 파기
+  Object.values(chartInstances).forEach(c=>c.destroy());
+  Object.keys(chartInstances).forEach(k=>delete chartInstances[k]);
+
+  LINES.forEach(line=>{
+    const lr=recs.filter(r=>r.line===line);
+    const card=document.createElement('div');
+    card.className='card';
+    const title=document.createElement('div');
+    title.className='card-title';
+    title.textContent=line;
+    card.appendChild(title);
+
+    if(!lr.length){
+      card.innerHTML+=`<div class="card-empty">생산 기록 없음</div>`;
+      grid.appendChild(card);
+      return;
+    }
+
+    // 모델별 집계
+    const map={};
+    lr.forEach(r=>{
+      const m=r.modelName||'(미등록)';
+      map[m]=(map[m]||0)+(r.qty||0);
+    });
+    const entries=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+    const total=entries.reduce((s,[,q])=>s+q,0);
+
+    // 내부 레이아웃
+    const inner=document.createElement('div');
+    inner.className='card-inner';
+
+    const cWrap=document.createElement('div');
+    cWrap.className='chart-wrap';
+    const canvas=document.createElement('canvas');
+    cWrap.appendChild(canvas);
+
+    const legend=document.createElement('div');
+    legend.className='legend';
+    entries.forEach(([m,q],i)=>{
+      const color=PALETTE[i%PALETTE.length];
+      const pct=total>0?((q/total)*100).toFixed(1):0;
+      const row=document.createElement('div');
+      row.className='leg-row';
+      row.innerHTML=`<div class="leg-dot" style="background:${color}"></div>
+        <span class="leg-name" title="${m}">${m}</span>
+        <span class="leg-pct">${pct}%</span>
+        <span class="leg-qty">${q.toLocaleString()}</span>`;
+      legend.appendChild(row);
+    });
+
+    inner.appendChild(cWrap);
+    inner.appendChild(legend);
+    card.appendChild(inner);
+
+    const footer=document.createElement('div');
+    footer.className='card-total';
+    footer.innerHTML=`<span>합계</span><strong>${total.toLocaleString()} PCS</strong>`;
+    card.appendChild(footer);
+    grid.appendChild(card);
+
+    // Chart.js 파이차트
+    const cid='chart_'+line.replace(/\W/g,'_');
+    chartInstances[cid]=new Chart(canvas,{
+      type:'doughnut',
+      data:{
+        labels:entries.map(([m])=>m),
+        datasets:[{data:entries.map(([,q])=>q),backgroundColor:entries.map((_,i)=>PALETTE[i%PALETTE.length]),borderWidth:1,borderColor:'#fff'}]
+      },
+      options:{
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+          const pct=total>0?((ctx.parsed/total)*100).toFixed(1):0;
+          return` ${ctx.label}: ${ctx.parsed.toLocaleString()} PCS (${pct}%)`;
+        }}}},
+        cutout:'55%',animation:{duration:400}
+      }
+    });
+  });
+}
+
+goToday();
+</script>
+</body>
+</html>

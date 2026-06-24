@@ -341,6 +341,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <span id="clock"></span>
     <a href="print-qr.html" class="adm">🖨️ QR</a>
     <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer">📥 Excel</button>
+    <a href="stats.html" class="adm">📊 통계</a>
     <a href="admin.html" class="adm">⚙ 관리</a>
   </div>
 </header>
@@ -595,7 +596,7 @@ function buildLineRow(line,li,slots,cur){
     <td class="col-model" onclick="openLineModal('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
   slots.forEach(slot=>{
     const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
-    row+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+    row+=`<td class="sv${isCur?' cur':''}"${q>0?` onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
   });
   row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
   row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
@@ -691,6 +692,28 @@ function connect(){
     setTimeout(connect,3000);
   };
   ws.onerror=()=>ws.close();
+}
+function openSlotModal(line, slot){
+  const recs = sr().filter(r=>r.line===line&&r.slot===slot&&r.modelName);
+  const map = {};
+  recs.forEach(r=>{
+    const key = `${r.modelName}||${r.process||''}`;
+    if(!map[key]) map[key]={model:r.modelName, proc:r.process||'', qty:0};
+    map[key].qty += (r.qty||0);
+  });
+  const entries = Object.values(map).sort((a,b)=>b.qty-a.qty);
+  const h = parseInt(slot);
+  const slotLabel = `${slot} ~ ${String((h+1)%24).padStart(2,'0')}:00`;
+  document.getElementById('lm-title').textContent = `${line}  ${slotLabel}`;
+  document.getElementById('lm-body').innerHTML = entries.length
+    ? entries.map(e=>`<div class="lm-row">
+        <span class="lm-model">${e.model}<span style="font-size:10px;color:var(--muted);margin-left:6px">${e.proc}</span></span>
+        <span class="lm-qty">${e.qty.toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
+      </div>`).join('')
+    : `<div class="lm-empty">기록 없음</div>`;
+  document.getElementById('lm-backdrop').classList.add('on');
+  document.getElementById('lm-box').style.display='flex';
+  document.getElementById('lm-box').style.flexDirection='column';
 }
 function openLineModal(line){
   const recs=adr().filter(r=>r.line===line&&r.modelName);
