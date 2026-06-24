@@ -205,6 +205,11 @@ td{
 .sum-row .col-line{font-size:11px;font-weight:800;}
 .sum-val{font-weight:900!important;}
 .sum-avg{font-weight:900!important;}
+/* ── 그룹 테두리 ── */
+.g-start td{border-top:2px solid var(--border2)!important;}
+.g-end td{border-bottom:2px solid var(--border2)!important;}
+tr.g-start td:first-child,tr.g-mid td:first-child,tr.g-end td:first-child{border-left:2px solid var(--border2)!important;}
+tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-right:2px solid var(--border2)!important;}
 
 /* ── swipe hint ── */
 .swipe-hint{
@@ -266,7 +271,7 @@ td{
 .pc-card .ln-cell .ln-model{font-size:9px;color:var(--muted);white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:1px;}
 .pc-card .sv{height:42px;}
 .pc-card .sv-inner{padding:2px 2px;}
-.pc-card .sv-total{font-size:14px;font-weight:800;color:var(--text);}
+.pc-card .sv-total{font-size:42px;font-weight:800;color:var(--text);}
 .pc-card .sv-empty{font-size:12px;color:var(--border2);}
 .pc-card .tv{padding:6px 4px;font-size:14px;font-weight:900;color:var(--text);}
 .pc-card .tv.z{color:var(--border2);font-size:12px;font-weight:400;}
@@ -535,50 +540,57 @@ function renderAll(){
   document.getElementById('s-tot').textContent=total.toLocaleString();
   document.getElementById('s-s1').textContent=s1tot.toLocaleString();
   document.getElementById('s-s2').textContent=s2tot.toLocaleString();
-  document.getElementById('s-a1').textContent=(el>0?Math.round(s1cur/el):0).toLocaleString();
-  document.getElementById('s-a2').textContent=(el>0?Math.round(s2cur/el):0).toLocaleString();
+  const s1Filled=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S1'&&(r.qty||0)>0).map(r=>r.slot)).size;
+  const s2Filled=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S2'&&(r.qty||0)>0).map(r=>r.slot)).size;
+  document.getElementById('s-a1').textContent=(s1Filled>0?Math.round(s1cur/s1Filled):0).toLocaleString();
+  document.getElementById('s-a2').textContent=(s2Filled>0?Math.round(s2cur/s2Filled):0).toLocaleString();
   buildSlide('th0','tb0',all.slice(0,6),cur);
   buildSlide('th1','tb1',all.slice(6),cur);
   buildPC(all,cur);
   refreshSlideLabel();
 }
 
+const MAIN_LINES=LINES.filter(l=>l!=='L.8_IN'&&l!=='L.8_OUT');
+const EXTRA_LINES=['L.8_IN','L.8_OUT'];
+
+function buildLineRow(line,li,slots,cur){
+  const cls=li%2===0?'odd':'even';
+  const model=lastModel(line);
+  const tot=adr().filter(r=>r.line===line&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
+  const curTot=sr().filter(r=>r.line===line&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
+  const filledSlots=new Set(sr().filter(r=>r.line===line&&r.process===viewProc&&(r.qty||0)>0).map(r=>r.slot)).size;
+  const avg=filledSlots>0?Math.round(curTot/filledSlots):0;
+  let row=`<tr class="${cls}">
+    <td class="col-line ln-cell">
+      <span class="ln-name">${line}</span>
+      ${model?`<span class="ln-model">${model}</span>`:''}
+    </td>`;
+  slots.forEach(slot=>{
+    const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
+    row+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+  });
+  row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
+  row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
+  row+=`</tr>`;
+  return row;
+}
+
+function addGroupClass(row,gc){return row.replace(/^<tr class="([^"]*)">/,`<tr class="$1 ${gc}">`);}
+
 function buildTableRows(slots,cur){
   const rows=[];
-  const el=elapsed();
-  LINES.forEach((line,li)=>{
-    const cls=li%2===0?'odd':'even';
-    const model=lastModel(line);
-    const tot=adr().filter(r=>r.line===line&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
-    const curTot=sr().filter(r=>r.line===line&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
-    const avg=el>0?Math.round(curTot/el):0;
-    let row=`<tr class="${cls}">
-      <td class="col-line ln-cell">
-        <span class="ln-name">${line}</span>
-        ${model?`<span class="ln-model">${model}</span>`:''}
-      </td>`;
-    slots.forEach(slot=>{
-      const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
-      row+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
-    });
-    row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
-    row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
-    row+=`</tr>`;
-    rows.push(row);
+  // 그룹1: L.1~L.9 + Total
+  MAIN_LINES.forEach((line,li)=>{
+    let r=buildLineRow(line,li,slots,cur);
+    const gc=li===0?'g-start':'g-mid';
+    rows.push(addGroupClass(r,gc));
   });
-  // 전체 합계 행
-  let sumRow=`<tr class="sum-row"><td class="col-line">전체</td>`;
-  slots.forEach(slot=>{
-    const q=LINES.reduce((s,l)=>s+slotQty(l,viewProc,slot),0);
-    const isCur=slot===cur;
-    sumRow+=`<td class="sv${isCur?' cur':''}">${q>0?q.toLocaleString():'—'}</td>`;
+  // 그룹2: L.8_IN / L.8_OUT
+  EXTRA_LINES.forEach((line,li)=>{
+    let r=buildLineRow(line,li,slots,cur);
+    const gc=li===0?'g-start':(li===EXTRA_LINES.length-1?'g-end':'g-mid');
+    rows.push(addGroupClass(r,gc));
   });
-  const gtot=adr().filter(r=>LINES.includes(r.line)&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
-  const gcur=sr().filter(r=>LINES.includes(r.line)&&r.process===viewProc).reduce((s,r)=>s+(r.qty||0),0);
-  const gavg=el>0?Math.round(gcur/el):0;
-  sumRow+=`<td class="col-tot sum-val">${gtot>0?gtot.toLocaleString():'—'}</td>`;
-  sumRow+=`<td class="col-avg sum-avg">${gavg>0?gavg.toLocaleString():'—'}</td></tr>`;
-  rows.push(sumRow);
   return rows.join('');
 }
 
