@@ -573,6 +573,7 @@ function renderAll(){
   const s2Filled=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S2'&&(r.qty||0)>0).map(r=>r.slot)).size;
   document.getElementById('s-a1').textContent=(s1Filled>0?Math.round(s1cur/s1Filled):0).toLocaleString();
   document.getElementById('s-a2').textContent=(s2Filled>0?Math.round(s2cur/s2Filled):0).toLocaleString();
+  snapQty=Object.assign({},prevQty);
   buildSlide('th0','tb0',all.slice(0,6),cur);
   buildSlide('th1','tb1',all.slice(6),cur);
   buildPC(all,cur);
@@ -596,7 +597,10 @@ function buildLineRow(line,li,slots,cur){
     <td class="col-model" onclick="openLineModal('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
   slots.forEach(slot=>{
     const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
-    row+=`<td class="sv${isCur?' cur':''}"${q>0?` onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+    const key=`${line}|${slot}|${viewProc}`;
+    const prev=snapQty[key]||0;
+    prevQty[key]=q;
+    row+=`<td class="sv${isCur?' cur':''}"${q>0?` onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total" data-val="${q}" data-from="${prev}">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
   });
   row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
   row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
@@ -631,14 +635,39 @@ const HDR_THEAD=(slots,cur)=>`<tr>
   <th class="col-avg">평균/h</th>
 </tr>`;
 
+const prevQty={};
+let snapQty={};
+
+function countUp(el,from,to,duration=600){
+  let startTime=null;
+  function step(ts){
+    if(!startTime) startTime=ts;
+    const progress=Math.min((ts-startTime)/duration,1);
+    const eased=1-Math.pow(1-progress,3);
+    el.textContent=Math.round(from+(to-from)*eased).toLocaleString();
+    if(progress<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function animateCounters(tbId){
+  document.getElementById(tbId).querySelectorAll('.sv-total[data-val]').forEach(el=>{
+    const to=parseInt(el.dataset.val);
+    const from=parseInt(el.dataset.from||'0');
+    if(from!==to) countUp(el,from,to);
+  });
+}
+
 function buildSlide(thId,tbId,slots,cur){
   document.getElementById(thId).innerHTML=HDR_THEAD(slots,cur);
   document.getElementById(tbId).innerHTML=buildTableRows(slots,cur);
+  animateCounters(tbId);
 }
 
 function buildPC(slots,cur){
   document.getElementById('pc-th').innerHTML=HDR_THEAD(slots,cur);
   document.getElementById('pc-tb').innerHTML=buildTableRows(slots,cur);
+  animateCounters('pc-tb');
   requestAnimationFrame(equalizeRows);
 }
 function equalizeRows(){
@@ -694,20 +723,19 @@ function connect(){
   ws.onerror=()=>ws.close();
 }
 function openSlotModal(line, slot){
-  const recs = sr().filter(r=>r.line===line&&r.slot===slot&&r.modelName);
+  const recs = sr().filter(r=>r.line===line&&r.slot===slot&&r.process===viewProc&&r.modelName);
   const map = {};
   recs.forEach(r=>{
-    const key = `${r.modelName}||${r.process||''}`;
-    if(!map[key]) map[key]={model:r.modelName, proc:r.process||'', qty:0};
-    map[key].qty += (r.qty||0);
+    if(!map[r.modelName]) map[r.modelName]={model:r.modelName, qty:0};
+    map[r.modelName].qty += (r.qty||0);
   });
   const entries = Object.values(map).sort((a,b)=>b.qty-a.qty);
   const h = parseInt(slot);
   const slotLabel = `${slot} ~ ${String((h+1)%24).padStart(2,'0')}:00`;
-  document.getElementById('lm-title').textContent = `${line}  ${slotLabel}`;
+  document.getElementById('lm-title').textContent = `${line}  ${slotLabel}  ·  ${viewProc}`;
   document.getElementById('lm-body').innerHTML = entries.length
     ? entries.map(e=>`<div class="lm-row">
-        <span class="lm-model">${e.model}<span style="font-size:10px;color:var(--muted);margin-left:6px">${e.proc}</span></span>
+        <span class="lm-model">${e.model}</span>
         <span class="lm-qty">${e.qty.toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
       </div>`).join('')
     : `<div class="lm-empty">기록 없음</div>`;
