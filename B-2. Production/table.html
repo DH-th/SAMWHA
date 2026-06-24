@@ -211,6 +211,22 @@ td{
 tr.g-start td:first-child,tr.g-mid td:first-child,tr.g-end td:first-child{border-left:2px solid var(--border2)!important;}
 tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-right:2px solid var(--border2)!important;}
 
+/* ── 모델 컬럼 ── */
+.col-model{min-width:80px;width:100px;text-align:left;padding:6px 8px;font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;cursor:pointer;}
+.col-model:hover{background:var(--surface2);}
+/* ── 라인 모달 ── */
+.lm-backdrop{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:200;display:none;}
+.lm-backdrop.on{display:block;}
+.lm-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:min(400px,90vw);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;z-index:201;}
+.lm-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);}
+.lm-title{font-size:16px;font-weight:900;}
+.lm-cls{width:28px;height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.lm-body{overflow-y:auto;padding:14px 18px 20px;}
+.lm-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+.lm-row:last-child{border-bottom:none;}
+.lm-model{font-size:13px;font-weight:700;color:var(--text);}
+.lm-qty{font-size:14px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;}
+.lm-empty{text-align:center;padding:24px;color:var(--muted);font-size:13px;}
 /* ── swipe hint ── */
 .swipe-hint{
   text-align:center;padding:7px;
@@ -271,7 +287,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 .pc-card .ln-cell .ln-model{font-size:9px;color:var(--muted);white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:1px;}
 .pc-card .sv{height:42px;}
 .pc-card .sv-inner{padding:2px 2px;}
-.pc-card .sv-total{font-size:42px;font-weight:800;color:var(--text);}
+.pc-card .sv-total{font-size:22px;font-weight:800;color:var(--text);}
 .pc-card .sv-empty{font-size:12px;color:var(--border2);}
 .pc-card .tv{padding:6px 4px;font-size:14px;font-weight:900;color:var(--text);}
 .pc-card .tv.z{color:var(--border2);font-size:12px;font-weight:400;}
@@ -323,6 +339,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
   <div class="hdr">
     <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt">연결중</span></div>
     <span id="clock"></span>
+    <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer">📥 Excel</button>
     <a href="admin.html" class="adm">⚙ 관리</a>
   </div>
 </header>
@@ -378,6 +395,16 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 </div>
 
 <div id="toast"></div>
+
+<!-- 라인 모달 -->
+<div class="lm-backdrop" id="lm-backdrop" onclick="closeLineModal()"></div>
+<div class="lm-box" id="lm-box">
+  <div class="lm-hd">
+    <span class="lm-title" id="lm-title">—</span>
+    <div class="lm-cls" onclick="closeLineModal()">✕</div>
+  </div>
+  <div class="lm-body" id="lm-body"></div>
+</div>
 
 <script>
 const TUNNEL='server.samhwa.cloud';
@@ -561,10 +588,10 @@ function buildLineRow(line,li,slots,cur){
   const filledSlots=new Set(sr().filter(r=>r.line===line&&r.process===viewProc&&(r.qty||0)>0).map(r=>r.slot)).size;
   const avg=filledSlots>0?Math.round(curTot/filledSlots):0;
   let row=`<tr class="${cls}">
-    <td class="col-line ln-cell">
+    <td class="col-line ln-cell" onclick="openLineModal('${line}')" style="cursor:pointer">
       <span class="ln-name">${line}</span>
-      ${model?`<span class="ln-model">${model}</span>`:''}
-    </td>`;
+    </td>
+    <td class="col-model" onclick="openLineModal('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
   slots.forEach(slot=>{
     const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
     row+=`<td class="sv${isCur?' cur':''}"><div class="sv-inner">${q>0?`<span class="sv-total">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
@@ -596,6 +623,7 @@ function buildTableRows(slots,cur){
 
 const HDR_THEAD=(slots,cur)=>`<tr>
   <th class="col-line">라인</th>
+  <th class="col-model" style="text-align:left">모델</th>
   ${slots.map(s=>`<th class="sh">${slotLbl(s)}</th>`).join('')}
   <th class="col-tot">일일 합계</th>
   <th class="col-avg">평균/h</th>
@@ -662,6 +690,32 @@ function connect(){
     setTimeout(connect,3000);
   };
   ws.onerror=()=>ws.close();
+}
+function openLineModal(line){
+  const recs=adr().filter(r=>r.line===line&&r.modelName);
+  // 모델별 수량 집계
+  const map={};
+  recs.forEach(r=>{
+    const m=r.modelName;
+    if(!map[m])map[m]=0;
+    map[m]+=(r.qty||0);
+  });
+  const entries=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('lm-title').textContent=line;
+  document.getElementById('lm-body').innerHTML=entries.length
+    ?entries.map(([m,q])=>`<div class="lm-row"><span class="lm-model">${m}</span><span class="lm-qty">${q.toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span></div>`).join('')
+    :`<div class="lm-empty">금일 생산 기록 없음</div>`;
+  document.getElementById('lm-backdrop').classList.add('on');
+  document.getElementById('lm-box').style.display='flex';
+  document.getElementById('lm-box').style.flexDirection='column';
+}
+function closeLineModal(){
+  document.getElementById('lm-backdrop').classList.remove('on');
+  document.getElementById('lm-box').style.display='none';
+}
+function exportExcel(){
+  const url=`https://${TUNNEL}/api/production/export?date=${viewDate}`;
+  const a=document.createElement('a');a.href=url;a.download='';a.click();
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');setTimeout(()=>t.classList.remove('s'),2000);}
 function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}

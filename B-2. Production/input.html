@@ -280,6 +280,10 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
       <div class="cf-row"><span class="cf-lbl">교대</span><span class="cf-val" id="cf-shift">-</span></div>
       <div class="cf-row"><span class="cf-lbl">모델</span><span class="cf-val" id="cf-model">-</span></div>
       <div class="cf-row"><span class="cf-lbl">수량</span><span class="cf-val" style="font-size:18px;color:var(--teal)" id="cf-qty">-</span></div>
+      <div class="cf-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <span class="cf-lbl">Remark</span>
+        <textarea id="cf-remark" rows="2" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;resize:none;background:var(--s2);color:var(--text);outline:none" placeholder="비고 (선택)"></textarea>
+      </div>
     </div>
     <div class="cf-btns">
       <button class="cf-cancel" onclick="closeConfirm()">취소</button>
@@ -482,11 +486,13 @@ function submit(){
     plantId:selPlant.id,plantName:selPlant.name,
     modelId:selModel.id,modelName:selModel.name,
     qty:parseInt(qtyStr),createdAt:now.toISOString(),
+    remark:document.getElementById('cf-remark').value.trim(),
   };
   ws.send(JSON.stringify({type:'ADD_PRODUCTION',record:rec}));
   const idx=records.findIndex(r=>r.id===rec.id);
   if(idx>-1)records[idx]=rec;else records.push(rec);
   closeConfirm();
+  document.getElementById('cf-remark').value='';
   toast(isEdit?'✓ 수정 완료':'✓ 등록 완료');
   editingId=null;qtyStr='0';
   document.getElementById('edit-badge').classList.remove('on');
