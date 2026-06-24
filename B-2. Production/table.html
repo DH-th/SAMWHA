@@ -770,7 +770,7 @@ function exportExcel(){
   const a=document.createElement('a');a.href=url;a.download='';a.click();
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');setTimeout(()=>t.classList.remove('s'),2000);}
-function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}
 setInterval(tick,1000);tick();
 
 function autoShiftCheck(){
