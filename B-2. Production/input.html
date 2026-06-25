@@ -155,7 +155,10 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 .model-opt.selected{background:var(--accent-bg);border-color:var(--accent);}
 .model-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;}
 .model-opt.selected .model-dot{background:var(--accent);border-color:var(--accent);}
-.model-opt-name{font-size:14px;font-weight:700;}
+.model-opt-name{font-size:14px;font-weight:700;flex:1;}
+.model-fav{font-size:18px;padding:2px 4px;background:none;border:none;cursor:pointer;color:var(--border2);line-height:1;flex-shrink:0;}
+.model-fav.on{color:#F59E0B;}
+.fav-divider{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.08em;padding:8px 8px 2px;text-transform:uppercase;}
 .no-plants{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
 
 /* ── 확인 시트 ── */
@@ -299,6 +302,16 @@ const TUNNEL='server.samhwa.cloud';
 const DAY_SLOTS  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 const NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 const LS_KEY='prod_last_sel';
+const FAV_KEY='prod_fav_models';
+function getFavs(){try{return JSON.parse(localStorage.getItem(FAV_KEY)||'{}')}catch{return{}}}
+function toggleFav(e,pid,mid){
+  e.stopPropagation();
+  const favs=getFavs();
+  const k=`${pid}:${mid}`;
+  if(favs[k])delete favs[k];else favs[k]=1;
+  localStorage.setItem(FAV_KEY,JSON.stringify(favs));
+  renderSheet();
+}
 
 const params=new URLSearchParams(location.search);
 const LINE=params.get('line')||'', PROC=params.get('process')||'';
@@ -427,10 +440,18 @@ function renderSheet(){
     backBtn.classList.add('on');title.textContent=pl.name+' 모델 선택';
     const models=pl.models||[];
     if(!models.length){body.innerHTML='<div class="no-plants">등록된 모델이 없습니다.</div>';return;}
-    body.innerHTML=models.map(m=>`
+    const favs=getFavs();
+    const favModels=models.filter(m=>favs[`${pl.id}:${m.id}`]);
+    const restModels=models.filter(m=>!favs[`${pl.id}:${m.id}`]);
+    const mkRow=(m,isFav)=>`
       <div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
-        <div class="model-dot"></div><div class="model-opt-name">${m.name}</div>
-      </div>`).join('');
+        <div class="model-dot"></div>
+        <div class="model-opt-name">${m.name}</div>
+        <button class="model-fav${isFav?' on':''}" onclick="toggleFav(event,'${pl.id}','${m.id}')">${isFav?'★':'☆'}</button>
+      </div>`;
+    body.innerHTML=
+      (favModels.length?`<div class="fav-divider">⭐ 즐겨찾기</div>${favModels.map(m=>mkRow(m,true)).join('')}<div class="fav-divider">전체 모델</div>`:'')
+      +restModels.map(m=>mkRow(m,false)).join('');
   }
 }
 function pickPlant(pid){
