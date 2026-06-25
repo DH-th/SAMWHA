@@ -744,13 +744,13 @@
 
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><div class="card-title">⬇️ 최근 입고</div></div>
+          <div class="card-header"><div class="card-title">⬇️ <span data-i18n="dash_recent_in">최근 입고</span></div></div>
           <div class="card-body" style="padding:0">
             <div id="dash-recent-in"></div>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">⬆️ 최근 출고</div></div>
+          <div class="card-header"><div class="card-title">⬆️ <span data-i18n="dash_recent_out">최근 출고</span></div></div>
           <div class="card-body" style="padding:0">
             <div id="dash-recent-out"></div>
           </div>
@@ -821,11 +821,11 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">📍 <span>구역(설비) 리스트</span></div></div>
+        <div class="card-header"><div class="card-title">📍 <span data-i18n="zones_title">구역(설비) 리스트</span></div></div>
         <div class="card-body">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">품목 등록 시 버튼으로 선택. "etc" 항목은 항상 포함됩니다.</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px" data-i18n="zone_hint">품목 등록 시 버튼으로 선택. "etc" 항목은 항상 포함됩니다.</div>
           <div class="cat-input-row">
-            <input class="form-control" id="new-zone" placeholder="새 구역 입력 (예: SMT#1, 조립라인)" onkeydown="if(event.key==='Enter')addZone()">
+            <input class="form-control" id="new-zone" data-i18n-ph="ph_new_zone" placeholder="새 구역 입력 (예: SMT#1, 조립라인)" onkeydown="if(event.key==='Enter')addZone()">
             <button class="btn btn-accent" onclick="addZone()">추가</button>
           </div>
           <div class="chip-list" id="zones-chip-list"></div>
@@ -838,13 +838,13 @@
       <!-- 부서 관리 패널 -->
       <div class="card" id="dept-mgmt-card" style="display:none">
         <div class="card-header">
-          <div class="card-title">🏷️ 부서 관리</div>
-          <button class="btn btn-outline btn-sm" onclick="toggleDeptMgmt()">닫기</button>
+          <div class="card-title">🏷️ <span data-i18n="dept_mgmt_title">부서 관리</span></div>
+          <button class="btn btn-outline btn-sm" onclick="toggleDeptMgmt()" data-i18n="btn_cancel">닫기</button>
         </div>
         <div class="card-body">
           <div class="cat-input-row" style="margin-bottom:12px">
-            <input class="form-control" id="new-dept-input" placeholder="새 부서명 입력" onkeydown="if(event.key==='Enter')addDept()">
-            <button class="btn btn-accent" onclick="addDept()">추가</button>
+            <input class="form-control" id="new-dept-input" data-i18n-ph="dept_new_ph" placeholder="새 부서명 입력" onkeydown="if(event.key==='Enter')addDept()">
+            <button class="btn btn-accent" onclick="addDept()" data-i18n="btn_add">추가</button>
           </div>
           <div id="dept-chip-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
@@ -853,7 +853,7 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title" data-i18n="personnel_add">담당자 추가</div>
-          <button class="btn btn-outline btn-sm" onclick="toggleDeptMgmt()">🏷️ 부서 관리</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleDeptMgmt()">🏷️ <span data-i18n="dept_mgmt_title">부서 관리</span></button>
         </div>
         <div class="card-body">
           <div class="form-row cols-2">
@@ -864,7 +864,7 @@
             <div class="form-group">
               <label class="form-label" data-i18n="col_dept">부서</label>
               <select class="form-control" id="p-dept">
-                <option value="">-- 부서 선택 --</option>
+                <option value="" data-i18n="ph_select_dept">-- 부서 선택 --</option>
               </select>
             </div>
           </div>
@@ -1166,9 +1166,9 @@
       <button class="modal-close" onclick="closeModal('modal-more')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="nav-section" style="padding:0 0 6px;margin-bottom:4px">재고</div>
+      <div class="nav-section" style="padding:0 0 6px;margin-bottom:4px" data-i18n="nav_inventory_sec">재고</div>
       <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');openItemModal()">
-        <span class="icon">➕</span><span>품목 등록</span>
+        <span class="icon">➕</span><span data-i18n="btn_add_item">품목 등록</span>
       </div>
       <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');showPage('history')">
         <span class="icon">📋</span><span data-i18n="nav_history">입출고 이력</span>
@@ -1176,7 +1176,7 @@
       <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');showPage('report')">
         <span class="icon">📈</span><span data-i18n="nav_report_monthly">월간 리포트</span>
       </div>
-      <div class="nav-section" style="padding:14px 0 6px;margin-bottom:4px;border-top:1px solid var(--border);margin-top:10px">관리</div>
+      <div class="nav-section" style="padding:14px 0 6px;margin-bottom:4px;border-top:1px solid var(--border);margin-top:10px" data-i18n="nav_manage">관리</div>
       <div class="nav-item" style="border-radius:10px;padding:14px" onclick="closeModal('modal-more');showPage('categories')">
         <span class="icon">🏷️</span><span data-i18n="nav_categories">분류 관리</span>
       </div>
@@ -1223,8 +1223,8 @@
         </div>
         <!-- 하단 입고/출고 버튼 (항상 표시) -->
         <div style="position:absolute;bottom:0;left:0;right:0;display:grid;grid-template-columns:1fr 1fr;z-index:3">
-          <button onclick="scanFabGoInbound()" style="padding:16px;background:rgba(22,163,74,.88);color:#fff;font-size:15px;font-weight:800;border:none;border-right:1px solid rgba(255,255,255,.2);cursor:pointer">⬇️ 입고</button>
-          <button onclick="scanFabGoOutbound()" style="padding:16px;background:rgba(220,38,38,.88);color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer">⬆️ 출고</button>
+          <button onclick="scanFabGoInbound()" style="padding:16px;background:rgba(22,163,74,.88);color:#fff;font-size:15px;font-weight:800;border:none;border-right:1px solid rgba(255,255,255,.2);cursor:pointer">⬇️ IN</button>
+          <button onclick="scanFabGoOutbound()" style="padding:16px;background:rgba(220,38,38,.88);color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer">⬆️ OUT</button>
         </div>
       </div>
     </div>
@@ -1727,17 +1727,23 @@ function handleServerMessage(msg) {
       categories2 = (msg.data && msg.data.cat2) || [];
       lines = (msg.data && msg.data.lines) || lines;
       zones = (msg.data && msg.data.zones) || zones;
+      if (msg.data && msg.data.depts && msg.data.depts.length) {
+        DEPT_LIST = msg.data.depts;
+        saveDeptList();
+      }
       renderAll();
       break;
     case 'CATEGORY_ADDED': {
       if (msg.catType === 'lines' && !lines.includes(msg.value)) lines.push(msg.value);
       if (msg.catType === 'zones' && !zones.includes(msg.value)) zones.push(msg.value);
+      if (msg.catType === 'depts' && !DEPT_LIST.includes(msg.value)) { DEPT_LIST.push(msg.value); saveDeptList(); }
       renderAll();
       break;
     }
     case 'CATEGORY_DELETED': {
       if (msg.catType === 'lines') lines = lines.filter(c=>c!==msg.value);
       if (msg.catType === 'zones') zones = zones.filter(c=>c!==msg.value);
+      if (msg.catType === 'depts') { DEPT_LIST = DEPT_LIST.filter(d=>d!==msg.value); saveDeptList(); }
       renderAll();
       break;
     }
@@ -1793,7 +1799,7 @@ const i18n = {
     msg_confirm_delete_cat:'이 항목을 삭제하시겠습니까?', msg_qty_zero:'수량을 입력하세요.',
     months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
     nav_equipment:'JIG&Fixture',
-    eq_add_btn:'설비 등록', eq_filter_cat1:'1st Total', eq_filter_cat2:'2nd Total',
+    eq_add_btn:'설비 등록', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
     eq_search_ph:'설비명 / 시리얼 검색',
     eq_modal_title:'설비 등록', eq_modal_edit_title:'설비 수정',
     eq_lbl_cat1:'1차 분류', eq_lbl_cat2:'2차 분류', eq_lbl_name:'설비명',
@@ -1803,7 +1809,12 @@ const i18n = {
     eq_status_active:'사용중',
     eq_detail_title:'설비 상세', eq_btn_edit:'수정', eq_btn_delete:'삭제',
     eq_cat_mgmt_title:'설비 분류 관리', eq_cat1_label:'1차 분류', eq_ph_cat1:'1차 분류 입력',
-    eq_col_photo:'사진', eq_col_status:'상태', eq_empty:'등록된 설비가 없습니다'
+    eq_col_photo:'사진', eq_col_status:'상태', eq_empty:'등록된 설비가 없습니다',
+    zones_title:'구역(설비) 리스트', zone_hint:'품목 등록 시 버튼으로 선택. "etc" 항목은 항상 포함됩니다.', ph_new_zone:'새 구역 입력 (예: SMT#1, 조립라인)',
+    dept_mgmt_title:'부서 관리', dept_new_ph:'새 부서명 입력', dept_empty:'등록된 부서가 없습니다.',
+    dept_dup:'이미 존재하는 부서명입니다.', dept_del_confirm:'부서를 삭제하시겠습니까?', ph_select_dept:'-- 부서 선택 --',
+    dash_recent_in:'최근 입고', dash_recent_out:'최근 출고',
+    nav_inventory_sec:'재고'
   },
   en: {
     sys_name:'Inventory System', nav_main:'MAIN', nav_dashboard:'Dashboard', nav_inventory:'Inventory',
@@ -1850,7 +1861,7 @@ const i18n = {
     msg_confirm_delete_cat:'Delete this entry?', msg_qty_zero:'Please enter a quantity.',
     months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     nav_equipment:'JIG&Fixture',
-    eq_add_btn:'Add Equipment', eq_filter_cat1:'1st Total', eq_filter_cat2:'2nd Total',
+    eq_add_btn:'Add Equipment', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
     eq_search_ph:'Search equipment / serial',
     eq_modal_title:'Register Equipment', eq_modal_edit_title:'Edit Equipment',
     eq_lbl_cat1:'Category 1', eq_lbl_cat2:'Category 2', eq_lbl_name:'Equipment Name',
@@ -1860,7 +1871,12 @@ const i18n = {
     eq_status_active:'In Use',
     eq_detail_title:'Equipment Detail', eq_btn_edit:'Edit', eq_btn_delete:'Delete',
     eq_cat_mgmt_title:'Category Management', eq_cat1_label:'Category 1', eq_ph_cat1:'Enter category 1',
-    eq_col_photo:'Photo', eq_col_status:'Status', eq_empty:'No equipment registered'
+    eq_col_photo:'Photo', eq_col_status:'Status', eq_empty:'No equipment registered',
+    zones_title:'Zone (Equipment) List', zone_hint:'Selected by button when registering items. "etc" is always included.', ph_new_zone:'Enter zone (e.g. SMT#1, Assembly)',
+    dept_mgmt_title:'Dept. Management', dept_new_ph:'Enter new department', dept_empty:'No departments registered.',
+    dept_dup:'Department name already exists.', dept_del_confirm:'Delete this department?', ph_select_dept:'-- Select Dept --',
+    dash_recent_in:'Recent IN', dash_recent_out:'Recent OUT',
+    nav_inventory_sec:'Inventory'
   },
   th: {
     sys_name:'ระบบจัดการสินค้าคงคลัง', nav_main:'หลัก', nav_dashboard:'แดชบอร์ด', nav_inventory:'สินค้าคงคลัง',
@@ -1907,7 +1923,7 @@ const i18n = {
     msg_confirm_delete_cat:'ต้องการลบรายการนี้หรือไม่?', msg_qty_zero:'กรุณาระบุจำนวน',
     months:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
     nav_equipment:'JIG&Fixture',
-    eq_add_btn:'เพิ่มอุปกรณ์', eq_filter_cat1:'1st Total', eq_filter_cat2:'2nd Total',
+    eq_add_btn:'เพิ่มอุปกรณ์', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
     eq_search_ph:'ค้นหาอุปกรณ์ / ซีเรียล',
     eq_modal_title:'ลงทะเบียนอุปกรณ์', eq_modal_edit_title:'แก้ไขอุปกรณ์',
     eq_lbl_cat1:'ประเภท 1', eq_lbl_cat2:'ประเภท 2', eq_lbl_name:'ชื่ออุปกรณ์',
@@ -1917,7 +1933,12 @@ const i18n = {
     eq_status_active:'กำลังใช้งาน',
     eq_detail_title:'รายละเอียดอุปกรณ์', eq_btn_edit:'แก้ไข', eq_btn_delete:'ลบ',
     eq_cat_mgmt_title:'จัดการประเภท', eq_cat1_label:'ประเภท 1', eq_ph_cat1:'ป้อนประเภท 1',
-    eq_col_photo:'รูป', eq_col_status:'สถานะ', eq_empty:'ไม่มีอุปกรณ์ที่ลงทะเบียน'
+    eq_col_photo:'รูป', eq_col_status:'สถานะ', eq_empty:'ไม่มีอุปกรณ์ที่ลงทะเบียน',
+    zones_title:'รายการโซน (อุปกรณ์)', zone_hint:'เลือกด้วยปุ่มเมื่อลงทะเบียนสินค้า รายการ "etc" จะรวมอยู่เสมอ', ph_new_zone:'ป้อนโซน (เช่น SMT#1, สายประกอบ)',
+    dept_mgmt_title:'จัดการแผนก', dept_new_ph:'ป้อนชื่อแผนกใหม่', dept_empty:'ไม่มีแผนกที่ลงทะเบียน',
+    dept_dup:'ชื่อแผนกนี้มีอยู่แล้ว', dept_del_confirm:'ต้องการลบแผนกนี้หรือไม่?', ph_select_dept:'-- เลือกแผนก --',
+    dash_recent_in:'รับเข้าล่าสุด', dash_recent_out:'จ่ายออกล่าสุด',
+    nav_inventory_sec:'สินค้าคงคลัง'
   }
 };
 let currentLang = 'ko';
@@ -2232,10 +2253,10 @@ function renderEqAlert() {
   const colorMap  = { repair:'var(--warn)', ng:'var(--danger)' };
   el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
     <thead><tr>
-      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">상태</th>
-      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">분류</th>
-      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">이름</th>
-      <th style="padding:7px 10px;text-align:center;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">라인</th>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Status</th>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Category</th>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Name</th>
+      <th style="padding:7px 10px;text-align:center;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Line</th>
     </tr></thead>
     <tbody>${flagged.map(eq => {
       const c1 = eqCat1Name(eq.cat1);
@@ -2257,9 +2278,9 @@ function renderRecentTransactions() {
     if (!records.length) return `<div class="empty-state" style="padding:14px;font-size:12px">-</div>`;
     return `<table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr>
-        <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">코드</th>
-        <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">품목명</th>
-        <th style="padding:7px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">수량</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Code</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Item</th>
+        <th style="padding:7px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Q'ty</th>
       </tr></thead>
       <tbody>${records.slice(0,5).map(r => {
         const item = findItem(r.itemId);
@@ -2445,6 +2466,8 @@ function renderChipList(elId, arr, catType) {
 // ═══════════════════════════════════════════
 function renderPersonnel() {
   refreshDeptSelects();
+  // 부서 관리 패널이 열려 있으면 함께 갱신
+  if (document.getElementById('dept-mgmt-card') && document.getElementById('dept-mgmt-card').style.display !== 'none') renderDeptChips();
 
   const list = document.getElementById('personnel-list');
   if (!personnel.length) { list.innerHTML = `<div class="empty-state">-</div>`; return; }
@@ -2837,15 +2860,15 @@ function toggleDeptMgmt() {
 function renderDeptChips() {
   const el = document.getElementById('dept-chip-list');
   if (!el) return;
-  if (!DEPT_LIST.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">등록된 부서가 없습니다.</div>'; return; }
+  if (!DEPT_LIST.length) { el.innerHTML = `<div style="font-size:12px;color:var(--muted)">${t('dept_empty')||'등록된 부서가 없습니다.'}</div>`; return; }
   el.innerHTML = DEPT_LIST.map((d, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s2);border:1px solid var(--border);border-radius:8px">
       <span id="dept-label-${i}" style="flex:1;font-size:13px;font-weight:700">${escapeHtml(d)}</span>
       <input id="dept-edit-${i}" class="form-control" style="flex:1;display:none;height:28px;font-size:12px" value="${escapeHtml(d)}">
-      <button class="btn btn-outline btn-sm" onclick="startEditDept(${i})" id="dept-btn-edit-${i}">수정</button>
-      <button class="btn btn-ok btn-sm" onclick="confirmEditDept(${i})" id="dept-btn-save-${i}" style="display:none">저장</button>
-      <button class="btn btn-outline btn-sm" onclick="cancelEditDept(${i})" id="dept-btn-cancel-${i}" style="display:none">취소</button>
-      <button class="btn btn-sm" style="background:var(--danger-bg,#fee2e2);color:var(--danger,#ef4444);border:1px solid var(--danger,#ef4444)" onclick="deleteDept(${i})">삭제</button>
+      <button class="btn btn-outline btn-sm" onclick="startEditDept(${i})" id="dept-btn-edit-${i}">${t('edit')}</button>
+      <button class="btn btn-ok btn-sm" onclick="confirmEditDept(${i})" id="dept-btn-save-${i}" style="display:none">${t('btn_save')}</button>
+      <button class="btn btn-outline btn-sm" onclick="cancelEditDept(${i})" id="dept-btn-cancel-${i}" style="display:none">${t('btn_cancel')}</button>
+      <button class="btn btn-sm" style="background:var(--danger-bg,#fee2e2);color:var(--danger,#ef4444);border:1px solid var(--danger,#ef4444)" onclick="deleteDept(${i})">${t('del')}</button>
     </div>`).join('');
 }
 
@@ -2853,12 +2876,9 @@ function addDept() {
   const inp = document.getElementById('new-dept-input');
   const name = inp.value.trim();
   if (!name) return;
-  if (DEPT_LIST.includes(name)) { alert('이미 존재하는 부서명입니다.'); return; }
-  DEPT_LIST.push(name);
-  saveDeptList();
+  if (DEPT_LIST.includes(name)) { alert(t('dept_dup') || '이미 존재하는 부서명입니다.'); return; }
+  sendWS({ type: 'ADD_CATEGORY', catType: 'depts', value: name });
   inp.value = '';
-  renderDeptChips();
-  refreshDeptSelects();
 }
 
 function startEditDept(i) {
@@ -2876,26 +2896,21 @@ function confirmEditDept(i) {
   const val = document.getElementById('dept-edit-' + i).value.trim();
   if (!val) return;
   const old = DEPT_LIST[i];
-  if (DEPT_LIST.some((d, j) => j !== i && d === val)) { alert('이미 존재하는 부서명입니다.'); return; }
-  DEPT_LIST[i] = val;
-  saveDeptList();
+  if (DEPT_LIST.some((d, j) => j !== i && d === val)) { alert(t('dept_dup') || '이미 존재하는 부서명입니다.'); return; }
+  // delete old, add new
+  sendWS({ type: 'DELETE_CATEGORY', catType: 'depts', value: old });
+  sendWS({ type: 'ADD_CATEGORY', catType: 'depts', value: val });
   // 기존 담당자 부서명도 일괄 변경
   personnel.forEach(p => { if (p.dept === old) sendWS({ type: 'UPDATE_PERSONNEL', person: { ...p, dept: val } }); });
-  renderDeptChips();
-  refreshDeptSelects();
 }
 
 function deleteDept(i) {
-  if (!confirm(`"${DEPT_LIST[i]}" 부서를 삭제하시겠습니까?`)) return;
-  DEPT_LIST.splice(i, 1);
-  saveDeptList();
-  renderDeptChips();
-  refreshDeptSelects();
-  renderPersonnel();
+  if (!confirm(`"${DEPT_LIST[i]}" ${t('dept_del_confirm') || '부서를 삭제하시겠습니까?'}`)) return;
+  sendWS({ type: 'DELETE_CATEGORY', catType: 'depts', value: DEPT_LIST[i] });
 }
 
 function refreshDeptSelects() {
-  const opts = '<option value="">-- 부서 선택 --</option>' + DEPT_LIST.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+  const opts = `<option value="">${t('ph_select_dept')}</option>` + DEPT_LIST.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
   ['p-dept'].forEach(id => { const s = document.getElementById(id); if (s) s.innerHTML = opts; });
 }
 
@@ -3594,7 +3609,7 @@ function renderEqCat1Selects() {
     const sel = document.getElementById(id);
     if (!sel) return;
     const prev = sel.value;
-    const ph = id.includes('filter') ? '<option value="">전체 1차</option>' : '<option value="">-- 선택 --</option>';
+    const ph = id.includes('filter') ? `<option value="">${t('eq_filter_cat1')}</option>` : `<option value="">${t('ph_select_cat')}</option>`;
     sel.innerHTML = ph + cat1s.map(c=>`<option value="${escapeHtml(c.id)}"${c.id===prev?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
   });
   onEqCat1FilterChange();
@@ -3607,7 +3622,7 @@ function onEqCat1FilterChange() {
   if (!sel) return;
   const prev = sel.value;
   const cat2s = (eqCategories.cat2||[]).filter(c=>!cat1Id||c.parentId===cat1Id);
-  sel.innerHTML = '<option value="">전체 2차</option>' +
+  sel.innerHTML = `<option value="">${t('eq_filter_cat2')}</option>` +
     cat2s.map(c=>`<option value="${escapeHtml(c.id)}"${c.id===prev?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
   renderEquipment();
 }
