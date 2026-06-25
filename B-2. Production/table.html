@@ -222,6 +222,22 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 .lm-title{font-size:16px;font-weight:900;}
 .lm-cls{width:28px;height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
 .lm-body{overflow-y:auto;padding:14px 18px 20px;}
+/* ── Excel 미리보기 모달 ── */
+#xp-backdrop{position:fixed;inset:0;background:rgba(26,22,16,.5);z-index:300;display:none;}
+#xp-backdrop.on{display:block;}
+#xp-modal{position:fixed;inset:20px;background:var(--surface);border-radius:14px;box-shadow:0 12px 48px rgba(0,0,0,.22);display:none;flex-direction:column;overflow:hidden;z-index:301;}
+#xp-modal.on{display:flex;}
+#xp-hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+#xp-title{font-size:15px;font-weight:900;flex:1;}
+#xp-line-sel{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;background:var(--s2);color:var(--text);}
+#xp-dl{padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+#xp-cls{width:28px;height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;}
+#xp-wrap{overflow:auto;flex:1;}
+#xp-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+#xp-tbl th{background:var(--accent);color:#fff;font-weight:700;font-size:11px;padding:8px 10px;white-space:nowrap;position:sticky;top:0;z-index:2;text-align:left;}
+#xp-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
+#xp-tbl tr:nth-child(even) td{background:var(--s2);}
+#xp-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
 .lm-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
 .lm-row:last-child{border-bottom:none;}
 .lm-model{font-size:13px;font-weight:700;color:var(--text);}
@@ -397,6 +413,27 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 </div>
 
 <div id="toast"></div>
+
+<!-- Excel 미리보기 모달 -->
+<div id="xp-backdrop" onclick="closeXP()"></div>
+<div id="xp-modal">
+  <div id="xp-hd">
+    <span id="xp-title">Excel 미리보기</span>
+    <select id="xp-line-sel" onchange="renderXPTable()"><option value="">전체 라인</option></select>
+    <button id="xp-dl" onclick="downloadExcel()">⬇ 다운로드</button>
+    <div id="xp-cls" onclick="closeXP()">✕</div>
+  </div>
+  <div id="xp-wrap">
+    <div id="xp-empty" style="display:none">기록이 없습니다.</div>
+    <table id="xp-tbl">
+      <thead><tr>
+        <th>Record</th><th>Line</th><th>Time</th><th>Shift</th>
+        <th>Section</th><th>Plant</th><th>Model</th><th>Q'ty</th><th>Remark</th>
+      </tr></thead>
+      <tbody id="xp-tbody"></tbody>
+    </table>
+  </div>
+</div>
 
 <!-- 라인 모달 -->
 <div class="lm-backdrop" id="lm-backdrop" onclick="closeLineModal()"></div>
@@ -765,9 +802,50 @@ function closeLineModal(){
   document.getElementById('lm-backdrop').classList.remove('on');
   document.getElementById('lm-box').style.display='none';
 }
-function exportExcel(){
-  const url=`https://${TUNNEL}/api/production/export?date=${viewDate}`;
-  const a=document.createElement('a');a.href=url;a.download='';a.click();
+let xpRows=[];
+async function exportExcel(){
+  document.getElementById('xp-backdrop').classList.add('on');
+  document.getElementById('xp-modal').classList.add('on');
+  document.getElementById('xp-title').textContent=`Excel 미리보기 — ${viewDate}`;
+  document.getElementById('xp-tbody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">불러오는 중...</td></tr>';
+  try{
+    const res=await fetch(`https://${TUNNEL}/api/production/preview?date=${viewDate}`);
+    const j=await res.json();
+    xpRows=j.rows||[];
+    // 라인 목록 채우기
+    const lines=[...new Set(xpRows.map(r=>r.line))].sort();
+    const sel=document.getElementById('xp-line-sel');
+    sel.innerHTML='<option value="">전체 라인</option>'+lines.map(l=>`<option value="${l}">${l}</option>`).join('');
+    renderXPTable();
+  }catch(e){
+    document.getElementById('xp-tbody').innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">오류: ${e.message}</td></tr>`;
+  }
+}
+function renderXPTable(){
+  const line=document.getElementById('xp-line-sel').value;
+  const rows=line?xpRows.filter(r=>r.line===line):xpRows;
+  if(!rows.length){
+    document.getElementById('xp-tbl').style.display='none';
+    document.getElementById('xp-empty').style.display='block';
+    return;
+  }
+  document.getElementById('xp-tbl').style.display='';
+  document.getElementById('xp-empty').style.display='none';
+  document.getElementById('xp-tbody').innerHTML=rows.map(r=>`<tr>
+    <td>${r.record}</td><td>${r.line}</td><td>${r.time}</td><td>${r.shift}</td>
+    <td>${r.section}</td><td>${r.plant}</td><td>${r.model}</td>
+    <td style="text-align:right;font-weight:700">${(r.qty||0).toLocaleString()}</td>
+    <td>${r.remark||''}</td>
+  </tr>`).join('');
+}
+function downloadExcel(){
+  const a=document.createElement('a');
+  a.href=`https://${TUNNEL}/api/production/export?date=${viewDate}`;
+  a.download='';a.click();
+}
+function closeXP(){
+  document.getElementById('xp-backdrop').classList.remove('on');
+  document.getElementById('xp-modal').classList.remove('on');
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');setTimeout(()=>t.classList.remove('s'),2000);}
 function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}

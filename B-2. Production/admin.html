@@ -182,17 +182,21 @@ button.add-btn:hover{background:#1E46B0;}
         웹에서 추가·수정·삭제하면 이 파일이 <b>자동으로 동기화</b>됩니다.<br>
         엑셀로 직접 편집 후 서버 재시작 시 반영됩니다.
         <table class="fmt-table">
-          <thead><tr><th>A — Plant 명</th><th>B — 모델 명</th><th>C — CAPA (수량/h)</th><th>D — Plant ID</th><th>E — Model ID</th></tr></thead>
+          <thead><tr><th>A — Plant 명</th><th>B — 모델 명</th><th>C — CAPA (수량/h)</th></tr></thead>
           <tbody>
-            <tr><td>Plant A</td><td>Model 001</td><td>500</td><td>p_abc12</td><td>m_def78</td></tr>
+            <tr><td>Plant A</td><td>Model 001</td><td>500</td></tr>
           </tbody>
         </table>
-        <div class="note">※ D·E열(ID)은 수정하지 마세요. A·B·C열만 편집하면 됩니다.</div>
+        <div class="note">※ A·B·C 열만 작성하면 됩니다. 업로드 시 기존 Plant/모델과 병합됩니다.</div>
       </div>
     </div>
     <div class="dl-row">
-      <a class="dl-btn" href="#" onclick="downloadXlsx(event)">⬇ plants.xlsx 다운로드</a>
-      <span class="dl-note">현재 데이터를 엑셀로 저장합니다.</span>
+      <a class="dl-btn" href="#" onclick="downloadXlsx(event)">⬇ 다운로드</a>
+      <label class="dl-btn" style="cursor:pointer;background:var(--green-bg);color:var(--green);border-color:var(--green);">
+        ⬆ 업로드
+        <input type="file" accept=".xlsx" style="display:none" onchange="uploadXlsx(this)">
+      </label>
+      <span class="dl-note">A·B·C열만 작성 후 업로드하면 자동 병합됩니다.</span>
     </div>
   </div>
 
@@ -250,6 +254,21 @@ function downloadXlsx(e){
   a.href=`https://${TUNNEL}/api/production/plants/download`;
   a.download='plants.xlsx';a.click();
   toast('plants.xlsx 다운로드 시작');
+}
+
+/* ── Excel 업로드 ── */
+async function uploadXlsx(input){
+  const file=input.files[0];
+  if(!file)return;
+  const fd=new FormData();
+  fd.append('file',file);
+  try{
+    const res=await fetch(`https://${TUNNEL}/api/production/plants/upload`,{method:'POST',body:fd});
+    const j=await res.json();
+    if(j.ok) toast(`✓ 업로드 완료 (Plant ${j.plants}개)`);
+    else toast('업로드 실패: '+(j.error||'알 수 없는 오류'));
+  }catch(err){toast('업로드 오류: '+err.message);}
+  input.value='';
 }
 
 /* ── Plant 렌더 ── */
