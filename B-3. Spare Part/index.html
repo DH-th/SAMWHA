@@ -756,6 +756,16 @@
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔧 JIG&amp;Fixture</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('equipment')">전체 보기</button>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="dash-eq-alert"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══ INVENTORY ═══ -->
@@ -825,8 +835,26 @@
 
     <!-- ═══ PERSONNEL ═══ -->
     <div id="page-personnel" class="page">
+      <!-- 부서 관리 패널 -->
+      <div class="card" id="dept-mgmt-card" style="display:none">
+        <div class="card-header">
+          <div class="card-title">🏷️ 부서 관리</div>
+          <button class="btn btn-outline btn-sm" onclick="toggleDeptMgmt()">닫기</button>
+        </div>
+        <div class="card-body">
+          <div class="cat-input-row" style="margin-bottom:12px">
+            <input class="form-control" id="new-dept-input" placeholder="새 부서명 입력" onkeydown="if(event.key==='Enter')addDept()">
+            <button class="btn btn-accent" onclick="addDept()">추가</button>
+          </div>
+          <div id="dept-chip-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-header"><div class="card-title" data-i18n="personnel_add">담당자 추가</div></div>
+        <div class="card-header">
+          <div class="card-title" data-i18n="personnel_add">담당자 추가</div>
+          <button class="btn btn-outline btn-sm" onclick="toggleDeptMgmt()">🏷️ 부서 관리</button>
+        </div>
         <div class="card-body">
           <div class="form-row cols-2">
             <div class="form-group">
@@ -835,7 +863,9 @@
             </div>
             <div class="form-group">
               <label class="form-label" data-i18n="col_dept">부서</label>
-              <input class="form-control" id="p-dept" data-i18n-ph="ph_dept" onkeydown="if(event.key==='Enter')savePersonnel()">
+              <select class="form-control" id="p-dept">
+                <option value="">-- 부서 선택 --</option>
+              </select>
             </div>
           </div>
           <button class="btn btn-accent btn-block" onclick="savePersonnel()">+ <span data-i18n="btn_save">저장</span></button>
@@ -1919,6 +1949,13 @@ function applyI18n() {
 // ═══════════════════════════════════════════
 //  DATA STORE
 // ═══════════════════════════════════════════
+const DEPT_LS_KEY = 'spare_dept_list';
+let DEPT_LIST = (() => {
+  try { const v = JSON.parse(localStorage.getItem(DEPT_LS_KEY)); if (Array.isArray(v) && v.length) return v; } catch {}
+  return ['생산', '품질', '설비', '자재', '관리', '기타'];
+})();
+function saveDeptList() { localStorage.setItem(DEPT_LS_KEY, JSON.stringify(DEPT_LIST)); }
+
 let items = [];
 let inbounds = [];
 let outbounds = [];
@@ -2180,6 +2217,39 @@ function renderDashboard() {
     : `<div class="empty-state">✅ ${t('all_normal')}</div>`;
 
   renderRecentTransactions();
+  renderEqAlert();
+}
+
+function renderEqAlert() {
+  const el = document.getElementById('dash-eq-alert');
+  if (!el) return;
+  const flagged = eqItems.filter(eq => eq.status === 'repair' || eq.status === 'ng');
+  if (!flagged.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:16px;font-size:12px">✅ Repair / NG 항목 없음</div>`;
+    return;
+  }
+  const statusMap = { repair:'Repair', ng:'NG' };
+  const colorMap  = { repair:'var(--warn)', ng:'var(--danger)' };
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">상태</th>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">분류</th>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">이름</th>
+      <th style="padding:7px 10px;text-align:center;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">라인</th>
+    </tr></thead>
+    <tbody>${flagged.map(eq => {
+      const c1 = eqCat1Name(eq.cat1);
+      const c2 = eq.cat2 ? eqCat2Name(eq.cat2) : '';
+      const cat = c2 && c2 !== '-' ? `${c1} · ${c2}` : c1;
+      const color = colorMap[eq.status] || 'var(--muted)';
+      return `<tr onclick="openEqDetail('${escapeHtml(eq.id)}')" style="cursor:pointer;border-bottom:1px solid var(--border)">
+        <td style="padding:8px 10px"><span style="font-size:11px;font-weight:800;color:${color}">${statusMap[eq.status]||eq.status}</span></td>
+        <td style="padding:8px 10px;color:var(--muted);font-size:11px">${escapeHtml(cat)}</td>
+        <td style="padding:8px 10px;font-weight:600">${escapeHtml(eq.name||'-')}</td>
+        <td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--accent)">${escapeHtml(eq.line||'-')}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
 }
 
 function renderRecentTransactions() {
@@ -2374,31 +2444,54 @@ function renderChipList(elId, arr, catType) {
 //  RENDER: PERSONNEL
 // ═══════════════════════════════════════════
 function renderPersonnel() {
+  refreshDeptSelects();
+
   const list = document.getElementById('personnel-list');
-  if (!personnel.length) {
-    list.innerHTML = `<div class="empty-state">-</div>`;
-    return;
-  }
-  list.innerHTML = personnel.map(p => {
-    if (editingPersonId === p.id) {
-      return `
-        <div class="person-row">
+  if (!personnel.length) { list.innerHTML = `<div class="empty-state">-</div>`; return; }
+
+  const deptOpts = DEPT_LIST.map(d => `<option value="${d}">{V}</option>`);
+  const mkDeptSel = (id, val) => `<select class="form-control" id="person-edit-dept-${id}">`
+    + `<option value="">-- 부서 --</option>`
+    + DEPT_LIST.map(d => `<option value="${d}"${d===val?' selected':''}>${d}</option>`).join('')
+    + `</select>`;
+
+  // 부서별 그룹
+  const grouped = {};
+  const order = [...DEPT_LIST, '기타', ''];
+  personnel.forEach(p => {
+    const d = (p.dept && DEPT_LIST.includes(p.dept)) ? p.dept : (p.dept || '미지정');
+    if (!grouped[d]) grouped[d] = [];
+    grouped[d].push(p);
+  });
+
+  const sortedDepts = Object.keys(grouped).sort((a,b) => {
+    const ai = order.indexOf(a), bi = order.indexOf(b);
+    return (ai===-1?99:ai) - (bi===-1?99:bi);
+  });
+
+  list.innerHTML = sortedDepts.map(dept => {
+    const rows = grouped[dept].map(p => {
+      if (editingPersonId === p.id) {
+        return `<div class="person-row">
           <div class="person-edit-inputs">
             <input class="form-control" id="person-edit-name-${p.id}" value="${escapeHtml(p.name)}" placeholder="${t('ph_name')}">
-            <input class="form-control" id="person-edit-dept-${p.id}" value="${escapeHtml(p.dept || '')}" placeholder="${t('ph_dept')}">
+            ${mkDeptSel(p.id, p.dept||'')}
           </div>
           <button class="btn btn-ok btn-sm" onclick="savePersonEdit('${p.id}')">${t('btn_save')}</button>
           <button class="btn btn-outline btn-sm" onclick="cancelPersonEdit()">${t('btn_cancel')}</button>
         </div>`;
-    }
-    return `
-      <div class="person-row">
+      }
+      return `<div class="person-row">
         <div class="person-row-info" onclick="startEditPerson('${p.id}')">
           <div class="person-row-name">${escapeHtml(p.name)}</div>
-          <div class="person-row-dept">${escapeHtml(p.dept || '-')}</div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="deletePersonnel('${p.id}')">${t('del')}</button>
       </div>`;
+    }).join('');
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.08em;padding:6px 2px 4px;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:4px">${escapeHtml(dept)}</div>
+      ${rows}
+    </div>`;
   }).join('');
 }
 
@@ -2733,9 +2826,82 @@ function saveOutbound() {
 // ═══════════════════════════════════════════
 //  PERSONNEL CRUD
 // ═══════════════════════════════════════════
+// ── 부서 관리 ──
+function toggleDeptMgmt() {
+  const card = document.getElementById('dept-mgmt-card');
+  const visible = card.style.display !== 'none';
+  card.style.display = visible ? 'none' : '';
+  if (!visible) renderDeptChips();
+}
+
+function renderDeptChips() {
+  const el = document.getElementById('dept-chip-list');
+  if (!el) return;
+  if (!DEPT_LIST.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">등록된 부서가 없습니다.</div>'; return; }
+  el.innerHTML = DEPT_LIST.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s2);border:1px solid var(--border);border-radius:8px">
+      <span id="dept-label-${i}" style="flex:1;font-size:13px;font-weight:700">${escapeHtml(d)}</span>
+      <input id="dept-edit-${i}" class="form-control" style="flex:1;display:none;height:28px;font-size:12px" value="${escapeHtml(d)}">
+      <button class="btn btn-outline btn-sm" onclick="startEditDept(${i})" id="dept-btn-edit-${i}">수정</button>
+      <button class="btn btn-ok btn-sm" onclick="confirmEditDept(${i})" id="dept-btn-save-${i}" style="display:none">저장</button>
+      <button class="btn btn-outline btn-sm" onclick="cancelEditDept(${i})" id="dept-btn-cancel-${i}" style="display:none">취소</button>
+      <button class="btn btn-sm" style="background:var(--danger-bg,#fee2e2);color:var(--danger,#ef4444);border:1px solid var(--danger,#ef4444)" onclick="deleteDept(${i})">삭제</button>
+    </div>`).join('');
+}
+
+function addDept() {
+  const inp = document.getElementById('new-dept-input');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (DEPT_LIST.includes(name)) { alert('이미 존재하는 부서명입니다.'); return; }
+  DEPT_LIST.push(name);
+  saveDeptList();
+  inp.value = '';
+  renderDeptChips();
+  refreshDeptSelects();
+}
+
+function startEditDept(i) {
+  document.getElementById('dept-label-' + i).style.display = 'none';
+  document.getElementById('dept-edit-' + i).style.display = '';
+  document.getElementById('dept-btn-edit-' + i).style.display = 'none';
+  document.getElementById('dept-btn-save-' + i).style.display = '';
+  document.getElementById('dept-btn-cancel-' + i).style.display = '';
+  document.getElementById('dept-edit-' + i).focus();
+}
+
+function cancelEditDept(i) { renderDeptChips(); }
+
+function confirmEditDept(i) {
+  const val = document.getElementById('dept-edit-' + i).value.trim();
+  if (!val) return;
+  const old = DEPT_LIST[i];
+  if (DEPT_LIST.some((d, j) => j !== i && d === val)) { alert('이미 존재하는 부서명입니다.'); return; }
+  DEPT_LIST[i] = val;
+  saveDeptList();
+  // 기존 담당자 부서명도 일괄 변경
+  personnel.forEach(p => { if (p.dept === old) sendWS({ type: 'UPDATE_PERSONNEL', person: { ...p, dept: val } }); });
+  renderDeptChips();
+  refreshDeptSelects();
+}
+
+function deleteDept(i) {
+  if (!confirm(`"${DEPT_LIST[i]}" 부서를 삭제하시겠습니까?`)) return;
+  DEPT_LIST.splice(i, 1);
+  saveDeptList();
+  renderDeptChips();
+  refreshDeptSelects();
+  renderPersonnel();
+}
+
+function refreshDeptSelects() {
+  const opts = '<option value="">-- 부서 선택 --</option>' + DEPT_LIST.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+  ['p-dept'].forEach(id => { const s = document.getElementById(id); if (s) s.innerHTML = opts; });
+}
+
 function savePersonnel() {
   const name = document.getElementById('p-name').value.trim();
-  const dept = document.getElementById('p-dept').value.trim();
+  const dept = document.getElementById('p-dept').value;
   if (!name) { alert(t('msg_enter_name')); return; }
   const person = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name, dept };
   if (sendWS({ type: 'ADD_PERSONNEL', person })) {
@@ -2757,7 +2923,7 @@ function cancelPersonEdit() {
 }
 function savePersonEdit(id) {
   const name = document.getElementById('person-edit-name-' + id).value.trim();
-  const dept = document.getElementById('person-edit-dept-' + id).value.trim();
+  const dept = document.getElementById('person-edit-dept-' + id).value;
   if (!name) { alert(t('msg_enter_name')); return; }
   editingPersonId = null;
   sendWS({ type: 'UPDATE_PERSONNEL', person: { id, name, dept } });
