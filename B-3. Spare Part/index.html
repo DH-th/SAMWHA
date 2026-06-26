@@ -658,7 +658,7 @@
       <span class="icon">📦</span><span data-i18n="nav_inventory">재고 현황</span>
     </div>
     <div class="nav-item" data-page="equipment" onclick="showPage('equipment')">
-      <span class="icon">🏭</span><span>JIG&amp;Fixture</span>
+      <span class="icon">🏭</span><span>Jig&amp;Fixture</span>
     </div>
     <div class="nav-section" data-i18n="nav_manage">관리</div>
     <div class="nav-item" data-page="categories" onclick="showPage('categories')">
@@ -759,8 +759,11 @@
 
       <div class="card">
         <div class="card-header">
-          <div class="card-title">🔧 JIG&amp;Fixture</div>
+          <div class="card-title">🔧 Jig&amp;Fixture</div>
           <button class="btn btn-outline btn-sm" onclick="showPage('equipment')">전체 보기</button>
+        </div>
+        <div class="card-body" style="padding:12px 12px 0">
+          <div id="dash-eq-summary" style="display:flex;gap:8px;margin-bottom:12px"></div>
         </div>
         <div class="card-body" style="padding:0">
           <div id="dash-eq-alert"></div>
@@ -973,6 +976,14 @@
 
     <!-- ═══ EQUIPMENT ═══ -->
     <div id="page-equipment" class="page">
+      <!-- 요약 + 가로 바 그래프 -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-body" style="padding:12px 14px">
+          <div id="eq-stat-chips" style="display:flex;gap:8px;margin-bottom:14px"></div>
+          <div id="eq-bar-chart" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </div>
+
       <div class="filter-bar" style="flex-direction:column;gap:6px">
         <div style="display:flex;gap:8px;align-items:center;width:100%">
           <div class="search-wrap" style="flex:1;min-width:0">
@@ -1798,7 +1809,7 @@ const i18n = {
     msg_confirm_delete_item:'품목을 삭제하시겠습니까?', msg_confirm_delete_person:'담당자를 삭제하시겠습니까?',
     msg_confirm_delete_cat:'이 항목을 삭제하시겠습니까?', msg_qty_zero:'수량을 입력하세요.',
     months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
-    nav_equipment:'JIG&Fixture',
+    nav_equipment:'Jig&Fixture',
     eq_add_btn:'설비 등록', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
     eq_search_ph:'설비명 / 시리얼 검색',
     eq_modal_title:'설비 등록', eq_modal_edit_title:'설비 수정',
@@ -1860,7 +1871,7 @@ const i18n = {
     msg_confirm_delete_item:'Delete this item?', msg_confirm_delete_person:'Delete this person?',
     msg_confirm_delete_cat:'Delete this entry?', msg_qty_zero:'Please enter a quantity.',
     months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-    nav_equipment:'JIG&Fixture',
+    nav_equipment:'Jig&Fixture',
     eq_add_btn:'Add Equipment', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
     eq_search_ph:'Search equipment / serial',
     eq_modal_title:'Register Equipment', eq_modal_edit_title:'Edit Equipment',
@@ -1922,7 +1933,7 @@ const i18n = {
     msg_confirm_delete_item:'ต้องการลบสินค้านี้หรือไม่?', msg_confirm_delete_person:'ต้องการลบผู้รับผิดชอบนี้หรือไม่?',
     msg_confirm_delete_cat:'ต้องการลบรายการนี้หรือไม่?', msg_qty_zero:'กรุณาระบุจำนวน',
     months:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
-    nav_equipment:'JIG&Fixture',
+    nav_equipment:'Jig&Fixture',
     eq_add_btn:'เพิ่มอุปกรณ์', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
     eq_search_ph:'ค้นหาอุปกรณ์ / ซีเรียล',
     eq_modal_title:'ลงทะเบียนอุปกรณ์', eq_modal_edit_title:'แก้ไขอุปกรณ์',
@@ -2038,11 +2049,11 @@ function showPage(page) {
   const titles = {
     dashboard:'nav_dashboard', inventory:'nav_inventory', categories:'nav_categories',
     personnel:'nav_personnel', report:'nav_report_monthly', history:'nav_history',
-    equipment:'JIG&Fixture'
+    equipment:'Jig&Fixture'
   };
   const titleEl = document.getElementById('page-title');
   if (titleEl) {
-    if (page === 'equipment') titleEl.textContent = 'JIG&Fixture';
+    if (page === 'equipment') titleEl.textContent = 'Jig&Fixture';
     else if (titles[page]) titleEl.textContent = t(titles[page]);
   }
 
@@ -2239,6 +2250,27 @@ function renderDashboard() {
 
   renderRecentTransactions();
   renderEqAlert();
+  renderEqSummary();
+}
+
+function renderEqSummary() {
+  const el = document.getElementById('dash-eq-summary');
+  if (!el) return;
+  const total   = eqItems.length;
+  const useC    = eqItems.filter(e => (e.status||'active') === 'active').length;
+  const repairC = eqItems.filter(e => e.status === 'repair').length;
+  const ngC     = eqItems.filter(e => e.status === 'ng').length;
+  const chips = [
+    { label:'Total',  val:total,   color:'var(--accent)',  bg:'var(--accent-bg,#EBF0FD)' },
+    { label:'Use',    val:useC,    color:'var(--ok)',      bg:'#f0fdf4' },
+    { label:'Repair', val:repairC, color:'var(--warn)',    bg:'#fffbeb' },
+    { label:'NG',     val:ngC,     color:'var(--danger)',  bg:'#fef2f2' },
+  ];
+  el.innerHTML = chips.map(c => `
+    <div style="flex:1;text-align:center;padding:8px 4px;background:${c.bg};border-radius:8px;border:1px solid ${c.color}22">
+      <div style="font-size:18px;font-weight:900;color:${c.color}">${c.val}</div>
+      <div style="font-size:10px;font-weight:700;color:${c.color};opacity:.8">${c.label}</div>
+    </div>`).join('');
 }
 
 function renderEqAlert() {
@@ -2256,7 +2288,7 @@ function renderEqAlert() {
       <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Status</th>
       <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Category</th>
       <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Name</th>
-      <th style="padding:7px 10px;text-align:center;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">Line</th>
+      <th style="padding:7px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;border-bottom:1px solid var(--border)">S/N</th>
     </tr></thead>
     <tbody>${flagged.map(eq => {
       const c1 = eqCat1Name(eq.cat1);
@@ -2267,7 +2299,7 @@ function renderEqAlert() {
         <td style="padding:8px 10px"><span style="font-size:11px;font-weight:800;color:${color}">${statusMap[eq.status]||eq.status}</span></td>
         <td style="padding:8px 10px;color:var(--muted);font-size:11px">${escapeHtml(cat)}</td>
         <td style="padding:8px 10px;font-weight:600">${escapeHtml(eq.name||'-')}</td>
-        <td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--accent)">${escapeHtml(eq.line||'-')}</td>
+        <td style="padding:8px 10px;font-size:11px;font-family:monospace;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
@@ -3495,17 +3527,17 @@ function connectEqWS() {
   eqWS.onmessage = e => {
     const msg = JSON.parse(e.data);
     if (msg.type === 'INIT_EQ_ITEMS') {
-      eqItems = msg.data; renderEquipment();
+      eqItems = msg.data; renderEquipment(); renderEqAlert(); renderEqSummary();
     } else if (msg.type === 'INIT_EQ_CATEGORIES') {
       eqCategories = msg.data || { cat1:[], cat2:[] };
-      renderEqCat1Selects(); renderEqCatTree();
+      renderEqCat1Selects(); renderEqCatTree(); renderEqAlert(); renderEqSummary(); renderEquipment();
     } else if (msg.type === 'EQ_UPSERTED') {
       const idx = eqItems.findIndex(x=>x.id===msg.item.id);
       if (idx>-1) eqItems[idx]=msg.item; else eqItems.push(msg.item);
-      renderEquipment();
+      renderEquipment(); renderEqAlert(); renderEqSummary();
     } else if (msg.type === 'EQ_DELETED') {
       eqItems = eqItems.filter(x=>x.id!==msg.id);
-      renderEquipment();
+      renderEquipment(); renderEqAlert(); renderEqSummary();
       if (currentEqId===msg.id) closeModal('modal-eq-detail');
     } else if (msg.type === 'EQ_CAT_UPDATED') {
       eqCategories = msg.data || { cat1:[], cat2:[] };
@@ -3526,6 +3558,48 @@ function eqCat1Name(id) { return (eqCategories.cat1.find(c=>c.id===id)||{}).name
 function eqCat2Name(id) { return (eqCategories.cat2.find(c=>c.id===id)||{}).name || '-'; }
 
 // ── 렌더: 설비 목록 ──
+function renderEqPageChart(src) {
+  const chips = document.getElementById('eq-stat-chips');
+  const bar   = document.getElementById('eq-bar-chart');
+  if (!chips || !bar) return;
+  const pool   = src || eqItems;
+  const total   = pool.length;
+  const useC    = pool.filter(e => (e.status||'active') === 'active').length;
+  const repairC = pool.filter(e => e.status === 'repair').length;
+  const ngC     = pool.filter(e => e.status === 'ng').length;
+  const spareC  = pool.filter(e => e.status === 'spare').length;
+
+  const statDefs = [
+    { label:'Total',  val:total,   color:'var(--accent)',          bg:'var(--accent-bg,#EBF0FD)' },
+    { label:'Use',    val:useC,    color:'var(--ok,#16a34a)',      bg:'#f0fdf4' },
+    { label:'Spare',  val:spareC,  color:'#7c3aed',                bg:'#f5f3ff' },
+    { label:'Repair', val:repairC, color:'var(--warn,#d97706)',    bg:'#fffbeb' },
+    { label:'NG',     val:ngC,     color:'var(--danger,#ef4444)',  bg:'#fef2f2' },
+  ];
+  chips.innerHTML = statDefs.map(c => `
+    <div style="flex:1;text-align:center;padding:8px 4px;background:${c.bg};border-radius:8px;border:1px solid ${c.color}22">
+      <div style="font-size:18px;font-weight:900;color:${c.color}">${c.val}</div>
+      <div style="font-size:10px;font-weight:700;color:${c.color};opacity:.8">${c.label}</div>
+    </div>`).join('');
+
+  const barDefs = [
+    { label:'Use',    val:useC,    color:'var(--ok,#16a34a)' },
+    { label:'Spare',  val:spareC,  color:'var(--muted)' },
+    { label:'Repair', val:repairC, color:'var(--warn,#d97706)' },
+    { label:'NG',     val:ngC,     color:'var(--danger,#ef4444)' },
+  ];
+  bar.innerHTML = barDefs.map(b => {
+    const pct = total ? Math.round(b.val / total * 100) : 0;
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <div style="width:44px;font-size:10px;font-weight:700;color:${b.color};text-align:right;flex-shrink:0">${b.label}</div>
+      <div style="flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${b.color};border-radius:5px;transition:width .4s"></div>
+      </div>
+      <div style="width:32px;font-size:10px;font-weight:700;color:${b.color};flex-shrink:0">${b.val} <span style="font-weight:400;opacity:.6">(${pct}%)</span></div>
+    </div>`;
+  }).join('');
+}
+
 function renderEquipment() {
   const search = (document.getElementById('eq-search')||{}).value||'';
   const cat1F  = (document.getElementById('eq-cat1-filter')||{}).value||'';
@@ -3554,6 +3628,7 @@ function renderEquipment() {
     return (lineOrder[a.line]??999) - (lineOrder[b.line]??999);
   });
 
+  renderEqPageChart(filtered);
   const wrap = document.getElementById('eq-table-wrap');
   if (!wrap) return;
   if (!filtered.length) {
@@ -3561,7 +3636,7 @@ function renderEquipment() {
     return;
   }
 
-  const statusMap = { active:'사용중', spare:'Spare', repair:'Repair', ng:'NG' };
+  const statusMap = { active:'Use', spare:'Spare', repair:'Repair', ng:'NG' };
   const rows = filtered.map((eq, i) => {
     const c1  = eqCat1Name(eq.cat1);
     const c2  = eq.cat2 ? eqCat2Name(eq.cat2) : '';
@@ -3580,7 +3655,7 @@ function renderEquipment() {
         ${eq.serial ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${escapeHtml(eq.serial)}</div>` : ''}
       </td>
       <td style="font-weight:700">${eq.qty||1}</td>
-      <td style="font-weight:700;color:var(--accent)">${escapeHtml(eq.line||'-')}</td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace">${escapeHtml(eq.serial||'-')}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
@@ -3588,14 +3663,14 @@ function renderEquipment() {
   wrap.innerHTML = `<table class="eq-table">
     <colgroup>
       <col class="col-no"><col class="col-photo"><col class="col-name">
-      <col class="col-qty"><col class="col-line"><col class="col-state">
+      <col class="col-qty"><col class="col-sn"><col class="col-state">
     </colgroup>
     <thead><tr>
       <th>No.</th>
       <th>${t('eq_col_photo')}</th>
       <th class="left">Name</th>
       <th>Qty</th>
-      <th>Line</th>
+      <th>S/N</th>
       <th>${t('eq_col_status')}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
