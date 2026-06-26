@@ -8,12 +8,12 @@
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <style>
 :root{
-  --bg:#F0EBE1;--surface:#FFFFFF;--s2:#F7F3EC;--s3:#EDE8DF;
-  --border:#DDD7CB;--border2:#C4BDB0;
-  --text:#1A1610;--text2:#3A342C;--muted:#8A8278;
-  --accent:#2558D4;--accent-bg:#EBF0FD;
-  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
-  --shm:0 4px 16px rgba(0,0,0,.10);
+  --bg:#EDFAF8;--surface:#FFFFFF;--s2:#E2F5F2;--s3:#D2EDEA;
+  --border:rgba(13,148,136,.14);--border2:rgba(13,148,136,.28);
+  --text:#0D2B28;--text2:#1A3D39;--muted:#5A7D7A;
+  --accent:#0D9488;--accent-bg:rgba(13,148,136,.10);
+  --sh:0 2px 8px rgba(13,148,136,.08),0 1px 3px rgba(13,148,136,.04);
+  --shm:0 4px 20px rgba(13,148,136,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;}
 html,body{background:var(--bg);color:var(--text);min-height:100vh;}
@@ -43,12 +43,12 @@ h1{font-size:16px;font-weight:900;}
 
 /* ── 요약 ── */
 .summary{display:flex;gap:12px;padding:14px 16px;flex-wrap:wrap;align-items:flex-start;}
-.sum-total{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+.sum-total{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;
   padding:11px 16px;box-shadow:var(--sh);flex-shrink:0;min-width:110px;}
 .sum-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
 .sum-val{font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
 .sum-sub{font-size:10px;color:var(--muted);margin-top:3px;}
-.sum-top10{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+.sum-top10{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;
   padding:11px 16px;box-shadow:var(--sh);flex:1;min-width:260px;}
 .sum-top10-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
 .top10-list{display:flex;flex-direction:column;gap:4px;}
@@ -63,12 +63,12 @@ h1{font-size:16px;font-weight:900;}
 
 /* ── 전체 뷰 ── */
 .overall-wrap{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap;}
-.overall-chart-card{background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;padding:18px;box-shadow:var(--shm);flex:1;min-width:300px;}
+.overall-chart-card{background:var(--surface);border:1.5px solid var(--border);
+  border-radius:18px;padding:18px;box-shadow:var(--shm);flex:1;min-width:300px;}
 .oc-title{font-size:15px;font-weight:900;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
 .oc-badge{font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;}
-.s1-badge{background:#EBF0FD;color:#2558D4;}
-.s2-badge{background:#E6FDF9;color:#0F766E;}
+.s1-badge{background:rgba(13,148,136,.12);color:#0D9488;}
+.s2-badge{background:rgba(13,148,136,.20);color:#0A7A70;}
 .oc-chart{width:100%;max-width:280px;margin:0 auto 16px;}
 .oc-legend{display:flex;flex-direction:column;gap:6px;}
 .oc-leg-row{display:flex;align-items:center;gap:7px;}
@@ -83,7 +83,7 @@ h1{font-size:16px;font-weight:900;}
 
 /* ── 라인별 뷰 ── */
 .line-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;margin-top:14px;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--sh);}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--sh);}
 .card-title{font-size:13px;font-weight:900;margin-bottom:10px;}
 .card-empty{text-align:center;padding:20px;color:var(--muted);font-size:12px;}
 .proc-sections{display:flex;gap:12px;}
@@ -112,8 +112,8 @@ h1{font-size:16px;font-weight:900;}
 .prod-proc-lbl{font-size:11px;font-weight:700;width:26px;color:var(--muted);}
 .prod-bar-wrap{flex:1;height:18px;background:var(--s3);border-radius:5px;overflow:hidden;}
 .prod-bar{height:100%;border-radius:5px;transition:width .4s;}
-.prod-bar-s1{background:linear-gradient(90deg,#2558D4,#6B9FF4);}
-.prod-bar-s2{background:linear-gradient(90deg,#0F9488,#5FD0C9);}
+.prod-bar-s1{background:linear-gradient(90deg,#0D9488,#34D8CE);}
+.prod-bar-s2{background:linear-gradient(90deg,#0A7A70,#27B09F);}
 .prod-qty{font-size:12px;font-weight:800;min-width:55px;text-align:right;}
 .prod-total{font-size:11px;color:var(--muted);margin-top:4px;text-align:right;}
 .prod-total strong{color:var(--text);}
