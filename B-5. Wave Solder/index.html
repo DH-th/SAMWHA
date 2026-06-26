@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#FFFBF0">
-    <title>Wave Solder</title>
+    <title>Wave Solder Status</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap">
     <style>
@@ -362,21 +362,22 @@
     <span class="header-title">Wave Solder</span>
     <span class="header-shift" id="current-shift-badge">Day Shift</span>
     <span class="header-time" id="current-time-shift">--:--:--</span>
+
   </div>
 </header>
 
 <div class="shell" id="mobile-view">
 
-  <div class="sec-label">라인 선택</div>
+  <div class="sec-label">Line Selection</div>
   <div class="factory-map-wrap">
-    <div class="factory-map-hint">공장 배치도 — 탭하여 라인 선택</div>
+    <div class="factory-map-hint">Factory Layout — Tap to select a line</div>
     <div class="factory-map" id="factory-map"></div>
   </div>
 
-  <div class="sec-label">상태 변경</div>
+  <div class="sec-label">Status Control</div>
   <div class="control-wrap">
     <div class="control-header">
-      선택 라인:&nbsp;<span class="selected-line-tag" id="display-selected-line">Line 1</span>
+      Selected:&nbsp;<span class="selected-line-tag" id="display-selected-line">Line 1</span>
     </div>
     <div class="status-button-group">
       <button class="btn-status run" onclick="recordStatus('RUN')">▶ RUN<span class="btn-temp">260℃ / 160℃</span></button>
@@ -386,18 +387,18 @@
     </div>
   </div>
 
-  <div class="sec-label">실시간 현황</div>
+  <div class="sec-label">Real-time Status</div>
   <div class="dashboard" id="dashboard"></div>
 
-  <div class="sec-label">통계 현황</div>
+  <div class="sec-label">Statistics</div>
   <div class="stats-wrap">
     <div class="stats-topbar">
-      <span class="stats-title">가동 시간 집계</span>
+      <span class="stats-title">Operating Time Summary</span>
       <span id="stat-date-display">-</span>
       <div class="stat-period-tabs">
-        <button class="stat-tab active" onclick="changeStatPeriod('day')"   id="btn-stat-day">일간</button>
-        <button class="stat-tab"        onclick="changeStatPeriod('week')"  id="btn-stat-week">주간</button>
-        <button class="stat-tab"        onclick="changeStatPeriod('month')" id="btn-stat-month">월간</button>
+        <button class="stat-tab active" onclick="changeStatPeriod('day')"   id="btn-stat-day">Daily</button>
+        <button class="stat-tab"        onclick="changeStatPeriod('week')"  id="btn-stat-week">Weekly</button>
+        <button class="stat-tab"        onclick="changeStatPeriod('month')" id="btn-stat-month">Monthly</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -410,9 +411,9 @@
     </div>
   </div>
 
-  <div class="sec-label">변경 기록</div>
+  <div class="sec-label">Change Log</div>
   <div class="log-wrap">
-    <div class="log-topbar">상태 변경 로그</div>
+    <div class="log-topbar">Status Change History</div>
     <ul class="log-list" id="log-list"></ul>
     <div class="pagination" id="pagination"></div>
   </div>
@@ -424,8 +425,8 @@
     <h1 class="pc-title">WAVE SOLDER TIME CHECKER</h1>
     <div class="pc-time-info">
       <div class="pc-clock" id="pc-clock">00:00:00</div>
-      <div class="pc-date-shift" id="pc-date-shift">กำลังโหลด...</div>
-      <button class="pc-btn-close" onclick="closePCView()">✕ 모바일 뷰로 돌아가기</button>
+      <div class="pc-date-shift" id="pc-date-shift">Loading...</div>
+      <button class="pc-btn-close" onclick="closePCView()">✕ Back to Mobile View</button>
     </div>
   </div>
   <div class="pc-grid" id="pc-grid"></div>
@@ -483,7 +484,7 @@
         return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
     }
     function getStatusName(status) {
-        const m = { RUN:'RUN (가동 중)', STBY:'STBY (대기)', REPAIR:'REPAIR (수리 중)', OFF:'OFF (정지)' };
+        const m = { RUN:'RUN (Running)', STBY:'STBY (Standby)', REPAIR:'REPAIR (Under Repair)', OFF:'OFF (Stopped)' };
         return m[status] || status;
     }
 
@@ -498,11 +499,11 @@
         const nowMs = new Date().getTime();
         const line = lines[lineId - 1];
         if (line.status === newStatus) {
-            alert(`Line ${lineId} 은(는) 이미 ${getStatusName(newStatus)} 상태입니다.`);
+            alert(`Line ${lineId} is already in ${getStatusName(newStatus)} status.`);
             return;
         }
         const labelMap = { RUN:'RUN (260℃ / 160℃)', STBY:'STBY (180℃ / OFF)', REPAIR:'REPAIR (OFF / OFF)', OFF:'OFF' };
-        if (!window.confirm(`Line ${lineId} 상태를 "${labelMap[newStatus]}"(으)로 변경할까요?`)) return;
+        if (!window.confirm(`Change Line ${lineId} status to "${labelMap[newStatus]}"?`)) return;
 
         const elapsedMs = nowMs - line.lastChanged;
         const now = new Date();
@@ -520,18 +521,19 @@
         currentPage = 1;
     };
 
+    const MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     function updateStatDateDisplay() {
         const now = new Date();
         let s = "";
         if (currentStatPeriod === 'day') {
-            s = `${now.getMonth()+1}월 ${now.getDate()}일`;
+            s = `${MONTH[now.getMonth()]} ${now.getDate()}`;
         } else if (currentStatPeriod === 'week') {
             const d = now.getDay() || 7;
             const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate()-d+1);
             const sun = new Date(now.getFullYear(), now.getMonth(), now.getDate()-d+7);
-            s = `${mon.getMonth()+1}월 ${mon.getDate()}일 ~ ${sun.getMonth()+1}월 ${sun.getDate()}일`;
+            s = `${MONTH[mon.getMonth()]} ${mon.getDate()} – ${MONTH[sun.getMonth()]} ${sun.getDate()}`;
         } else {
-            s = `${now.getMonth()+1}월`;
+            s = `${MONTH[now.getMonth()]} ${now.getFullYear()}`;
         }
         document.getElementById('stat-date-display').innerText = s;
     }
@@ -625,6 +627,7 @@
             REPAIR: { badgeClass:'bg-repair', pcClass:'pc-status-repair', pcSt:'REPAIR', st:'REPAIR', heaterM:'OFF',  heaterS:'OFF',  pcHeat:'HEATER OFF' },
             OFF:    { badgeClass:'bg-off',    pcClass:'pc-status-off',    pcSt:'OFF',    st:'OFF',    heaterM:'OFF',  heaterS:'OFF',  pcHeat:'HEATER OFF' }
         };
+
         return map[line.status] || map.OFF;
     }
 
@@ -669,7 +672,7 @@
         const pcBtn = document.createElement('div');
         pcBtn.className = 'pc-open-card';
         pcBtn.onclick = window.openPCView;
-        pcBtn.innerHTML = `<div class="pc-open-icon">🖥️</div><span>PC 대시보드<br>전체화면</span>`;
+        pcBtn.innerHTML = `<div class="pc-open-icon">🖥️</div><span>PC Dashboard<br>Full Screen</span>`;
         dashEl.appendChild(pcBtn);
 
         physOrder.forEach(id => {
