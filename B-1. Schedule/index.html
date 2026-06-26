@@ -577,9 +577,9 @@
                 <button id="btn-slide-view" class="view-btn" onclick="toggleSlideMode()" style="background:#7c3aed; color:white; border-color:#7c3aed;">📺 슬라이드</button>
                 <!-- 언어 전환 -->
                 <div style="display:flex; gap:4px; margin-left:8px;">
-                    <button onclick="setLang('ko')" id="lang-ko" class="lang-btn active" title="한국어">🇰🇷</button>
+                    <button onclick="setLang('ko')" id="lang-ko" class="lang-btn" title="한국어">🇰🇷</button>
                     <button onclick="setLang('en')" id="lang-en" class="lang-btn" title="English">🇬🇧</button>
-                    <button onclick="setLang('th')" id="lang-th" class="lang-btn" title="ภาษาไทย">🇹🇭</button>
+                    <button onclick="setLang('th')" id="lang-th" class="lang-btn active" title="ภาษาไทย">🇹🇭</button>
                 </div>
             </div>
             <div style="display:flex; gap:10px;">
@@ -986,7 +986,7 @@
 // ═══════════════════════════════════════════
 //  다국어 (한국어 / English / ภาษาไทย)
 // ═══════════════════════════════════════════
-var currentLang = 'ko';
+var currentLang = 'th';
 
 var LANG = {
     ko: {
@@ -2448,7 +2448,7 @@ function fetchSchedules() {}
                 }
                 const clickAttr = rosterEditMode ? `onclick="openRosterEditModal('${line}','${ds}','${rosterShift}')"` : '';
                 const cursor    = rosterEditMode ? 'cursor:pointer;' : 'cursor:default;';
-                rowHtml += `<td class="${cellClass}" style="${cursor}" data-line="${line}" data-date="${ds}" data-shift="${rosterShift}" data-reg="${cell ? cell.reg : 0}" data-ot="${cell ? cell.ot : 0}" ${clickAttr} onmouseenter="rosterCellHover(this,event)" onmouseleave="rosterCellLeave()"> </td>`;
+                rowHtml += `<td class="${cellClass}" style="${cursor}" data-line="${line}" data-date="${ds}" data-shift="${rosterShift}" data-reg="${cell ? cell.reg : 0}" data-ot="${cell ? cell.ot : 0}" ${clickAttr} onmouseenter="rosterCellHover(this,event)" onmouseleave="rosterCellLeave()" ontouchstart="rosterCellTouch(this,event)"> </td>`;
             }
             rowHtml += `</tr>`;
             bodyHtml += rowHtml;
@@ -2534,7 +2534,7 @@ function fetchSchedules() {}
                 }
                 const clickAttr = rosterEditMode ? `onclick="openRosterEditModal('${line}','${ds}','${rosterShift}')"` : '';
                 const cursor = rosterEditMode ? 'cursor:pointer;' : 'cursor:default;';
-                rowHtml += `<td class="${cellClass}" style="${cursor}" data-line="${line}" data-date="${ds}" data-shift="${rosterShift}" data-reg="${cell?cell.reg:0}" data-ot="${cell?cell.ot:0}" ${clickAttr} onmouseenter="rosterCellHover(this,event)" onmouseleave="rosterCellLeave()"> </td>`;
+                rowHtml += `<td class="${cellClass}" style="${cursor}" data-line="${line}" data-date="${ds}" data-shift="${rosterShift}" data-reg="${cell?cell.reg:0}" data-ot="${cell?cell.ot:0}" ${clickAttr} onmouseenter="rosterCellHover(this,event)" onmouseleave="rosterCellLeave()" ontouchstart="rosterCellTouch(this,event)"> </td>`;
             });
             const totalColor = dayTotal > 0 ? '#059669' : '#cbd5e1';
             rowHtml += `<td style="text-align:center;font-weight:800;font-size:11px;color:${isToday?'#ef4444':totalColor};">${dayTotal > 0 ? dayTotal : '·'}</td>`;
@@ -2557,35 +2557,50 @@ function fetchSchedules() {}
     }
 
 
-    // 호버 툴팁 (1초 지연 — 기존보다 0.5초 빠르게)
+    function showRosterTooltip(td) {
+        const reg   = parseInt(td.dataset.reg) || 0;
+        const ot    = parseInt(td.dataset.ot)  || 0;
+        const line  = td.dataset.line;
+        const date  = td.dataset.date;
+        const mmdd  = date.slice(5);
+        const shift = td.dataset.shift === 'day' ? '☀️ 주간' : '🌙 야간';
+
+        if (reg === 0 && ot === 0) {
+            rosterTooltipEl.innerHTML = `<span style="color:#94a3b8;">${line}  ${mmdd}<br>${shift} ${T('offline')}</span>`;
+        } else {
+            rosterTooltipEl.innerHTML =
+                `<strong>${line}  ${mmdd}  ${shift}</strong><br>` +
+                `<span style="color:#86efac;">${T('regPplLabel', reg)}</span>` +
+                (ot > 0 ? `<br><span style="color:#fdba74;">${T('otPplLabel', ot)}</span>` : '');
+        }
+        const rect = td.getBoundingClientRect();
+        rosterTooltipEl.style.left      = `${rect.left + rect.width/2}px`;
+        rosterTooltipEl.style.top       = `${rect.top - 8}px`;
+        rosterTooltipEl.style.transform = 'translate(-50%, -100%)';
+        rosterTooltipEl.classList.add('visible');
+    }
+
+    // 호버 (PC)
     function rosterCellHover(td, e) {
         clearTimeout(rosterTooltipTimer);
-        rosterTooltipTimer = setTimeout(() => {
-            const reg   = parseInt(td.dataset.reg) || 0;
-            const ot    = parseInt(td.dataset.ot)  || 0;
-            const line  = td.dataset.line;
-            const date  = td.dataset.date;  // YYYY-MM-DD
-            const mmdd  = date.slice(5);    // MM-DD (연도 제외)
-            const shift = td.dataset.shift === 'day' ? '☀️ 주간' : '🌙 야간';
-
-            if (reg === 0 && ot === 0) {
-                rosterTooltipEl.innerHTML = `<span style="color:#94a3b8;">${line}  ${mmdd}<br>${shift} ${T('offline')}</span>`;
-            } else {
-                rosterTooltipEl.innerHTML =
-                    `<strong>${line}  ${mmdd}  ${shift}</strong><br>` +
-                    `<span style="color:#86efac;">${T('regPplLabel', reg)}</span>` +
-                    (ot > 0 ? `<br><span style="color:#fdba74;">${T('otPplLabel', ot)}</span>` : '');
-            }
-            const rect = td.getBoundingClientRect();
-            rosterTooltipEl.style.left      = `${rect.left + rect.width/2}px`;
-            rosterTooltipEl.style.top       = `${rect.top - 8}px`;
-            rosterTooltipEl.style.transform = 'translate(-50%, -100%)';
-            rosterTooltipEl.classList.add('visible');
-        }, 300);
+        rosterTooltipTimer = setTimeout(() => showRosterTooltip(td), 300);
     }
     function rosterCellLeave() {
         clearTimeout(rosterTooltipTimer);
         rosterTooltipEl.classList.remove('visible');
+    }
+
+    // 터치 (모바일) — 탭하면 툴팁 토글
+    function rosterCellTouch(td, e) {
+        e.preventDefault();
+        if (rosterEditMode) { openRosterEditModal(td.dataset.line, td.dataset.date, td.dataset.shift); return; }
+        if (rosterTooltipEl.classList.contains('visible') && rosterTooltipEl._srcTd === td) {
+            rosterTooltipEl.classList.remove('visible');
+            rosterTooltipEl._srcTd = null;
+        } else {
+            showRosterTooltip(td);
+            rosterTooltipEl._srcTd = td;
+        }
     }
 
     // 셀 클릭 → 편집 모달 (수정 모드일 때만 동작)
