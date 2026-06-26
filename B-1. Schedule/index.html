@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Factory Dashboard</title>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2471,8 +2472,9 @@ function fetchSchedules() {}
         document.getElementById('roster-stat-ot').innerText  = statOtSet.size;
         const regWorkDays = totalRegByDay.filter(v => v > 0).length;
         const otWorkDays  = totalOtByDay.filter(v => v > 0).length;
-        const avgReg = regWorkDays > 0 ? (totalRegByDay.reduce((a,b)=>a+b,0) / regWorkDays).toFixed(1) : '-';
-        const avgOt  = otWorkDays  > 0 ? (totalOtByDay.reduce((a,b)=>a+b,0)  / otWorkDays).toFixed(1)  : '-';
+        const ceilOne = v => Math.ceil(v);
+        const avgReg = regWorkDays > 0 ? ceilOne(totalRegByDay.reduce((a,b)=>a+b,0) / regWorkDays) : '-';
+        const avgOt  = otWorkDays  > 0 ? ceilOne(totalOtByDay.reduce((a,b)=>a+b,0)  / otWorkDays)  : '-';
         document.getElementById('roster-stat-reg-total').innerText = avgReg;
         document.getElementById('roster-stat-ot-total').innerText  = avgOt;
     }
@@ -2547,8 +2549,9 @@ function fetchSchedules() {}
         document.getElementById('roster-stat-ot').innerText  = statOtSet.size;
         const regWorkDays = totalRegByDay.filter(v => v > 0).length;
         const otWorkDays  = totalOtByDay.filter(v => v > 0).length;
-        const avgReg = regWorkDays > 0 ? (totalRegByDay.reduce((a,b)=>a+b,0) / regWorkDays).toFixed(1) : '-';
-        const avgOt  = otWorkDays  > 0 ? (totalOtByDay.reduce((a,b)=>a+b,0)  / otWorkDays).toFixed(1)  : '-';
+        const ceilOne = v => Math.ceil(v);
+        const avgReg = regWorkDays > 0 ? ceilOne(totalRegByDay.reduce((a,b)=>a+b,0) / regWorkDays) : '-';
+        const avgOt  = otWorkDays  > 0 ? ceilOne(totalOtByDay.reduce((a,b)=>a+b,0)  / otWorkDays)  : '-';
         document.getElementById('roster-stat-reg-total').innerText = avgReg;
         document.getElementById('roster-stat-ot-total').innerText  = avgOt;
     }
