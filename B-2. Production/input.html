@@ -143,7 +143,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 .sheet-title{font-size:15px;font-weight:800;flex:1;}
 .sheet-x{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:15px;cursor:pointer;padding:5px 11px;font-weight:700;}
 .sheet-body{overflow-y:auto;flex:1;padding:8px 12px 12px;}
-.model-search-wrap{position:relative;padding:10px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.model-search-wrap{padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .model-search-wrap input:focus{border-color:var(--accent);}
 /* Plant 선택 */
 .plant-opt{display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:10px;cursor:pointer;transition:background .12s;border:1px solid var(--border);margin-bottom:7px;background:var(--s2);}
@@ -271,13 +271,15 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
       <div class="sheet-title" id="sheet-title">Plant 선택</div>
       <button class="sheet-x" onclick="closeSheet()">✕</button>
     </div>
-    <div class="model-search-wrap" id="model-search-wrap" style="display:none">
-      <input type="search" id="model-search" placeholder="모델 검색..." autocomplete="off"
-        oninput="filterModels(this.value)"
-        style="width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--border);border-radius:10px;
-               font-size:14px;font-family:inherit;background:var(--surface2);color:var(--text);outline:none;
-               transition:border-color .15s;">
-      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none">🔍</span>
+    <div class="model-search-wrap" id="model-search-wrap">
+      <div style="position:relative">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none;line-height:1">🔍</span>
+        <input type="search" id="model-search" placeholder="전체 모델 검색..." autocomplete="off"
+          oninput="filterModels(this.value)"
+          style="width:100%;padding:9px 14px 9px 34px;border:1.5px solid var(--border);border-radius:10px;
+                 font-size:14px;font-family:inherit;background:var(--surface2);color:var(--text);outline:none;
+                 transition:border-color .15s;-webkit-appearance:none;">
+      </div>
     </div>
     <div class="sheet-body" id="sheet-body"></div>
   </div>
@@ -429,19 +431,34 @@ function cancelEdit(){
 
 /* ── 모델 시트 (2단계: Plant → 모델) ── */
 let sheetStep='plant', sheetPlant=null;
-function openSheet(){sheetStep='plant';sheetPlant=null;renderSheet();document.getElementById('sheet-bg').classList.add('open');}
+function openSheet(){
+  sheetStep='plant';sheetPlant=null;
+  document.getElementById('model-search').value='';
+  renderSheet();
+  document.getElementById('sheet-bg').classList.add('open');
+  setTimeout(()=>document.getElementById('model-search').focus(),300);
+}
 function closeSheet(){document.getElementById('sheet-bg').classList.remove('open');}
 function onSheetBg(e){if(e.target===document.getElementById('sheet-bg'))closeSheet();}
-function sheetBack(){sheetStep='plant';sheetPlant=null;renderSheet();}
+function sheetBack(){
+  sheetStep='plant';sheetPlant=null;
+  document.getElementById('model-search').value='';
+  renderSheet();
+}
 function renderSheet(){
   const body=document.getElementById('sheet-body');
   const backBtn=document.getElementById('sheet-back');
   const title=document.getElementById('sheet-title');
-  const searchWrap=document.getElementById('model-search-wrap');
-  const searchInput=document.getElementById('model-search');
+  const q=document.getElementById('model-search').value.trim().toLowerCase();
+  if(q){
+    // 전체 검색 모드
+    backBtn.classList.remove('on');
+    title.textContent='모델 검색';
+    renderAllModelSearch(q);
+    return;
+  }
   if(sheetStep==='plant'){
     backBtn.classList.remove('on');title.textContent='Plant 선택';
-    searchWrap.style.display='none';
     if(!plants.length){body.innerHTML='<div class="no-plants">등록된 Plant가 없습니다.</div>';return;}
     body.innerHTML=plants.map(pl=>`
       <div class="plant-opt" onclick="pickPlant('${pl.id}')">
@@ -452,19 +469,33 @@ function renderSheet(){
   } else {
     const pl=sheetPlant;
     backBtn.classList.add('on');title.textContent=pl.name+' 모델 선택';
-    searchWrap.style.display='block';
-    searchInput.value='';
-    renderModelList('');
+    renderModelList(pl,'');
   }
 }
-function renderModelList(query){
+function renderAllModelSearch(q){
   const body=document.getElementById('sheet-body');
-  const pl=sheetPlant;
+  const favs=getFavs();
+  let html='';let total=0;
+  plants.forEach(pl=>{
+    const matched=(pl.models||[]).filter(m=>m.name.toLowerCase().includes(q));
+    if(!matched.length)return;
+    total+=matched.length;
+    html+=`<div class="plant-label">${pl.name}</div>`;
+    matched.forEach(m=>{
+      const isFav=!!favs[`${pl.id}:${m.id}`];
+      html+=`<div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
+        <div class="model-dot"></div>
+        <div class="model-opt-name">${m.name}</div>
+        <button class="model-fav${isFav?' on':''}" onclick="toggleFav(event,'${pl.id}','${m.id}')">${isFav?'★':'☆'}</button>
+      </div>`;
+    });
+  });
+  body.innerHTML=total?html:'<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">검색 결과가 없습니다.</div>';
+}
+function renderModelList(pl, q){
+  const body=document.getElementById('sheet-body');
   const allModels=pl.models||[];
   if(!allModels.length){body.innerHTML='<div class="no-plants">등록된 모델이 없습니다.</div>';return;}
-  const q=query.trim().toLowerCase();
-  const models=q?allModels.filter(m=>m.name.toLowerCase().includes(q)):allModels;
-  if(!models.length){body.innerHTML='<div class="no-plants" style="text-align:center;padding:32px;color:var(--muted);font-size:13px">검색 결과가 없습니다.</div>';return;}
   const favs=getFavs();
   const mkRow=(m)=>{
     const isFav=!!favs[`${pl.id}:${m.id}`];
@@ -474,19 +505,14 @@ function renderModelList(query){
         <button class="model-fav${isFav?' on':''}" onclick="toggleFav(event,'${pl.id}','${m.id}')">${isFav?'★':'☆'}</button>
       </div>`;
   };
-  if(q){
-    body.innerHTML=models.map(m=>mkRow(m)).join('');
-  } else {
-    const favModels=models.filter(m=>favs[`${pl.id}:${m.id}`]);
-    const restModels=models.filter(m=>!favs[`${pl.id}:${m.id}`]);
-    body.innerHTML=
-      (favModels.length?`<div class="fav-divider">⭐ 즐겨찾기</div>${favModels.map(m=>mkRow(m)).join('')}<div class="fav-divider">전체 모델</div>`:'')
-      +restModels.map(m=>mkRow(m)).join('');
-  }
+  const favModels=allModels.filter(m=>favs[`${pl.id}:${m.id}`]);
+  const restModels=allModels.filter(m=>!favs[`${pl.id}:${m.id}`]);
+  body.innerHTML=
+    (favModels.length?`<div class="fav-divider">⭐ 즐겨찾기</div>${favModels.map(m=>mkRow(m)).join('')}<div class="fav-divider">전체 모델</div>`:'')
+    +restModels.map(m=>mkRow(m)).join('');
 }
 function filterModels(query){
-  if(sheetStep!=='model')return;
-  renderModelList(query);
+  renderSheet();
 }
 function pickPlant(pid){
   sheetPlant=plants.find(pl=>pl.id===pid);
