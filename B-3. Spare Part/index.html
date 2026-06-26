@@ -4,52 +4,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SAMHWA - 재고 관리 시스템</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <style>
   :root {
-    --bg: #F0EBE1;
-    --bg-mid: #E6DFD5;
+    --bg: #F0F2FF;
+    --bg-mid: #E6E9FF;
     --surface: #FFFFFF;
-    --surface2: #F7F3EC;
-    --border: #DDD5C8;
-    --accent: #2558D4;
-    --accent-bg: rgba(37,88,212,0.08);
-    --accent2: #3D6FE8;
-    --teal: #1A8C87;
-    --teal-bg: rgba(26,140,135,0.08);
-    --text: #1C1814;
-    --muted: #6B6057;
-    --text-muted: #9A8E84;
-    --ok: #16A34A;
-    --ok-bg: rgba(22,163,74,0.1);
+    --surface2: #F5F7FF;
+    --border: rgba(120,100,220,0.13);
+    --accent: #7C3AED;
+    --accent-bg: rgba(124,58,237,0.08);
+    --accent2: #6D28D9;
+    --teal: #0D9488;
+    --teal-bg: rgba(13,148,136,0.08);
+    --text: #1E1B4B;
+    --muted: #6B7294;
+    --text-muted: #9CA3B8;
+    --ok: #059669;
+    --ok-bg: rgba(5,150,105,0.10);
     --warn: #D97706;
-    --warn-bg: rgba(217,119,6,0.1);
+    --warn-bg: rgba(217,119,6,0.10);
     --danger: #DC2626;
-    --danger-bg: rgba(220,38,38,0.1);
-    --info: #2196F3;
-    --shadow: 0 1px 4px rgba(100,80,60,0.10);
-    --shadow-md: 0 3px 12px rgba(100,80,60,0.13);
+    --danger-bg: rgba(220,38,38,0.10);
+    --info: #3B82F6;
+    --shadow: 0 2px 8px rgba(100,80,200,0.08);
+    --shadow-md: 0 4px 20px rgba(100,80,200,0.13);
     --sidebar-w: 220px;
     --header-h: 56px;
     --tabbar-h: 64px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  html, body { font-family: 'Pretendard', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
   button, input, select, textarea { font-family: inherit; color: var(--text); }
 
   /* ── LAYOUT ── */
   #app { display: flex; min-height: 100vh; }
   #sidebar {
-    width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+    width: var(--sidebar-w); background: linear-gradient(180deg, #F8F6FF 0%, #FFFFFF 60%); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; flex-shrink: 0; z-index: 100;
-    position: fixed; top: 0; left: 0; height: 100vh; box-shadow: var(--shadow-md);
+    position: fixed; top: 0; left: 0; height: 100vh; box-shadow: 2px 0 16px rgba(100,80,200,0.07);
   }
   #main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; margin-left: var(--sidebar-w); }
   #header {
-    height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border);
+    height: var(--header-h); background: rgba(255,255,255,0.90); border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0;
-    position: sticky; top: 0; z-index: 90; box-shadow: var(--shadow);
+    position: sticky; top: 0; z-index: 90; box-shadow: 0 2px 12px rgba(100,80,200,0.07);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
   #content { flex: 1; padding: 18px 20px; padding-bottom: calc(18px + var(--tabbar-h) + var(--safe-bottom)); }
   #conn-status {
@@ -65,9 +67,9 @@
     display: flex; align-items: center; gap: 10px;
   }
   .logo-icon {
-    width: 36px; height: 36px; background: var(--accent); border-radius: 9px;
+    width: 36px; height: 36px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); border-radius: 10px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(37,88,212,0.3); overflow: hidden; padding: 2px;
+    box-shadow: 0 3px 10px rgba(124,58,237,0.35); overflow: hidden; padding: 2px;
   }
   .logo-icon img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0) invert(1); }
   .logo-text { font-size: 13px; font-weight: 800; color: var(--text); line-height: 1.3; }
@@ -75,12 +77,12 @@
   nav { flex: 1; padding: 10px 0; overflow-y: auto; }
   .nav-section { padding: 10px 16px 4px; font-size: 9px; color: var(--text-muted); font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
   .nav-item {
-    display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer;
-    font-size: 13px; color: var(--muted); border-left: 3px solid transparent;
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin: 1px 8px; cursor: pointer;
+    font-size: 13px; color: var(--muted); border-radius: 10px; border-left: none;
     transition: all 0.15s; user-select: none;
   }
   .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item.active { background: var(--accent-bg); color: var(--accent); border-left-color: var(--accent); font-weight: 700; }
+  .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 700; box-shadow: 0 1px 6px rgba(124,58,237,0.12); }
   .nav-item .icon { width: 18px; text-align: center; font-size: 15px; }
 
   .lang-switcher { padding: 12px 14px; border-top: 1px solid var(--border); }
@@ -88,17 +90,18 @@
   .lang-btns { display: flex; gap: 4px; }
   .lang-btn {
     flex: 1; padding: 6px 4px; border: 1px solid var(--border); background: var(--surface2);
-    color: var(--muted); font-size: 11px; border-radius: 6px; cursor: pointer; text-align: center;
+    color: var(--muted); font-size: 11px; border-radius: 8px; cursor: pointer; text-align: center;
     transition: all 0.15s; font-family: inherit;
   }
   .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .lang-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .lang-btn.active { background: linear-gradient(135deg, #8B5CF6, #6D28D9); border-color: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(124,58,237,0.30); }
 
   /* ── BOTTOM TAB BAR (mobile) ── */
   #tabbar {
     display: none; position: fixed; bottom: 0; left: 0; right: 0; height: calc(var(--tabbar-h) + var(--safe-bottom));
-    background: var(--surface); border-top: 1px solid var(--border); z-index: 200;
-    padding-bottom: var(--safe-bottom); box-shadow: 0 -2px 12px rgba(100,80,60,0.10);
+    background: rgba(255,255,255,0.92); border-top: 1px solid var(--border); z-index: 200;
+    padding-bottom: var(--safe-bottom); box-shadow: 0 -4px 20px rgba(100,80,200,0.10);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
   #tabbar .tabbar-inner { display: flex; height: var(--tabbar-h); align-items: center; }
   .tabbar-item {
@@ -113,10 +116,10 @@
     cursor: pointer; position: relative; padding-bottom: 6px;
   }
   .tabbar-scan-btn {
-    width: 52px; height: 52px; border-radius: 50%; background: var(--accent);
+    width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #8B5CF6, #6D28D9);
     display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff;
     line-height: 1;
-    box-shadow: 0 4px 16px rgba(37,88,212,0.40); border: 3px solid var(--surface);
+    box-shadow: 0 4px 16px rgba(124,58,237,0.45); border: 3px solid var(--surface);
     transition: transform 0.15s;
     position: absolute; bottom: calc(100% - 16px);
     left: 50%; transform: translateX(-50%);
@@ -141,12 +144,12 @@
   .header-right { display: flex; align-items: center; gap: 8px; }
   .header-date { font-size: 11px; color: var(--muted); font-family: 'Roboto Mono', monospace; }
   .btn {
-    padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
+    padding: 9px 16px; border-radius: 10px; border: none; cursor: pointer;
     font-size: 13px; font-weight: 700; transition: all 0.15s;
     display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
   }
-  .btn-accent { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(37,88,212,0.25); }
-  .btn-accent:hover { background: var(--accent2); }
+  .btn-accent { background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: #fff; box-shadow: 0 3px 10px rgba(124,58,237,0.28); }
+  .btn-accent:hover { background: linear-gradient(135deg, #7C3AED, #6D28D9); box-shadow: 0 4px 14px rgba(124,58,237,0.38); }
   .btn-outline { background: var(--surface); border: 1.5px solid var(--border); color: var(--muted); }
   .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
   .btn-sm { padding: 6px 12px; font-size: 12px; }
@@ -162,7 +165,7 @@
   .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .stat-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px;
     padding: 14px 16px; box-shadow: var(--shadow);
   }
   .stat-card.clickable { cursor: pointer; transition: all 0.15s; }
@@ -176,7 +179,7 @@
   .stat-value.ok { color: var(--ok); }
   .stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
   .card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px;
     margin-bottom: 14px; box-shadow: var(--shadow);
   }
   .card-header {
@@ -189,12 +192,12 @@
   /* ── ITEM CARD GRID ── */
   .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
   .item-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
     padding: 10px; cursor: pointer; transition: all 0.15s;
     display: flex; flex-direction: column; gap: 8px;
   }
   .item-card:active { transform: scale(0.97); }
-  .item-card:hover { border-color: var(--accent); }
+  .item-card:hover { border-color: var(--accent); box-shadow: 0 4px 14px rgba(124,58,237,0.12); }
   .item-card-photo {
     position: relative; width: 100%; aspect-ratio: 1.3/1; border-radius: 8px;
     background: var(--surface2); display: flex; align-items: center; justify-content: center;
@@ -265,7 +268,7 @@
   }
   .modal-bg.open { display: flex; }
   .modal {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px 16px 0 0;
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 24px 24px 0 0;
     width: 100%; max-width: 600px; max-height: 92vh; display: flex; flex-direction: column;
   }
   .modal-header {
@@ -284,7 +287,7 @@
 
   @media (min-width: 700px) {
     .modal-bg { align-items: center; }
-    .modal { border-radius: 14px; }
+    .modal { border-radius: 20px; }
   }
 
   /* ── FORM ── */
@@ -296,10 +299,10 @@
   .form-label .toggle-link { font-size: 10px; color: var(--accent); cursor: pointer; text-transform: none; font-weight: 600; }
   .form-control {
     padding: 11px 12px; background: var(--surface2); border: 1.5px solid var(--border);
-    border-radius: 8px; color: var(--text); font-size: 14px;
+    border-radius: 10px; color: var(--text); font-size: 14px;
     transition: border-color 0.15s; outline: none; width: 100%;
   }
-  .form-control:focus { border-color: var(--accent); }
+  .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,0.10); }
   .form-control::placeholder { color: var(--text-muted); }
   select.form-control { cursor: pointer; }
   textarea.form-control { resize: vertical; min-height: 64px; }
@@ -349,11 +352,11 @@
   /* ── CATEGORY TREE (cat1 -> cat2) ── */
   .cat1-tree { display: flex; flex-direction: column; gap: 10px; }
   .cat1-node {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    background: var(--surface2); border: 1.5px solid var(--border); border-radius: 14px; padding: 10px 12px;
   }
   .cat1-node-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .cat1-prefix-badge {
-    flex-shrink: 0; width: 26px; height: 26px; border-radius: 6px; background: var(--accent); color: #fff;
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: #fff;
     font-weight: 900; font-size: 12px; display: flex; align-items: center; justify-content: center;
   }
   .cat1-name {
@@ -375,6 +378,16 @@
     display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 11px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px; font-size: 11px;
   }
+  .cat2-sub-list { padding-left: 34px; display: flex; flex-direction: column; gap: 4px; }
+  .cat2-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+  .cat2-name { flex: 1; font-size: 12px; color: var(--text-secondary); cursor: pointer; padding: 2px 6px; border-radius: 5px; }
+  .cat2-name:hover { background: var(--surface); }
+  .cat2-add-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .drag-handle { cursor: grab; color: var(--text-muted); font-size: 14px; padding: 0 4px; flex-shrink: 0; user-select: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .drag-over { opacity: 0.4; border: 2px dashed var(--accent) !important; }
+  .chip.draggable { cursor: grab; }
+  .chip.draggable:active { cursor: grabbing; }
   .cat2-chip.is-etc { opacity: 0.7; border-style: dashed; }
   .cat2-chip-name { cursor: pointer; }
   .cat2-chip-input {
@@ -388,8 +401,8 @@
   /* ── PERSONNEL LIST (inline edit) ── */
   .person-list { display: flex; flex-direction: column; gap: 8px; }
   .person-row {
-    display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 10px 12px;
   }
   .person-row-info { flex: 1; min-width: 0; cursor: pointer; padding: 4px; border-radius: 6px; }
   .person-row-info:hover { background: var(--surface); }
@@ -400,7 +413,7 @@
 
 
   /* ── VIEW TOGGLE ── */
-  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .view-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; flex-shrink: 0; }
   .view-toggle-btn {
     width: 34px; height: 34px; border: none; background: var(--surface2); color: var(--muted);
     cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
@@ -410,11 +423,11 @@
   /* ── ITEM LIST (compact row view) ── */
   .item-list { display: flex; flex-direction: column; gap: 6px; }
   .item-list-row {
-    display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 8px 10px; cursor: pointer; transition: all 0.15s;
   }
   .item-list-row:active { transform: scale(0.99); }
-  .item-list-row:hover { border-color: var(--accent); }
+  .item-list-row:hover { border-color: var(--accent); box-shadow: 0 3px 10px rgba(124,58,237,0.10); }
   .item-list-photo {
     width: 38px; height: 38px; border-radius: 7px; background: var(--surface2); flex-shrink: 0;
     display: flex; align-items: center; justify-content: center; font-size: 16px; overflow: hidden; position: relative;
@@ -493,16 +506,6 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-  /* ── ZONE BUTTONS ── */
-  .zone-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-  .zone-btn {
-    padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 20px;
-    background: var(--surface2); color: var(--muted); font-size: 12px;
-    cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.15s;
-  }
-  .zone-btn:active { transform: scale(0.95); }
-  .zone-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .zone-btn.etc-btn { border-style: dashed; }
 
   /* ── QR CODE ── */
   .qr-section { text-align: center; padding: 14px 0 6px; }
@@ -543,12 +546,12 @@
   .scan-result { margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center; min-height: 18px; }
 
   /* ── OUT METHOD TABS ── */
-  .out-method-tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+  .out-method-tabs { display: flex; gap: 0; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
   .out-method-tab {
     flex: 1; padding: 9px 4px; text-align: center; font-size: 13px; font-weight: 700;
     cursor: pointer; color: var(--muted); background: var(--surface2); transition: all 0.15s;
   }
-  .out-method-tab.active { background: var(--accent); color: #fff; }
+  .out-method-tab.active { background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: #fff; }
 
   /* ── PRINT LABEL (not used for browser print anymore — popup window handles it) ── */
   #print-label { display: none; }
@@ -785,8 +788,11 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;width:100%">
-          <select class="form-control" id="inv-cat1" onchange="renderInventory()" style="flex:1;min-width:0">
-            <option value="" data-i18n="filter_all_cat1">전체 분류1</option>
+          <select class="form-control" id="inv-cat1" onchange="onInvCat1Change()" style="flex:1;min-width:0">
+            <option value="" data-i18n="filter_all_cat1">전체 대분류</option>
+          </select>
+          <select class="form-control" id="inv-cat2" onchange="renderInventory()" style="flex:1;min-width:0">
+            <option value="" data-i18n="filter_all_cat2">전체 소분류</option>
           </select>
           <select class="form-control" id="inv-status-filter" onchange="renderInventory()" style="flex:1;min-width:0">
             <option value="" data-i18n="filter_all_status">전체 상태</option>
@@ -807,7 +813,7 @@
         <div class="card-header"><div class="card-title">🏷️ <span data-i18n="cat1_title">분류 1 (대분류)</span></div></div>
         <div class="card-body">
           <div class="cat-input-row">
-            <input class="form-control" id="new-cat1" placeholder="새 분류1 입력" data-i18n-ph="ph_new_cat" onkeydown="if(event.key==='Enter')addCat1()">
+            <input class="form-control" id="new-cat1" placeholder="새 대분류 입력" data-i18n-ph="ph_new_cat" onkeydown="if(event.key==='Enter')addCat1()">
             <button class="btn btn-accent" onclick="addCat1()" data-i18n="btn_add">추가</button>
           </div>
           <div class="cat1-tree" id="cat1-tree"></div>
@@ -821,17 +827,6 @@
             <button class="btn btn-accent" onclick="addCategory('lines')" data-i18n="btn_add">추가</button>
           </div>
           <div class="chip-list" id="lines-chip-list"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">📍 <span data-i18n="zones_title">구역(설비) 리스트</span></div></div>
-        <div class="card-body">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px" data-i18n="zone_hint">품목 등록 시 버튼으로 선택. "etc" 항목은 항상 포함됩니다.</div>
-          <div class="cat-input-row">
-            <input class="form-control" id="new-zone" data-i18n-ph="ph_new_zone" placeholder="새 구역 입력 (예: SMT#1, 조립라인)" onkeydown="if(event.key==='Enter')addZone()">
-            <button class="btn btn-accent" onclick="addZone()">추가</button>
-          </div>
-          <div class="chip-list" id="zones-chip-list"></div>
         </div>
       </div>
     </div>
@@ -976,11 +971,18 @@
 
     <!-- ═══ EQUIPMENT ═══ -->
     <div id="page-equipment" class="page">
-      <!-- 요약 + 가로 바 그래프 -->
+      <!-- 요약 + 그래프 -->
       <div class="card" style="margin-bottom:12px">
-        <div class="card-body" style="padding:12px 14px">
-          <div id="eq-stat-chips" style="display:flex;gap:8px;margin-bottom:14px"></div>
-          <div id="eq-bar-chart" style="display:flex;flex-direction:column;gap:6px"></div>
+        <div class="card-body" style="padding:12px 14px;display:flex;gap:0;min-height:180px">
+          <!-- 왼쪽: 원형 그래프 -->
+          <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);padding-right:14px">
+            <svg id="eq-pie-svg" width="160" height="160" viewBox="0 0 160 160"></svg>
+          </div>
+          <!-- 오른쪽: 수량 칩 + 바 그래프 -->
+          <div style="flex:1;display:flex;flex-direction:column;gap:10px;padding-left:14px;justify-content:center">
+            <div id="eq-stat-chips" style="display:flex;gap:6px"></div>
+            <div id="eq-bar-chart" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
         </div>
       </div>
 
@@ -1268,21 +1270,18 @@
           <input class="form-control" id="item-name" placeholder="품목명 입력">
         </div>
       </div>
-      <div class="form-row">
+      <div class="form-row cols-2">
         <div class="form-group">
-          <label class="form-label" data-i18n="col_cat1">분류 <span class="req">*</span></label>
+          <label class="form-label" data-i18n="col_cat1">대분류 <span class="req">*</span></label>
           <select class="form-control" id="item-cat1" onchange="onItemCat1Change()">
             <option value="" data-i18n="ph_select_cat">-- 선택 --</option>
           </select>
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
-          <label class="form-label">구역(설비)</label>
-          <div class="zone-btns" id="item-zone-btns">
-            <button type="button" class="zone-btn etc-btn selected" onclick="selectZone('etc')">etc</button>
-          </div>
-          <input type="hidden" id="item-zone" value="etc">
+          <label class="form-label" data-i18n="col_cat2">소분류</label>
+          <select class="form-control" id="item-cat2">
+            <option value="" data-i18n="ph_select_cat2_first">-- 대분류 먼저 선택 --</option>
+          </select>
         </div>
       </div>
       <div class="form-row">
@@ -1601,7 +1600,6 @@
   <canvas id="print-qr-canvas" width="200" height="200"></canvas>
   <div class="pl-code" id="pl-code"></div>
   <div class="pl-name" id="pl-name"></div>
-  <div class="pl-zone" id="pl-zone"></div>
 </div>
 
 <!-- ─── SCRIPTS ─── -->
@@ -1695,7 +1693,6 @@ function handleServerMessage(msg) {
       categories1 = (msg.data && msg.data.cat1) || [];
       categories2 = (msg.data && msg.data.cat2) || [];
       lines = (msg.data && msg.data.lines) || [];
-      zones = (msg.data && msg.data.zones) || [];
       renderAll();
       break;
     case 'ITEM_UPSERTED': {
@@ -1737,7 +1734,6 @@ function handleServerMessage(msg) {
       categories1 = (msg.data && msg.data.cat1) || [];
       categories2 = (msg.data && msg.data.cat2) || [];
       lines = (msg.data && msg.data.lines) || lines;
-      zones = (msg.data && msg.data.zones) || zones;
       if (msg.data && msg.data.depts && msg.data.depts.length) {
         DEPT_LIST = msg.data.depts;
         saveDeptList();
@@ -1746,14 +1742,12 @@ function handleServerMessage(msg) {
       break;
     case 'CATEGORY_ADDED': {
       if (msg.catType === 'lines' && !lines.includes(msg.value)) lines.push(msg.value);
-      if (msg.catType === 'zones' && !zones.includes(msg.value)) zones.push(msg.value);
       if (msg.catType === 'depts' && !DEPT_LIST.includes(msg.value)) { DEPT_LIST.push(msg.value); saveDeptList(); }
       renderAll();
       break;
     }
     case 'CATEGORY_DELETED': {
       if (msg.catType === 'lines') lines = lines.filter(c=>c!==msg.value);
-      if (msg.catType === 'zones') zones = zones.filter(c=>c!==msg.value);
       if (msg.catType === 'depts') { DEPT_LIST = DEPT_LIST.filter(d=>d!==msg.value); saveDeptList(); }
       renderAll();
       break;
@@ -1782,11 +1776,11 @@ const i18n = {
     col_receiver:'입고 담당자', col_issuer:'출고 담당자', col_line:'사용 라인', col_note:'비고',
     col_type:'구분', col_person:'담당자', col_name:'이름', col_dept:'부서',
     col_photo:'사진', col_code:'품목코드',
-    filter_all_cat1:'전체 분류1', filter_all_status:'전체 상태', filter_ok:'정상', filter_warn:'주의', filter_danger:'위험',
+    filter_all_cat1:'전체 대분류', filter_all_cat2:'전체 소분류', filter_all_status:'전체 상태', filter_ok:'정상', filter_warn:'주의', filter_danger:'위험',
     search_ph:'품목명 / 코드 검색',
     modal_item_title:'품목 등록', modal_item_edit_title:'품목 수정', photo_click:'탭하여 사진 촬영/업로드',
     ph_select_item:'-- 품목 선택 --', ph_select_person:'-- 담당자 선택 --', ph_select_line:'-- 라인 선택 --',
-    ph_select_cat:'-- 선택 --', ph_select_cat2_first:'-- 분류1을 먼저 선택 --', ph_new_cat:'새 분류1 입력', ph_new_cat2:'새 분류2 입력', ph_new_line:'새 라인 입력 (예: L.11)',
+    ph_select_cat:'-- 선택 --', ph_select_cat2_first:'-- 대분류 먼저 선택 --', ph_new_cat:'새 대분류 입력', ph_new_cat2:'새 소분류 입력', ph_new_line:'새 라인 입력 (예: L.11)',
     code_auto_hint:'(분류1 선택 시 자동 생성)',
     ph_name:'이름 입력', ph_dept:'부서 입력', ph_manual_name:'이름 직접 입력', ph_manual_line:'라인 직접 입력',
     opt_custom:'직접 입력',
@@ -1797,7 +1791,7 @@ const i18n = {
     report_trend:'월별 입출고 추이', report_detail:'월간 입출고 상세', report_in_qty:'입고 수량',
     report_out_qty:'출고 수량', report_net:'순변동', report_out_count:'출고 건수',
     unit_ea:'건', edit:'수정', del:'삭제',
-    cat1_title:'분류 1 (대분류)', cat2_title:'분류 2 리스트', lines_title:'사용 라인 리스트',
+    cat1_title:'대분류 / 소분류 관리', cat2_title:'소분류 리스트', lines_title:'사용 라인 리스트',
     detail_title:'품목 상세', detail_chart_title:'월별 입출고 추이', detail_records_title:'입출고 기록',
     detail_no_records:'기록이 없습니다', current_stock_label:'현재 재고', min_stock_label:'최소 수량',
     empty_inventory:'등록된 품목이 없습니다', all_normal:'모든 재고가 정상입니다',
@@ -1821,7 +1815,6 @@ const i18n = {
     eq_detail_title:'설비 상세', eq_btn_edit:'수정', eq_btn_delete:'삭제',
     eq_cat_mgmt_title:'설비 분류 관리', eq_cat1_label:'1차 분류', eq_ph_cat1:'1차 분류 입력',
     eq_col_photo:'사진', eq_col_status:'상태', eq_empty:'등록된 설비가 없습니다',
-    zones_title:'구역(설비) 리스트', zone_hint:'품목 등록 시 버튼으로 선택. "etc" 항목은 항상 포함됩니다.', ph_new_zone:'새 구역 입력 (예: SMT#1, 조립라인)',
     dept_mgmt_title:'부서 관리', dept_new_ph:'새 부서명 입력', dept_empty:'등록된 부서가 없습니다.',
     dept_dup:'이미 존재하는 부서명입니다.', dept_del_confirm:'부서를 삭제하시겠습니까?', ph_select_dept:'-- 부서 선택 --',
     dash_recent_in:'최근 입고', dash_recent_out:'최근 출고',
@@ -1844,11 +1837,11 @@ const i18n = {
     col_receiver:'Receiver', col_issuer:'Issuer', col_line:'Line', col_note:'Note',
     col_type:'Type', col_person:'Person', col_name:'Name', col_dept:'Dept',
     col_photo:'Photo', col_code:'Code',
-    filter_all_cat1:'All Cat.1', filter_all_status:'All Status', filter_ok:'Normal', filter_warn:'Warning', filter_danger:'Critical',
+    filter_all_cat1:'All Category', filter_all_cat2:'All Sub-cat.', filter_all_status:'All Status', filter_ok:'Normal', filter_warn:'Warning', filter_danger:'Critical',
     search_ph:'Search item / code',
     modal_item_title:'Add Item', modal_item_edit_title:'Edit Item', photo_click:'Tap to take/upload photo',
     ph_select_item:'-- Select Item --', ph_select_person:'-- Select Person --', ph_select_line:'-- Select Line --',
-    ph_select_cat:'-- Select --', ph_select_cat2_first:'-- Select Category 1 first --', ph_new_cat:'Enter new category 1', ph_new_cat2:'Enter new category 2', ph_new_line:'Enter new line (e.g. L.11)',
+    ph_select_cat:'-- Select --', ph_select_cat2_first:'-- Select main category first --', ph_new_cat:'Enter new category', ph_new_cat2:'Enter new sub-category', ph_new_line:'Enter new line (e.g. L.11)',
     code_auto_hint:'(auto-generated after selecting Category 1)',
     ph_name:'Enter name', ph_dept:'Enter dept', ph_manual_name:'Enter name manually', ph_manual_line:'Enter line manually',
     opt_custom:'Manual input',
@@ -1859,7 +1852,7 @@ const i18n = {
     report_trend:'Monthly Trend', report_detail:'Monthly Detail', report_in_qty:'IN Qty',
     report_out_qty:'OUT Qty', report_net:'Net Change', report_out_count:'OUT count',
     unit_ea:'records', edit:'Edit', del:'Delete',
-    cat1_title:'Category 1 List', cat2_title:'Category 2 List', lines_title:'Line List',
+    cat1_title:'Category Management', cat2_title:'Sub-category List', lines_title:'Line List',
     detail_title:'Item Detail', detail_chart_title:'Monthly IN/OUT Trend', detail_records_title:'IN/OUT Records',
     detail_no_records:'No records', current_stock_label:'Current Stock', min_stock_label:'Min. Qty',
     empty_inventory:'No items registered', all_normal:'All stock levels are normal',
@@ -1883,7 +1876,6 @@ const i18n = {
     eq_detail_title:'Equipment Detail', eq_btn_edit:'Edit', eq_btn_delete:'Delete',
     eq_cat_mgmt_title:'Category Management', eq_cat1_label:'Category 1', eq_ph_cat1:'Enter category 1',
     eq_col_photo:'Photo', eq_col_status:'Status', eq_empty:'No equipment registered',
-    zones_title:'Zone (Equipment) List', zone_hint:'Selected by button when registering items. "etc" is always included.', ph_new_zone:'Enter zone (e.g. SMT#1, Assembly)',
     dept_mgmt_title:'Dept. Management', dept_new_ph:'Enter new department', dept_empty:'No departments registered.',
     dept_dup:'Department name already exists.', dept_del_confirm:'Delete this department?', ph_select_dept:'-- Select Dept --',
     dash_recent_in:'Recent IN', dash_recent_out:'Recent OUT',
@@ -1906,11 +1898,11 @@ const i18n = {
     col_receiver:'ผู้รับ', col_issuer:'ผู้จ่าย', col_line:'ไลน์', col_note:'หมายเหตุ',
     col_type:'ประเภท', col_person:'บุคคล', col_name:'ชื่อ', col_dept:'แผนก',
     col_photo:'รูปภาพ', col_code:'รหัส',
-    filter_all_cat1:'ทุกประเภท 1', filter_all_status:'ทุกสถานะ', filter_ok:'ปกติ', filter_warn:'เตือน', filter_danger:'วิกฤต',
+    filter_all_cat1:'ทุกประเภทหลัก', filter_all_cat2:'ทุกประเภทย่อย', filter_all_status:'ทุกสถานะ', filter_ok:'ปกติ', filter_warn:'เตือน', filter_danger:'วิกฤต',
     search_ph:'ค้นหารายการ / รหัส',
     modal_item_title:'เพิ่มรายการ', modal_item_edit_title:'แก้ไขรายการ', photo_click:'แตะเพื่อถ่าย/อัปโหลดรูป',
     ph_select_item:'-- เลือกรายการ --', ph_select_person:'-- เลือกบุคคล --', ph_select_line:'-- เลือกไลน์ --',
-    ph_select_cat:'-- เลือก --', ph_select_cat2_first:'-- เลือกประเภท 1 ก่อน --', ph_new_cat:'ระบุประเภท 1 ใหม่', ph_new_cat2:'ระบุประเภท 2 ใหม่', ph_new_line:'ระบุไลน์ใหม่ (เช่น L.11)',
+    ph_select_cat:'-- เลือก --', ph_select_cat2_first:'-- เลือกประเภทหลักก่อน --', ph_new_cat:'ระบุประเภทหลักใหม่', ph_new_cat2:'ระบุประเภทย่อยใหม่', ph_new_line:'ระบุไลน์ใหม่ (เช่น L.11)',
     code_auto_hint:'(สร้างอัตโนมัติหลังเลือกประเภท 1)',
     ph_name:'ระบุชื่อ', ph_dept:'ระบุแผนก', ph_manual_name:'ระบุชื่อเอง', ph_manual_line:'ระบุไลน์เอง',
     opt_custom:'ระบุเอง',
@@ -1921,7 +1913,7 @@ const i18n = {
     report_trend:'แนวโน้มรายเดือน', report_detail:'รายละเอียดเดือน', report_in_qty:'จำนวนรับ',
     report_out_qty:'จำนวนจ่าย', report_net:'การเปลี่ยนแปลง', report_out_count:'จำนวนครั้ง',
     unit_ea:'รายการ', edit:'แก้ไข', del:'ลบ',
-    cat1_title:'รายการประเภท 1', cat2_title:'รายการประเภท 2', lines_title:'รายการไลน์',
+    cat1_title:'จัดการประเภทหลัก/ย่อย', cat2_title:'รายการประเภทย่อย', lines_title:'รายการไลน์',
     detail_title:'รายละเอียดสินค้า', detail_chart_title:'แนวโน้มรับ-จ่ายรายเดือน', detail_records_title:'ประวัติรับ-จ่าย',
     detail_no_records:'ไม่มีประวัติ', current_stock_label:'สต็อกปัจจุบัน', min_stock_label:'จำนวนขั้นต่ำ',
     empty_inventory:'ไม่มีรายการสินค้า', all_normal:'สต็อกทั้งหมดอยู่ในระดับปกติ',
@@ -1945,7 +1937,6 @@ const i18n = {
     eq_detail_title:'รายละเอียดอุปกรณ์', eq_btn_edit:'แก้ไข', eq_btn_delete:'ลบ',
     eq_cat_mgmt_title:'จัดการประเภท', eq_cat1_label:'ประเภท 1', eq_ph_cat1:'ป้อนประเภท 1',
     eq_col_photo:'รูป', eq_col_status:'สถานะ', eq_empty:'ไม่มีอุปกรณ์ที่ลงทะเบียน',
-    zones_title:'รายการโซน (อุปกรณ์)', zone_hint:'เลือกด้วยปุ่มเมื่อลงทะเบียนสินค้า รายการ "etc" จะรวมอยู่เสมอ', ph_new_zone:'ป้อนโซน (เช่น SMT#1, สายประกอบ)',
     dept_mgmt_title:'จัดการแผนก', dept_new_ph:'ป้อนชื่อแผนกใหม่', dept_empty:'ไม่มีแผนกที่ลงทะเบียน',
     dept_dup:'ชื่อแผนกนี้มีอยู่แล้ว', dept_del_confirm:'ต้องการลบแผนกนี้หรือไม่?', ph_select_dept:'-- เลือกแผนก --',
     dash_recent_in:'รับเข้าล่าสุด', dash_recent_out:'จ่ายออกล่าสุด',
@@ -1995,7 +1986,6 @@ let personnel = [];
 let categories1 = [];   // [{id, name, prefix}]
 let categories2 = [];   // kept for backward compat, not used in UI
 let lines = [];
-let zones = [];         // 구역(설비) 리스트
 let currentDetailItemId = null;
 let historyTabFilter = 'all';
 let currentPage = 'dashboard';
@@ -2159,6 +2149,16 @@ function updateSelects() {
 
   fillSelectObjs('inv-cat1', cat1Options, t('filter_all_cat1'));
 
+  // inv-cat2: 현재 선택된 cat1 기준으로 갱신
+  const invCat1Val = document.getElementById('inv-cat1') ? document.getElementById('inv-cat1').value : '';
+  const invCat2Sel = document.getElementById('inv-cat2');
+  if (invCat2Sel) {
+    const prevCat2 = invCat2Sel.value;
+    const subOpts = invCat1Val ? categories2.filter(c => c.parentId === invCat1Val && !c.isEtc) : [];
+    invCat2Sel.innerHTML = `<option value="">${t('filter_all_cat2')}</option>`
+      + subOpts.map(c => `<option value="${c.id}"${c.id===prevCat2?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  }
+
   // 사용 라인
   fillSelect('out-line', lines, t('ph_select_line'));
 
@@ -2178,7 +2178,26 @@ function getCat2Name(id) { const c = categories2.find(c=>c.id===id); return c ? 
 function cat2OptionsForCat1(cat1Id) { return categories2.filter(c => c.parentId === cat1Id); }
 
 function onItemCat1Change(preserveVal) {
+  const cat1Id = document.getElementById('item-cat1').value;
+  const cat2Sel = document.getElementById('item-cat2');
+  const prevVal = preserveVal ? cat2Sel.value : '';
+  const opts = categories2.filter(c => c.parentId === cat1Id && !c.isEtc);
+  if (!cat1Id || !opts.length) {
+    cat2Sel.innerHTML = `<option value="">${t(cat1Id ? 'ph_select_cat' : 'ph_select_cat2_first')}</option>`;
+  } else {
+    cat2Sel.innerHTML = `<option value="">${t('ph_select_cat')}</option>`
+      + opts.map(c => `<option value="${c.id}"${c.id===prevVal?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  }
   updateItemCodePreview();
+}
+
+function onInvCat1Change() {
+  const cat1Id = document.getElementById('inv-cat1').value;
+  const cat2Sel = document.getElementById('inv-cat2');
+  const opts = cat1Id ? categories2.filter(c => c.parentId === cat1Id && !c.isEtc) : [];
+  cat2Sel.innerHTML = `<option value="">${t('filter_all_cat2')}</option>`
+    + opts.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  renderInventory();
 }
 
 function updateItemCodePreview() {
@@ -2297,9 +2316,9 @@ function renderEqAlert() {
       const color = colorMap[eq.status] || 'var(--muted)';
       return `<tr onclick="openEqDetail('${escapeHtml(eq.id)}')" style="cursor:pointer;border-bottom:1px solid var(--border)">
         <td style="padding:8px 10px"><span style="font-size:11px;font-weight:800;color:${color}">${statusMap[eq.status]||eq.status}</span></td>
-        <td style="padding:8px 10px;color:var(--muted);font-size:11px">${escapeHtml(cat)}</td>
-        <td style="padding:8px 10px;font-weight:600">${escapeHtml(eq.name||'-')}</td>
-        <td style="padding:8px 10px;font-size:11px;font-family:monospace;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
+        <td style="padding:8px 10px;font-weight:700;font-size:11px">${escapeHtml(cat)}</td>
+        <td style="padding:8px 10px;font-weight:400;font-size:12px">${escapeHtml(eq.name||'-')}</td>
+        <td style="padding:8px 10px;font-size:11px;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
@@ -2341,7 +2360,6 @@ function itemCardHtml(item) {
     ? `<img src="${escapeHtml(photoUrl(item.photo))}" alt="">`
     : `🔧`;
   const cat1Name = getCat1Name(item.cat1);
-  const zoneName = item.zone && item.zone !== 'etc' ? item.zone : '';
   return `
     <div class="item-card" onclick="openItemDetail('${item.id}')">
       <div class="item-card-photo">${photo}<span class="status-dot ${status}"></span></div>
@@ -2351,7 +2369,6 @@ function itemCardHtml(item) {
       </div>
       <div class="item-card-cats">
         ${cat1Name ? `<span class="chip-sm">${escapeHtml(cat1Name)}</span>` : ''}
-        ${zoneName ? `<span class="chip-sm">📍${escapeHtml(zoneName)}</span>` : ''}
       </div>
       <div class="item-card-stock-row">
         <div class="stock-bar"><div class="stock-bar-fill ${status}" style="width:${stockPct(item)}%"></div></div>
@@ -2366,7 +2383,6 @@ function itemListRowHtml(item) {
     ? `<img src="${escapeHtml(photoUrl(item.photo))}" alt="">`
     : `🔧`;
   const cat1Name = getCat1Name(item.cat1);
-  const zoneName = item.zone && item.zone !== 'etc' ? item.zone : '';
   return `
     <div class="item-list-row" onclick="openItemDetail('${item.id}')">
       <div class="item-list-photo">${photo}<span class="status-dot ${status}"></span></div>
@@ -2375,7 +2391,6 @@ function itemListRowHtml(item) {
         <div class="item-list-meta">
           <span>${escapeHtml(item.code || '-')}</span>
           ${cat1Name ? `<span>· ${escapeHtml(cat1Name)}</span>` : ''}
-          ${zoneName ? `<span>· 📍${escapeHtml(zoneName)}</span>` : ''}
         </div>
       </div>
       <div class="item-list-stock">
@@ -2400,11 +2415,13 @@ function setInventoryView(mode) {
 function renderInventory() {
   const search = (document.getElementById('inv-search').value || '').toLowerCase();
   const cat1Filter = document.getElementById('inv-cat1').value;
+  const cat2Filter = document.getElementById('inv-cat2').value;
   const statusFilter = document.getElementById('inv-status-filter').value;
 
   let filtered = items.filter(i => {
     if (search && !(i.name.toLowerCase().includes(search) || (i.code || '').toLowerCase().includes(search))) return false;
     if (cat1Filter && i.cat1 !== cat1Filter) return false;
+    if (cat2Filter && i.cat2 !== cat2Filter) return false;
     if (statusFilter && getStockStatus(i) !== statusFilter) return false;
     return true;
   });
@@ -2439,27 +2456,6 @@ function renderInventory() {
 function renderCategories() {
   renderCat1Tree();
   renderChipList('lines-chip-list', lines, 'lines');
-  renderZones();
-}
-
-function renderZones() {
-  // Categories page chip list
-  const el = document.getElementById('zones-chip-list');
-  if (el) {
-    el.innerHTML = zones.length
-      ? zones.map(v => `<div class="chip">${escapeHtml(v)}<span class="chip-del" onclick="deleteZone('${escapeHtml(v).replace(/'/g,"\\'")}')">✕</span></div>`).join('')
-      : `<div class="empty-state" style="padding:10px">-</div>`;
-  }
-  // Item modal zone buttons
-  const btns = document.getElementById('item-zone-btns');
-  if (btns) {
-    const raw = document.getElementById('item-zone').value || '';
-    const sel = new Set(raw ? raw.split(',') : []);
-    btns.innerHTML = zones.map(v =>
-      `<button type="button" class="zone-btn${sel.has(v)?' selected':''}" onclick="selectZone('${escapeHtml(v).replace(/'/g,"\\'")}'">${escapeHtml(v)}</button>`
-    ).join('') +
-    `<button type="button" class="zone-btn etc-btn${sel.has('etc')?' selected':''}" onclick="selectZone('etc')">etc</button>`;
-  }
 }
 
 function renderCat1Tree() {
@@ -2475,13 +2471,28 @@ function renderCat1Tree() {
       ? `<input class="cat1-name-input" id="cat1-edit-input-${c1.id}" value="${escapeHtml(c1.name)}" onkeydown="if(event.key==='Enter')saveCat1Edit('${c1.id}')" onblur="saveCat1Edit('${c1.id}')">`
       : `<div class="cat1-name" onclick="startEditCat1('${c1.id}')">${escapeHtml(c1.name)}</div>`;
     const itemCount = items.filter(i => i.cat1 === c1.id).length;
+    const subCats = categories2.filter(c => c.parentId === c1.id && !c.isEtc);
+    const subHtml = subCats.map(c2 => {
+      const isEditingC2 = editingCat2Id === c2.id;
+      return isEditingC2
+        ? `<div class="cat2-item" draggable="true" data-cat2-id="${c2.id}" data-parent="${c1.id}" ondragstart="dragCat2Start(event)" ondragover="dragOver(event)" ondrop="dropCat2(event,this)" ondragleave="dragLeave(event)"><span class="drag-handle">⠿</span><input class="cat1-name-input" id="cat2-edit-input-${c2.id}" value="${escapeHtml(c2.name)}" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter')saveCat2Edit('${c2.id}')" onblur="saveCat2Edit('${c2.id}')"></div>`
+        : `<div class="cat2-item" draggable="true" data-cat2-id="${c2.id}" data-parent="${c1.id}" ondragstart="dragCat2Start(event)" ondragover="dragOver(event)" ondrop="dropCat2(event,this)" ondragleave="dragLeave(event)"><span class="drag-handle">⠿</span><span class="cat2-name" onclick="startEditCat2('${c2.id}')">${escapeHtml(c2.name)}</span><button class="cat1-del-btn" style="font-size:10px;padding:0 5px" onclick="deleteCat2('${c2.id}')">✕</button></div>`;
+    }).join('');
     return `
-      <div class="cat1-node">
+      <div class="cat1-node" draggable="true" data-cat1-id="${c1.id}" ondragstart="dragCat1Start(event)" ondragover="dragOver(event)" ondrop="dropCat1(event,this)" ondragleave="dragLeave(event)">
         <div class="cat1-node-head">
+          <span class="drag-handle" style="font-size:16px">⠿</span>
           <div class="cat1-prefix-badge">${escapeHtml(prefix)}</div>
           ${nameHtml}
           <span style="font-size:11px;color:var(--text-muted);margin-right:4px">${itemCount}개</span>
           <button class="cat1-del-btn" onclick="deleteCat1('${c1.id}')">✕</button>
+        </div>
+        <div class="cat2-sub-list" id="cat2-list-${c1.id}">
+          ${subHtml}
+          <div class="cat2-add-row">
+            <input class="form-control" id="new-cat2-${c1.id}" placeholder="${t('ph_new_cat2')}" style="flex:1;font-size:12px;height:30px" onkeydown="if(event.key==='Enter')addCat2('${c1.id}')">
+            <button class="btn btn-accent" style="padding:4px 10px;font-size:12px;height:30px" onclick="addCat2('${c1.id}')">${t('btn_add')}</button>
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -2489,7 +2500,7 @@ function renderCat1Tree() {
 function renderChipList(elId, arr, catType) {
   const el = document.getElementById(elId);
   el.innerHTML = arr.length
-    ? arr.map(v => `<div class="chip">${escapeHtml(v)}<span class="chip-del" onclick="deleteCategory('${catType}','${escapeHtml(v).replace(/'/g,"\\'")}')">✕</span></div>`).join('')
+    ? arr.map(v => `<div class="chip draggable" draggable="true" data-value="${escapeHtml(v)}" data-cattype="${catType}" ondragstart="dragChipStart(event)" ondragover="dragOver(event)" ondrop="dropChip(event,this,'${catType}')" ondragleave="dragLeave(event)">${escapeHtml(v)}<span class="chip-del" onclick="deleteCategory('${catType}','${escapeHtml(v).replace(/'/g,"\\'")}')">✕</span></div>`).join('')
     : `<div class="empty-state" style="padding:10px">-</div>`;
 }
 
@@ -2506,7 +2517,7 @@ function renderPersonnel() {
 
   const deptOpts = DEPT_LIST.map(d => `<option value="${d}">{V}</option>`);
   const mkDeptSel = (id, val) => `<select class="form-control" id="person-edit-dept-${id}">`
-    + `<option value="">-- 부서 --</option>`
+    + `<option value="">${t('ph_select_dept')}</option>`
     + DEPT_LIST.map(d => `<option value="${d}"${d===val?' selected':''}>${d}</option>`).join('')
     + `</select>`;
 
@@ -2620,6 +2631,7 @@ function openItemModal(editId) {
   document.getElementById('item-code').value = '';
   document.getElementById('item-name').value = '';
   document.getElementById('item-cat1').value = '';
+  document.getElementById('item-cat2').value = '';
   document.getElementById('item-brand').value = '';
   document.getElementById('item-min').value = '';
   document.getElementById('item-note').value = '';
@@ -2627,8 +2639,6 @@ function openItemModal(editId) {
   document.getElementById('item-modal-title').textContent = t('modal_item_title');
   onItemCat1Change(); // cat2 select를 '분류1을 먼저 선택' 상태로 초기화 + 코드 미리보기 초기화
 
-  document.getElementById('item-zone').value = '';
-  renderZones();
   if (editId) {
     const item = findItem(editId);
     if (item) {
@@ -2637,15 +2647,14 @@ function openItemModal(editId) {
       document.getElementById('item-code').value = item.code || '';
       document.getElementById('item-name').value = item.name || '';
       document.getElementById('item-cat1').value = item.cat1 || '';
-      onItemCat1Change(true);
+      onItemCat1Change(false);
+      document.getElementById('item-cat2').value = item.cat2 || '';
       document.getElementById('item-brand').value = item.brand || '';
       document.getElementById('item-min').value = item.minQty || 0;
       document.getElementById('item-note').value = item.note || '';
       document.getElementById('item-modal-title').textContent = t('modal_item_edit_title');
       updateItemCodePreview();
       if (item.photo) showPhotoPreview(photoUrl(item.photo));
-      document.getElementById('item-zone').value = item.zone || '';
-      renderZones();
     }
   }
   openModal('modal-item');
@@ -2684,7 +2693,7 @@ function saveItem() {
   const minQty = parseInt(document.getElementById('item-min').value, 10);
   const cat1 = document.getElementById('item-cat1').value;
   if (!name) { alert(t('msg_enter_item_name')); return; }
-  if (!cat1) { alert('분류를 선택하세요.'); return; }
+  if (!cat1) { alert(t('msg_required')); return; }
   if (isNaN(minQty)) { alert(t('msg_required')); return; }
 
   const editId = document.getElementById('item-edit-id').value;
@@ -2696,7 +2705,7 @@ function saveItem() {
     code: document.getElementById('item-code').value.trim(),
     name: name,
     cat1: cat1,
-    zone: document.getElementById('item-zone').value || 'etc',
+    cat2: document.getElementById('item-cat2').value || '',
     brand: document.getElementById('item-brand').value.trim(),
     minQty: minQty,
     note: document.getElementById('item-note').value.trim(),
@@ -2752,7 +2761,6 @@ function renderItemDetailContent(item) {
   let badges = statusBadge(status);
   if (item.brand) badges += `<span class="badge badge-info">${escapeHtml(item.brand)}</span>`;
   if (cat1Name) badges += `<span class="badge badge-accent">${escapeHtml(cat1Name)}</span>`;
-  if (item.zone && item.zone !== 'etc') badges += `<span class="badge badge-accent">📍${escapeHtml(item.zone)}</span>`;
   document.getElementById('detail-badges').innerHTML = badges;
 
   // QR code
@@ -2993,25 +3001,6 @@ function deleteCategory(catType, value) {
   sendWS({ type: 'DELETE_CATEGORY', catType, value });
 }
 
-// ── 구역(설비) CRUD ──
-function addZone() {
-  const input = document.getElementById('new-zone');
-  const value = input.value.trim();
-  if (!value) return;
-  if (sendWS({ type: 'ADD_CATEGORY', catType: 'zones', value })) input.value = '';
-}
-function deleteZone(value) {
-  if (!confirm(t('msg_confirm_delete_cat'))) return;
-  sendWS({ type: 'DELETE_CATEGORY', catType: 'zones', value });
-}
-function selectZone(value) {
-  const input = document.getElementById('item-zone');
-  const cur = new Set(input.value ? input.value.split(',') : []);
-  if (cur.has(value)) { cur.delete(value); } else { cur.add(value); }
-  input.value = [...cur].join(',');
-  renderZones();
-}
-
 // ── QR 코드 / 라벨 인쇄 ──
 function generateQR(code, canvasId, size) {
   const canvas = document.getElementById(canvasId);
@@ -3025,7 +3014,6 @@ function printLabel() {
   if (!item || !item.code) return;
   document.getElementById('pl-code').textContent = item.code;
   document.getElementById('pl-name').textContent = item.name;
-  document.getElementById('pl-zone').textContent = item.zone && item.zone !== 'etc' ? `구역: ${item.zone}` : '';
   generateQR(item.code, 'print-qr-canvas', 200);
   window.print();
 }
@@ -3061,6 +3049,65 @@ function saveCat1Edit(id) {
 function deleteCat1(id) {
   if (!confirm(t('msg_confirm_delete_cat'))) return;
   sendWS({ type: 'DELETE_CAT1', id });
+}
+
+// ── 드래그 앤 드롭 ──
+let _dragId = null, _dragType = null, _dragValue = null;
+
+function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+function dragCat1Start(e) {
+  _dragType = 'cat1';
+  _dragId = e.currentTarget.dataset.cat1Id;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dropCat1(e, el) {
+  e.preventDefault(); el.classList.remove('drag-over');
+  const targetId = el.dataset.cat1Id;
+  if (!targetId || targetId === _dragId || _dragType !== 'cat1') return;
+  const ids = categories1.map(c => c.id);
+  const fromIdx = ids.indexOf(_dragId), toIdx = ids.indexOf(targetId);
+  if (fromIdx < 0 || toIdx < 0) return;
+  ids.splice(fromIdx, 1); ids.splice(toIdx, 0, _dragId);
+  sendWS({ type: 'REORDER_CAT1', ids });
+}
+
+function dragCat2Start(e) {
+  e.stopPropagation();
+  _dragType = 'cat2';
+  _dragId = e.currentTarget.dataset.cat2Id;
+  _dragValue = e.currentTarget.dataset.parent;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dropCat2(e, el) {
+  e.preventDefault(); e.stopPropagation(); el.classList.remove('drag-over');
+  const targetId = el.dataset.cat2Id;
+  if (!targetId || targetId === _dragId || _dragType !== 'cat2') return;
+  const parentId = _dragValue;
+  const sub = categories2.filter(c => c.parentId === parentId && !c.isEtc);
+  const ids = sub.map(c => c.id);
+  const fromIdx = ids.indexOf(_dragId), toIdx = ids.indexOf(targetId);
+  if (fromIdx < 0 || toIdx < 0) return;
+  ids.splice(fromIdx, 1); ids.splice(toIdx, 0, _dragId);
+  sendWS({ type: 'REORDER_CAT2', parentId, ids });
+}
+
+function dragChipStart(e) {
+  _dragType = 'chip';
+  _dragValue = e.currentTarget.dataset.value;
+  _dragId = e.currentTarget.dataset.cattype;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dropChip(e, el, catType) {
+  e.preventDefault(); el.classList.remove('drag-over');
+  const targetVal = el.dataset.value;
+  if (!targetVal || targetVal === _dragValue || _dragType !== 'chip' || _dragId !== catType) return;
+  const arr = lines;
+  const fromIdx = arr.indexOf(_dragValue), toIdx = arr.indexOf(targetVal);
+  if (fromIdx < 0 || toIdx < 0) return;
+  arr.splice(fromIdx, 1); arr.splice(toIdx, 0, _dragValue);
+  sendWS({ type: 'REORDER_CATEGORY', catType, values: [...arr] });
 }
 
 // ── 분류2 (소분류, 분류1에 종속) CRUD ──
@@ -3484,14 +3531,13 @@ async function printLabel() {
     alert('프린터가 선택되지 않았습니다.\n⚙️ 프린터 설정에서 프린터를 선택하고 저장하세요.');
     return;
   }
-  const zone = (item.zone || '').split(',').filter(z => z && z !== 'etc').join(', ');
   showToast('🖨️ 인쇄 중...');
   try {
     const res = await fetch(`${HTTP_BASE}/api/inventory/print-label`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        code: item.code, name: item.name, zone,
+        code: item.code, name: item.name,
         printer: s.printer, width: s.width, height: s.height,
         margin: s.margin, qrMm: s.qrMm, codePt: s.codePt, namePt: s.namePt,
       }),
@@ -3514,6 +3560,7 @@ const EQ_WS_URL = WS_URL.replace('/ws/inventory', '/ws/equipment');
 const EQ_HTTP   = HTTP_BASE;
 
 let eqItems      = [];
+let eqStatusFilter = null; // null = 전체
 let eqCategories = { cat1: [], cat2: [] };
 let eqWS         = null;
 let currentEqId  = null;
@@ -3558,6 +3605,11 @@ function eqCat1Name(id) { return (eqCategories.cat1.find(c=>c.id===id)||{}).name
 function eqCat2Name(id) { return (eqCategories.cat2.find(c=>c.id===id)||{}).name || '-'; }
 
 // ── 렌더: 설비 목록 ──
+function setEqStatusFilter(key) {
+  eqStatusFilter = (eqStatusFilter === key || key === 'all') ? null : key;
+  renderEquipment();
+}
+
 function renderEqPageChart(src) {
   const chips = document.getElementById('eq-stat-chips');
   const bar   = document.getElementById('eq-bar-chart');
@@ -3570,32 +3622,70 @@ function renderEqPageChart(src) {
   const spareC  = pool.filter(e => e.status === 'spare').length;
 
   const statDefs = [
-    { label:'Total',  val:total,   color:'var(--accent)',          bg:'var(--accent-bg,#EBF0FD)' },
-    { label:'Use',    val:useC,    color:'var(--ok,#16a34a)',      bg:'#f0fdf4' },
-    { label:'Spare',  val:spareC,  color:'#7c3aed',                bg:'#f5f3ff' },
-    { label:'Repair', val:repairC, color:'var(--warn,#d97706)',    bg:'#fffbeb' },
-    { label:'NG',     val:ngC,     color:'var(--danger,#ef4444)',  bg:'#fef2f2' },
+    { key:'all',    label:'Total',  val:total,   color:'var(--accent)',         bg:'var(--accent-bg,#EBF0FD)' },
+    { key:'active', label:'Use',    val:useC,    color:'#16a34a',               bg:'#f0fdf4' },
+    { key:'spare',  label:'Spare',  val:spareC,  color:'#7c3aed',               bg:'#f5f3ff' },
+    { key:'repair', label:'Repair', val:repairC, color:'#d97706',               bg:'#fffbeb' },
+    { key:'ng',     label:'NG',     val:ngC,     color:'#ef4444',               bg:'#fef2f2' },
   ];
-  chips.innerHTML = statDefs.map(c => `
-    <div style="flex:1;text-align:center;padding:8px 4px;background:${c.bg};border-radius:8px;border:1px solid ${c.color}22">
+  chips.innerHTML = statDefs.map(c => {
+    const active = eqStatusFilter === c.key;
+    return `<div onclick="setEqStatusFilter('${c.key}')" style="flex:1;text-align:center;padding:8px 4px;background:${c.bg};border-radius:8px;border:2px solid ${active ? c.color : c.color+'33'};cursor:pointer;transition:border-color .15s;user-select:none">
       <div style="font-size:18px;font-weight:900;color:${c.color}">${c.val}</div>
       <div style="font-size:10px;font-weight:700;color:${c.color};opacity:.8">${c.label}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
-  const barDefs = [
-    { label:'Use',    val:useC,    color:'var(--ok,#16a34a)' },
-    { label:'Spare',  val:spareC,  color:'var(--muted)' },
-    { label:'Repair', val:repairC, color:'var(--warn,#d97706)' },
-    { label:'NG',     val:ngC,     color:'var(--danger,#ef4444)' },
+  const sliceDefs = [
+    { label:'Use',    val:useC,    color:'#16a34a' },
+    { label:'Spare',  val:spareC,  color:'#7c3aed' },
+    { label:'Repair', val:repairC, color:'#d97706' },
+    { label:'NG',     val:ngC,     color:'#ef4444' },
   ];
-  bar.innerHTML = barDefs.map(b => {
+
+  // ── 파이(도넛) 차트 ──
+  const svg = document.getElementById('eq-pie-svg');
+  if (svg) {
+    const cx = 80, cy = 80, r = 68, hole = 40;
+    const nonZero = sliceDefs.filter(s => s.val > 0);
+    if (!total || nonZero.length === 0) {
+      svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--border)"/>
+        <circle cx="${cx}" cy="${cy}" r="${hole}" fill="var(--surface,#fff)"/>`;
+    } else if (nonZero.length === 1) {
+      const s = nonZero[0];
+      svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${s.color}"/>
+        <circle cx="${cx}" cy="${cy}" r="${hole}" fill="var(--surface,#fff)"/>
+        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="16" font-weight="900" fill="${s.color}">${s.val}</text>`;
+    } else {
+      let angle = -Math.PI / 2;
+      const paths = nonZero.map(s => {
+        const sweep = (s.val / total) * 2 * Math.PI;
+        const end   = angle + sweep;
+        const x1 = cx + r * Math.cos(angle),    y1 = cy + r * Math.sin(angle);
+        const x2 = cx + r * Math.cos(end),      y2 = cy + r * Math.sin(end);
+        const xi1 = cx + hole * Math.cos(end),  yi1 = cy + hole * Math.sin(end);
+        const xi2 = cx + hole * Math.cos(angle),yi2 = cy + hole * Math.sin(angle);
+        const large = sweep > Math.PI ? 1 : 0;
+        const d = `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} L${xi1},${yi1} A${hole},${hole} 0 ${large} 0 ${xi2},${yi2} Z`;
+        angle = end;
+        return `<path d="${d}" fill="${s.color}"/>`;
+      });
+      svg.innerHTML = paths.join('') +
+        `<circle cx="${cx}" cy="${cy}" r="${hole}" fill="var(--surface,#fff)"/>` +
+        `<text x="${cx}" y="${cy - 8}" text-anchor="middle" dominant-baseline="middle" font-size="18" font-weight="900" fill="var(--text,#1a1610)">${total}</text>` +
+        `<text x="${cx}" y="${cy + 10}" text-anchor="middle" dominant-baseline="middle" font-size="11" font-weight="600" fill="var(--muted)">Total</text>`;
+    }
+  }
+
+  // ── 바 차트 ──
+  bar.innerHTML = sliceDefs.map(b => {
     const pct = total ? Math.round(b.val / total * 100) : 0;
     return `<div style="display:flex;align-items:center;gap:8px">
       <div style="width:44px;font-size:10px;font-weight:700;color:${b.color};text-align:right;flex-shrink:0">${b.label}</div>
       <div style="flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden">
         <div style="width:${pct}%;height:100%;background:${b.color};border-radius:5px;transition:width .4s"></div>
       </div>
-      <div style="width:32px;font-size:10px;font-weight:700;color:${b.color};flex-shrink:0">${b.val} <span style="font-weight:400;opacity:.6">(${pct}%)</span></div>
+      <div style="width:46px;font-size:10px;font-weight:700;color:${b.color};flex-shrink:0">${b.val} <span style="font-weight:400;opacity:.6">(${pct}%)</span></div>
     </div>`;
   }).join('');
 }
@@ -3605,7 +3695,8 @@ function renderEquipment() {
   const cat1F  = (document.getElementById('eq-cat1-filter')||{}).value||'';
   const cat2F  = (document.getElementById('eq-cat2-filter')||{}).value||'';
 
-  let filtered = eqItems.filter(eq => {
+  // 검색+분류 필터 (그래프 기준)
+  const baseFiltered = eqItems.filter(eq => {
     const q = search.toLowerCase();
     const c1n = eqCat1Name(eq.cat1).toLowerCase();
     const c2n = eq.cat2 ? eqCat2Name(eq.cat2).toLowerCase() : '';
@@ -3614,6 +3705,11 @@ function renderEquipment() {
     const matchCat2 = !cat2F || eq.cat2 === cat2F;
     return matchSearch && matchCat1 && matchCat2;
   });
+
+  // 상태 필터 (테이블 기준)
+  let filtered = eqStatusFilter
+    ? baseFiltered.filter(eq => (eq.status||'active') === eqStatusFilter)
+    : baseFiltered;
 
   // 정렬: 상태 순 → 1차분류 → 2차분류 → 라인 순
   const statusOrder = { active:0, spare:1, repair:2, ng:3 };
@@ -3628,7 +3724,7 @@ function renderEquipment() {
     return (lineOrder[a.line]??999) - (lineOrder[b.line]??999);
   });
 
-  renderEqPageChart(filtered);
+  renderEqPageChart(baseFiltered);
   const wrap = document.getElementById('eq-table-wrap');
   if (!wrap) return;
   if (!filtered.length) {
@@ -3655,7 +3751,7 @@ function renderEquipment() {
         ${eq.serial ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${escapeHtml(eq.serial)}</div>` : ''}
       </td>
       <td style="font-weight:700">${eq.qty||1}</td>
-      <td style="font-size:11px;color:var(--muted);font-family:monospace">${escapeHtml(eq.serial||'-')}</td>
+      <td style="font-size:11px;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
