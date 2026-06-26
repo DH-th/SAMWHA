@@ -52,7 +52,44 @@ header{
   padding:5px 8px;border:1px solid var(--border);border-radius:8px;
   background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;
 }
-#date-lbl{font-size:12px;font-weight:700;min-width:86px;text-align:center;}
+#date-lbl{
+  font-size:12px;font-weight:700;min-width:86px;text-align:center;
+  cursor:pointer;padding:4px 8px;border-radius:8px;transition:background .12s;
+  text-decoration:underline dotted rgba(0,0,0,.25);text-underline-offset:3px;
+}
+#date-lbl:hover{background:var(--surface2);}
+
+/* ── 미니 캘린더 ── */
+#mini-cal{
+  display:none;position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  background:var(--surface);border:1.5px solid var(--border);border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.14);padding:14px;z-index:500;width:240px;
+}
+#mini-cal.open{display:block;}
+#mc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+#mc-head button{
+  width:28px;height:28px;border:1.5px solid var(--border);border-radius:8px;
+  background:var(--surface2);color:var(--text2);font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+}
+#mc-head button:hover{background:var(--surface3);}
+#mc-title{font-size:13px;font-weight:800;color:var(--text);}
+#mc-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;}
+#mc-dow span{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:3px 0;}
+#mc-dow span:first-child{color:#E05252;}
+#mc-dow span:last-child{color:#4E8AF4;}
+#mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.mc-day{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:500;border-radius:8px;cursor:pointer;
+  color:var(--text2);transition:background .1s;
+}
+.mc-day:hover{background:var(--surface2);}
+.mc-day.other{color:var(--border2);}
+.mc-day.sun{color:#E05252;}
+.mc-day.sat{color:#4E8AF4;}
+.mc-day.today{font-weight:900;box-shadow:inset 0 0 0 1.5px var(--accent);}
+.mc-day.selected{background:var(--accent)!important;color:#fff!important;font-weight:700;}
 .today-btn{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important;font-size:11px!important;box-shadow:0 2px 8px rgba(13,148,136,.30)!important;}
 .shift-tabs{display:flex;gap:4px;}
 .stab{
@@ -335,11 +372,22 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 <header>
   <a href="../index.html" class="back">← 홈</a>
   <span class="ptitle">Production</span>
-  <div class="date-nav">
+  <div class="date-nav" style="position:relative">
     <button onclick="changeDate(-1)">◀</button>
-    <span id="date-lbl">-</span>
+    <span id="date-lbl" onclick="toggleCal(event)" title="달력 열기">-</span>
     <button onclick="changeDate(1)">▶</button>
     <button class="today-btn" onclick="goToday()">오늘</button>
+    <div id="mini-cal">
+      <div id="mc-head">
+        <button onclick="calShiftMonth(-1)">◀</button>
+        <span id="mc-title"></span>
+        <button onclick="calShiftMonth(1)">▶</button>
+      </div>
+      <div id="mc-dow">
+        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+      </div>
+      <div id="mc-grid"></div>
+    </div>
   </div>
   <div class="shift-tabs">
     <button class="stab" id="td" onclick="setShift('day')">☀ 주간</button>
@@ -888,6 +936,66 @@ document.getElementById('date-lbl').textContent=viewDate;
 renderTabs();renderProc();connect();startProcTimer();
 setInterval(renderAll,60000);
 setInterval(autoShiftCheck,60000);
+
+/* ── 미니 캘린더 ── */
+let calYear,calMonth;
+function toggleCal(e){
+  e.stopPropagation();
+  const mc=document.getElementById('mini-cal');
+  if(mc.classList.contains('open')){mc.classList.remove('open');return;}
+  const d=viewDate?new Date(viewDate+'T12:00:00'):new Date();
+  calYear=d.getFullYear();calMonth=d.getMonth();
+  renderCal();mc.classList.add('open');
+}
+function calShiftMonth(d){
+  calMonth+=d;
+  if(calMonth<0){calMonth=11;calYear--;}
+  if(calMonth>11){calMonth=0;calYear++;}
+  renderCal();
+}
+function renderCal(){
+  const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('mc-title').textContent=calYear+'년 '+mn[calMonth];
+  const grid=document.getElementById('mc-grid');
+  grid.innerHTML='';
+  const today=fmtD(new Date());
+  const firstDow=new Date(calYear,calMonth,1).getDay();
+  const daysInMon=new Date(calYear,calMonth+1,0).getDate();
+  const prevDays=new Date(calYear,calMonth,0).getDate();
+  for(let i=firstDow-1;i>=0;i--){
+    const el=document.createElement('div');
+    el.className='mc-day other';el.textContent=prevDays-i;grid.appendChild(el);
+  }
+  for(let i=1;i<=daysInMon;i++){
+    const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
+    const dow=new Date(calYear,calMonth,i).getDay();
+    let cls='mc-day';
+    if(dow===0)cls+=' sun';
+    if(dow===6)cls+=' sat';
+    if(ds===today)cls+=' today';
+    if(ds===viewDate)cls+=' selected';
+    const el=document.createElement('div');
+    el.className=cls;el.textContent=i;
+    el.onclick=()=>selectCalDate(ds);
+    grid.appendChild(el);
+  }
+  const remain=(firstDow+daysInMon)%7;
+  if(remain>0){for(let i=1;i<=7-remain;i++){
+    const el=document.createElement('div');
+    el.className='mc-day other';el.textContent=i;grid.appendChild(el);
+  }}
+}
+function selectCalDate(ds){
+  viewDate=ds;
+  document.getElementById('date-lbl').textContent=viewDate;
+  document.getElementById('mini-cal').classList.remove('open');
+  fetchLog();
+}
+document.addEventListener('click',function(e){
+  const mc=document.getElementById('mini-cal');
+  if(!mc||!mc.classList.contains('open'))return;
+  if(!mc.contains(e.target))mc.classList.remove('open');
+});
 autoShiftCheck();
 </script>
 </body>
