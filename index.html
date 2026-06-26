@@ -3,384 +3,299 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SAMWHA SF">
 <link rel="apple-touch-icon" href="app-logo.png">
-
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0B1220">
-
+<meta name="theme-color" content="#EEF2FF">
 <title>SAMHWA</title>
-
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
-
 :root {
-    --ink: #0B1220;
-    --ink-soft: #4A5568;
-    --panel: #FFFFFF;
-    --bg-deep: #0B1220;
-    --accent: #2F6FED;
-    --accent-soft: #E8F0FE;
-    --line-glow: #5FD0C9;
-    --grid-line: rgba(255,255,255,0.06);
-    --steel: #8A98AC;
+    --bg: #EEF2FF;
+    --surface: #FFFFFF;
+    --text: #1E2B3C;
+    --muted: #8896A9;
+    --shadow-card: 0 2px 12px rgba(99,120,180,0.10), 0 1px 3px rgba(99,120,180,0.06);
+    --shadow-hover: 0 10px 32px rgba(99,120,180,0.18), 0 2px 8px rgba(99,120,180,0.10);
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-}
+* { box-sizing: border-box; margin: 0; padding: 0;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
 
-html, body {
-    background: var(--bg-deep);
-}
+html, body { background: var(--bg); min-height: 100vh; color: var(--text); overflow-x: hidden; }
 
-body {
-    min-height: 100vh;
-    color: var(--ink);
-    overflow-x: hidden;
-}
-
-/* ===== 배경 ===== */
-.bg-grid {
+/* 배경 블롭 */
+.blob {
     position: fixed;
-    inset: 0;
-    z-index: 0;
-    background-image:
-        linear-gradient(var(--grid-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size: 42px 42px;
-    background-color: var(--bg-deep);
-}
-
-.bg-glow {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
+    border-radius: 50%;
     pointer-events: none;
-    background:
-        radial-gradient(ellipse 900px 600px at 12% -5%, rgba(47,111,237,0.35), transparent 60%),
-        radial-gradient(ellipse 700px 500px at 110% 10%, rgba(95,208,201,0.18), transparent 60%);
+    z-index: 0;
+    filter: blur(48px);
+    will-change: auto;
 }
+.blob-1 { width: 360px; height: 360px; background: #C7D8FF; opacity: 0.40; top: -100px; right: -80px; }
+.blob-2 { width: 280px; height: 280px; background: #FFD6ED; opacity: 0.32; bottom: 30px; left: -80px; }
+.blob-3 { width: 200px; height: 200px; background: #C7F7E8; opacity: 0.30; top: 50%; right: -50px; }
 
-/* ===== 레이아웃 셔블 ===== */
 .shell {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 1180px;
+    max-width: 1200px;
     margin: 0 auto;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    padding: 0 18px;
 }
 
-/* ===== 헤더 ===== */
+/* 헤더 */
 header {
-    width: 100%;
-    padding-top: env(safe-area-inset-top);
-    position: relative;
+    padding-top: max(16px, env(safe-area-inset-top));
 }
 
 .header-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 22px 24px 18px;
+    padding: 16px 0 20px;
 }
 
 .logo {
-    height: 44px;
-    width: auto;
-    max-width: 230px;
+    height: 38px;
+    max-width: 200px;
     object-fit: contain;
-    display: block;
 }
 
 .status-pill {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 14px;
+    gap: 7px;
+    padding: 7px 15px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 999px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 10px rgba(99,120,180,0.12);
     font-size: 12px;
     font-weight: 600;
-    color: #C9D4E5;
-    letter-spacing: 0.02em;
+    color: #3D5A80;
+    white-space: nowrap;
 }
 
 .status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--line-glow);
-    box-shadow: 0 0 8px var(--line-glow);
-    animation: pulse 2s ease-in-out infinite;
+    background: #34D399;
+    box-shadow: 0 0 6px rgba(52,211,153,0.7);
+    animation: pulse 2.4s ease-in-out infinite;
+    flex-shrink: 0;
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.85); }
 }
 
-.header-rule {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-}
+/* 메인 */
+main { flex: 1; padding-bottom: 36px; }
 
-/* ===== 메인 ===== */
-main {
-    flex: 1;
-    padding: 8px 24px 40px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.intro {
-    padding: 28px 4px 30px;
-}
+.intro { padding: 18px 0 26px; }
 
 .eyebrow {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    color: var(--line-glow);
+    letter-spacing: 0.13em;
+    color: #7B9FE0;
     text-transform: uppercase;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .intro h1 {
-    font-size: clamp(24px, 4vw, 32px);
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.01em;
-    line-height: 1.25;
+    font-size: clamp(19px, 4.5vw, 28px);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.3;
 }
 
 .intro p {
-    margin-top: 8px;
-    font-size: 14px;
-    color: var(--steel);
-    line-height: 1.5;
+    margin-top: 7px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.65;
 }
 
-/* ===== 그리드 ===== */
+/* 그리드 */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 13px;
 }
 
+/* 카드 */
 .nav-button {
-    --n: 0;
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     text-decoration: none;
     -webkit-tap-highlight-color: transparent;
-    background: var(--panel);
-    border-radius: 18px;
+    background: var(--surface);
+    border-radius: 22px;
     padding: 18px 16px 16px;
-    min-height: 152px;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 30px -10px rgba(0,0,0,0.45);
-    border: 1px solid rgba(255,255,255,0.08);
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    min-height: 162px;
+    box-shadow: var(--shadow-card);
+    border: 1.5px solid rgba(255,255,255,0.85);
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
     overflow: hidden;
 }
 
-.nav-button::before {
-    content: "";
+/* 우하단 장식 원 */
+.nav-button::after {
+    content: '';
     position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--accent), var(--line-glow));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
+    bottom: -18px;
+    right: -18px;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    opacity: 0.10;
+    transition: opacity 0.2s ease;
 }
 
-.nav-button:hover::before,
-.nav-button:active::before {
-    transform: scaleX(1);
-}
+.nav-button:hover::after { opacity: 0.16; }
 
 .nav-button:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 20px 36px -10px rgba(0,0,0,0.5);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-hover);
 }
 
 .nav-button:active {
     transform: scale(0.96);
+    box-shadow: var(--shadow-card);
 }
 
+/* 번호 배지 */
+.badge {
+    position: absolute;
+    top: 13px;
+    right: 13px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--c-accent);
+    background: var(--c-bg);
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+/* 아이콘 프레임 */
 .icon-frame {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: var(--accent-soft);
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: var(--c-bg);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 14px;
-    overflow: hidden;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
 }
 
-.nav-button img {
-    width: 30px;
-    height: 30px;
+.nav-button:hover .icon-frame {
+    transform: scale(1.06) rotate(-2deg);
+}
+
+.nav-button img, .icon-frame svg {
+    width: 34px;
+    height: 34px;
     object-fit: contain;
     display: block;
 }
 
-.nav-button .index {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #C7D2E0;
-    letter-spacing: 0.04em;
-}
-
-.nav-button span.label {
+/* 텍스트 */
+.label {
+    display: block;
     font-size: 14.5px;
-    font-weight: 700;
-    color: var(--ink);
+    font-weight: 800;
+    color: var(--text);
     letter-spacing: -0.01em;
-    line-height: 1.3;
+    line-height: 1.2;
 }
 
-.nav-button .sub {
-    font-size: 11.5px;
-    color: var(--ink-soft);
+.sub {
+    font-size: 11px;
+    color: var(--muted);
     margin-top: 3px;
     font-weight: 500;
+    line-height: 1.4;
 }
 
-/* ===== 푸터 ===== */
+/* 카드 색상 테마 */
+.c-blue   { --c-accent:#3B82F6; --c-bg:#DBEAFE; }
+.c-teal   { --c-accent:#0D9488; --c-bg:#CCFBF1; }
+.c-purple { --c-accent:#8B5CF6; --c-bg:#EDE9FE; }
+.c-rose   { --c-accent:#F43F5E; --c-bg:#FFE4E6; }
+.c-amber  { --c-accent:#D97706; --c-bg:#FEF3C7; }
+.c-green  { --c-accent:#059669; --c-bg:#D1FAE5; }
+
+/* 푸터 */
 footer {
-    position: relative;
-    padding: 28px 24px calc(24px + env(safe-area-inset-bottom));
+    padding: 22px 0 calc(18px + env(safe-area-inset-bottom));
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 18px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    gap: 14px;
+    border-top: 1px solid rgba(99,120,180,0.10);
 }
 
 .qr-code {
-    width: 56px;
-    height: 56px;
-    object-fit: cover;
-    background-color: #fff;
-    padding: 4px;
-    border-radius: 10px;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0,0,0,0.07);
+    background: #fff;
+    padding: 3px;
     flex-shrink: 0;
+    object-fit: cover;
 }
 
-.footer-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+.copyright     { font-size: 12px; font-weight: 600; color: #3D5A80; }
+.copyright-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* 태블릿 (3열) */
+@media (min-width: 560px) {
+    .grid-container { grid-template-columns: repeat(3, 1fr); gap: 15px; }
 }
 
-.copyright {
-    font-size: 12.5px;
-    color: #E2E8F0;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+/* 데스크탑 (6열) */
+@media (min-width: 900px) {
+    .shell { padding: 0 40px; }
+    .header-inner { padding: 28px 0 24px; }
+    .logo { height: 50px; max-width: 260px; }
+    .intro { padding: 32px 0 36px; }
+    main { padding-bottom: 52px; }
+    .grid-container { grid-template-columns: repeat(6, 1fr); gap: 18px; }
+    .nav-button { min-height: 205px; padding: 22px 18px 20px; border-radius: 26px; }
+    .icon-frame { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 18px; }
+    .nav-button img, .icon-frame svg { width: 38px; height: 38px; }
+    .label { font-size: 15px; }
+    footer { padding: 32px 0 calc(28px + env(safe-area-inset-bottom)); }
+    .qr-code { width: 58px; height: 58px; }
 }
-
-.copyright-sub {
-    font-size: 11px;
-    color: var(--steel);
-    font-weight: 500;
-}
-
-/* ===== 데스크탑 ===== */
-@media (min-width: 768px) {
-
-    .shell {
-        padding: 0 32px;
-    }
-
-    .header-inner {
-        padding: 32px 0 24px;
-    }
-
-    .logo {
-        height: 56px;
-        max-width: 300px;
-    }
-
-    main {
-        padding: 0 0 60px;
-    }
-
-    .intro {
-        padding: 44px 0 36px;
-    }
-
-    .grid-container {
-        grid-template-columns: repeat(6, 1fr);
-        gap: 18px;
-    }
-
-    .nav-button {
-        min-height: 188px;
-        padding: 22px 18px 20px;
-        border-radius: 20px;
-    }
-
-    .icon-frame {
-        width: 56px;
-        height: 56px;
-    }
-
-    .nav-button img {
-        width: 32px;
-        height: 32px;
-    }
-
-    .nav-button span.label {
-        font-size: 15px;
-    }
-
-    footer {
-        padding: 36px 0 calc(28px + env(safe-area-inset-bottom));
-        justify-content: flex-start;
-        gap: 20px;
-    }
-
-    .qr-code {
-        width: 64px;
-        height: 64px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .grid-container {
-        gap: 22px;
-    }
-}
-
 </style>
 </head>
-
 <body>
 
-<div class="bg-grid"></div>
-<div class="bg-glow"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
 
 <div class="shell">
 
@@ -392,11 +307,9 @@ footer {
                 System Online
             </div>
         </div>
-        <div class="header-rule"></div>
     </header>
 
     <main>
-
         <div class="intro">
             <div class="eyebrow">Smart Factory Console</div>
             <h1>오늘도 안전하고 정확하게,<br>현장을 한 화면에서 관리하세요.</h1>
@@ -404,10 +317,22 @@ footer {
         </div>
 
         <div class="grid-container">
-            <a href="./B-1. Schedule/index.html" class="nav-button">
-                <span class="index">01</span>
+
+            <a href="./B-1. Schedule/index.html" class="nav-button c-blue">
+                <span class="badge">01</span>
                 <div class="icon-frame">
-                    <img src="icon_01.png" alt="">
+                    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="9" width="30" height="25" rx="5" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2"/>
+                        <rect x="4" y="9" width="30" height="10" rx="5" fill="#3B82F6"/>
+                        <rect x="4" y="15" width="30" height="4" fill="#3B82F6"/>
+                        <rect x="12.5" y="5" width="3" height="8" rx="1.5" fill="#3B82F6"/>
+                        <rect x="22.5" y="5" width="3" height="8" rx="1.5" fill="#3B82F6"/>
+                        <circle cx="12" cy="25" r="1.8" fill="#3B82F6"/>
+                        <circle cx="19" cy="25" r="1.8" fill="#3B82F6"/>
+                        <circle cx="26" cy="25" r="1.8" fill="#3B82F6"/>
+                        <circle cx="12" cy="31" r="1.8" fill="#3B82F6"/>
+                        <circle cx="19" cy="31" r="1.8" fill="#3B82F6"/>
+                    </svg>
                 </div>
                 <div>
                     <span class="label">Schedule</span>
@@ -415,14 +340,16 @@ footer {
                 </div>
             </a>
 
-            <a href="./B-2. Production/index.html" class="nav-button">
-                <span class="index">02</span>
-                <div class="icon-frame" style="background:rgba(47,111,237,0.12);">
-                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                        <rect x="3" y="18" width="5" height="9" rx="1.5" fill="#2F6FED"/>
-                        <rect x="10" y="12" width="5" height="15" rx="1.5" fill="#5FD0C9"/>
-                        <rect x="17" y="7" width="5" height="20" rx="1.5" fill="#2F6FED"/>
-                        <rect x="24" y="3" width="3" height="24" rx="1.5" fill="#5FD0C9" opacity=".6"/>
+            <a href="./B-2. Production/index.html" class="nav-button c-teal">
+                <span class="badge">02</span>
+                <div class="icon-frame">
+                    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4"  y="26" width="7" height="9"  rx="2.5" fill="#0D9488" opacity=".4"/>
+                        <rect x="14" y="19" width="7" height="16" rx="2.5" fill="#0D9488" opacity=".65"/>
+                        <rect x="24" y="11" width="7" height="24" rx="2.5" fill="#0D9488"/>
+                        <polyline points="6,22 17,15 27,8" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+                        <circle cx="27" cy="8" r="2.5" fill="#0D9488"/>
+                        <polyline points="24,8 30,5 30,11" stroke="#0D9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div>
@@ -431,10 +358,21 @@ footer {
                 </div>
             </a>
 
-            <a href="./B-3. Spare Part/index.html" class="nav-button">
-                <span class="index">03</span>
+            <a href="./B-3. Spare Part/index.html" class="nav-button c-purple">
+                <span class="badge">03</span>
                 <div class="icon-frame">
-                    <img src="icon_03.png" alt="">
+                    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="19" cy="19" r="8" fill="#EDE9FE" stroke="#8B5CF6" stroke-width="2"/>
+                        <circle cx="19" cy="19" r="3" fill="#8B5CF6"/>
+                        <rect x="17.5" y="5"  width="3" height="6" rx="1.5" fill="#8B5CF6"/>
+                        <rect x="17.5" y="27" width="3" height="6" rx="1.5" fill="#8B5CF6"/>
+                        <rect x="5"  y="17.5" width="6" height="3" rx="1.5" fill="#8B5CF6"/>
+                        <rect x="27" y="17.5" width="6" height="3" rx="1.5" fill="#8B5CF6"/>
+                        <rect x="17.5" y="5"  width="3" height="6" rx="1.5" fill="#8B5CF6" transform="rotate(45 19 19)"/>
+                        <rect x="17.5" y="27" width="3" height="6" rx="1.5" fill="#8B5CF6" transform="rotate(45 19 19)"/>
+                        <rect x="5"  y="17.5" width="6" height="3" rx="1.5" fill="#8B5CF6" transform="rotate(45 19 19)"/>
+                        <rect x="27" y="17.5" width="6" height="3" rx="1.5" fill="#8B5CF6" transform="rotate(45 19 19)"/>
+                    </svg>
                 </div>
                 <div>
                     <span class="label">Spare Part</span>
@@ -442,10 +380,17 @@ footer {
                 </div>
             </a>
 
-            <a href="./B-4. Alarm/index.html" class="nav-button">
-                <span class="index">04</span>
+            <a href="./B-4. Alarm/index.html" class="nav-button c-rose">
+                <span class="badge">04</span>
                 <div class="icon-frame">
-                    <img src="icon_04.png" alt="">
+                    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6C19 6 10 10 10 21V27H28V21C28 10 19 6 19 6Z" fill="#FFE4E6" stroke="#F43F5E" stroke-width="2" stroke-linejoin="round"/>
+                        <rect x="7" y="26" width="24" height="3.5" rx="1.75" fill="#F43F5E"/>
+                        <path d="M16 30C16 31.66 17.34 33 19 33C20.66 33 22 31.66 22 30" stroke="#F43F5E" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="17.5" y="3" width="3" height="5" rx="1.5" fill="#F43F5E"/>
+                        <circle cx="29" cy="9" r="4" fill="#F43F5E"/>
+                        <text x="29" y="12.5" text-anchor="middle" font-size="6" font-weight="800" fill="white">!</text>
+                    </svg>
                 </div>
                 <div>
                     <span class="label">Alarm</span>
@@ -453,10 +398,15 @@ footer {
                 </div>
             </a>
 
-            <a href="./B-5. Wave Solder/index.html" class="nav-button">
-                <span class="index">05</span>
+            <a href="./B-5. Wave Solder/index.html" class="nav-button c-amber">
+                <span class="badge">05</span>
                 <div class="icon-frame">
-                    <img src="icon_05.png" alt="">
+                    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M26 5L33 12L21 24H17V20Z" fill="#FEF3C7" stroke="#D97706" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M17 20L13 24L15 26L19 22" fill="#D97706" opacity=".4"/>
+                        <path d="M14 26L11 32" stroke="#D97706" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M4 32 C6.5 28.5 9 35 11.5 31.5 C14 28 16.5 35 19 31.5 C21.5 28 24 35 26.5 31.5 C29 28 31.5 35 34 31.5" stroke="#D97706" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                    </svg>
                 </div>
                 <div>
                     <span class="label">Wave Solder</span>
@@ -464,29 +414,34 @@ footer {
                 </div>
             </a>
 
-            <a href="./B-6. Spare parts/index.html" class="nav-button">
-                <span class="index">06</span>
+            <a href="./B-6. Spare parts/index.html" class="nav-button c-green">
+                <span class="badge">06</span>
                 <div class="icon-frame">
-                    <img src="icon_06.png" alt="">
+                    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 14L19 8L33 14V30L19 34L5 30Z" fill="#D1FAE5" stroke="#059669" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M5 14L19 20L33 14" stroke="#059669" stroke-width="2" stroke-linejoin="round"/>
+                        <line x1="19" y1="20" x2="19" y2="34" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 11L19 8L26 11L19 14Z" fill="#059669" opacity=".35"/>
+                        <rect x="15.5" y="21" width="7" height="5" rx="1.5" fill="#059669" opacity=".55"/>
+                    </svg>
                 </div>
                 <div>
                     <span class="label">Spare Parts</span>
                     <div class="sub">부품 재고 관리</div>
                 </div>
             </a>
-        </div>
 
+        </div>
     </main>
 
     <footer>
         <img src="qr_code.png" alt="" class="qr-code">
-        <div class="footer-text">
+        <div>
             <div class="copyright">Smart Factory System of SAMHWA</div>
             <div class="copyright-sub">© 2026 SAMHWA. All rights reserved.</div>
         </div>
     </footer>
 
 </div>
-
 </body>
 </html>
