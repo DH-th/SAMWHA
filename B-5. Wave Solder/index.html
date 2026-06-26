@@ -2,168 +2,440 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>กระดานสถานะ Wave Solder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FFFBF0">
+    <title>Wave Solder</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap">
     <style>
-        :root {
-            --bg-color: #f4f7f6; --card-bg: #ffffff; --text-main: #2c3e50; --text-muted: #7f8c8d;
-            --run: #27ae60; --stby: #f39c12; --off: #bdc3c7; --repair: #e74c3c; --primary: #2980b9;
-        }
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; padding-bottom: 50px; }
-        header { background-color: #34495e; color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; }
-        .time-shift { font-size: 0.9em; color: #ecf0f1; margin-top: 5px; }
-        .container { padding: 15px; }
-        h2 { font-size: 1.1em; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 25px; }
-        
-        /* 미니맵 스타일 */
-        .factory-map { display: flex; flex-direction: row; justify-content: space-between; background-color: var(--card-bg); padding: 20px 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .map-node { 
-            width: 40px; height: 75px; border-radius: 5px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; font-size: 0.9em; font-weight: bold; 
-            color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            cursor: pointer; transition: all 0.2s ease;
-            border: 3px solid transparent;
-        }
-        .map-node:hover { transform: scale(1.05); }
-        .map-node.selected { border-color: #3498db; box-shadow: 0 0 12px rgba(52, 152, 219, 0.8); transform: scale(1.15); z-index: 10; }
+    :root {
+        --bg: #FFFBF0;
+        --surface: #FFFFFF;
+        --surface2: #FFF8F0;
+        --border: rgba(200,140,30,0.14);
+        --accent: #D97706;
+        --accent2: #F59E0B;
+        --accent-bg: rgba(217,119,6,0.09);
+        --text: #1C1810;
+        --muted: #8A7050;
+        --shadow: 0 2px 8px rgba(160,100,0,0.07);
+        --shadow-md: 0 4px 20px rgba(160,100,0,0.12);
+        --run: #059669;
+        --run-bg: rgba(5,150,105,0.10);
+        --stby: #D97706;
+        --stby-bg: rgba(217,119,6,0.10);
+        --repair: #DC2626;
+        --repair-bg: rgba(220,38,38,0.10);
+        --off: #94A3B8;
+        --off-bg: rgba(100,116,139,0.10);
+    }
 
-        /* 대시보드 및 컨트롤 패널 */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .line-card { background-color: var(--card-bg); border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid var(--off); display: flex; flex-direction: column; justify-content: space-between; }
-        .status-run { border-color: var(--run); } .status-stby { border-color: var(--stby); } .status-off { border-color: var(--off); } .status-repair { border-color: var(--repair); }
-        .line-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .line-title { font-weight: bold; font-size: 1.1em; }
-        .timer-badge { font-size: 0.85em; font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 4px; }
-        .heater-status { font-size: 0.8em; color: var(--text-muted); background: #f8f9fa; padding: 5px; border-radius: 4px;}
-        .status-badge { align-self: flex-start; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-top: 8px; }
-        .bg-run { background-color: var(--run); color: white; } .bg-stby { background-color: var(--stby); color: white; } .bg-off { background-color: var(--off); color: #333; } .bg-repair { background-color: var(--repair); color: white; }
-        
-        /* PC 뷰 버튼 */
-        .pc-open-card { background-color: #34495e; color: #f1c40f; border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; text-align: center; font-weight: bold; border: 2px dashed #f1c40f; transition: background-color 0.2s; }
-        .pc-open-card:active { background-color: #2c3e50; }
-        .pc-open-icon { font-size: 2em; margin-bottom: 5px; }
-        
-        .control-panel { background-color: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .control-panel label { display: block; margin-bottom: 10px; font-weight: bold; }
-        .status-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-status { padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85em; line-height: 1.4; transition: opacity 0.2s; }
-        .btn-status:active { opacity: 0.7; }
-        .btn-status.run { background-color: var(--run); color: white; } .btn-status.stby { background-color: var(--stby); color: white; } .btn-status.off { background-color: var(--off); color: #333; } .btn-status.repair { background-color: var(--repair); color: white; }
-        
-        /* 통계 테이블 스타일 */
-        .stats-controls { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-        .stats-table { width: 100%; border-collapse: collapse; background: var(--card-bg); font-size: 0.85em; text-align: center; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 8px; }
-        .stats-table th { background-color: #34495e; color: white; font-weight: bold; }
-        .stats-run { background-color: #e8f5e9; color: #27ae60; font-weight: bold; }
-        .stats-stby { background-color: #fff8e1; color: #f39c12; font-weight: bold; }
-        .stats-repair { background-color: #ffebee; color: #e74c3c; font-weight: bold; }
-        .stats-off { background-color: #f8f9fa; color: #7f8c8d; }
-        #stat-date-display { font-weight: bold; color: var(--primary); font-size: 1.05em; margin-left: auto; padding-right: 5px; }
+    * { box-sizing: border-box; margin: 0; padding: 0;
+        font-family: 'Pretendard', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
 
-        /* 로그 리스트 스타일 */
-        .log-list { list-style: none; padding: 0; margin: 0; }
-        .log-item { background-color: var(--card-bg); padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9em; margin-bottom: 5px; border-radius: 5px; }
-        .log-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .log-time { color: var(--text-muted); font-size: 0.85em; }
-        .log-duration { color: #d35400; font-size: 0.85em; font-weight: bold; background: #fdf2e9; padding: 2px 5px; border-radius: 3px; }
-        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
-        .page-btn { padding: 6px 12px; border: 1px solid #ccc; background-color: var(--card-bg); border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
-        .page-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
-        
-        /* PC 뷰 스타일 */
-        #pc-view { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #121212; z-index: 2000; flex-direction: column; box-sizing: border-box; padding: 2vw; overflow: hidden; }
-        .pc-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 1vw; margin-bottom: 2vw; }
-        .pc-title { font-size: 3vw; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: 2px; }
-        .pc-time-info { text-align: right; }
-        .pc-clock { font-size: 2vw; font-family: monospace; font-weight: bold; color: #4fc3f7; }
-        .pc-date-shift { font-size: 1.2vw; color: #aaa; margin-top: 0.5vw; }
-        .pc-btn-close { background-color: transparent; color: #aaa; border: 1px solid #aaa; padding: 0.5vw 1vw; font-size: 1vw; border-radius: 0.5vw; cursor: pointer; margin-left: 1vw; }
-        .pc-grid { display: flex; flex: 1; gap: 1vw; justify-content: space-between; align-items: stretch; }
-        .pc-line-card { flex: 1; display: flex; flex-direction: column; background-color: #1e1e1e; border-radius: 1vw; border: 0.4vw solid #333; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: border-color 0.3s; }
-        .pc-card-header { background-color: #2c2c2c; padding: 1.5vw 0; text-align: center; font-size: 2.5vw; font-weight: bold; color: white; letter-spacing: 1px; }
-        .pc-card-status-box { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 3vw; font-weight: 900; color: #555; background-color: #1a1a1a; letter-spacing: 5px; text-align: center; }
-        .pc-card-footer { background-color: #1a1a1a; padding: 1.5vw 1vw; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-top: 2px solid #2c2c2c; }
-        .pc-card-time { font-size: 3.5vw; font-family: monospace; font-weight: bold; color: #fff; margin-bottom: 0.8vw; text-align: center; width: 100%; letter-spacing: 2px;}
-        .pc-card-heater { font-size: 1.2vw; color: #888; font-weight: bold; text-align: center; width: 100%; }
-        .pc-status-run { border-color: #00e676; } .pc-status-run .pc-card-status-box { background-color: #00e676; color: #000; } .pc-status-run .pc-card-time { color: #00e676; }
-        .pc-status-stby { border-color: #ff9100; } .pc-status-stby .pc-card-status-box { background-color: #ff9100; color: #000; } .pc-status-stby .pc-card-time { color: #ff9100; }
-        .pc-status-repair { border-color: #ff1744; } .pc-status-repair .pc-card-status-box { background-color: #ff1744; color: white; } .pc-status-repair .pc-card-time { color: #ff1744; }
-        .pc-status-off { border-color: #555; } .pc-status-off .pc-card-status-box { background-color: #222; color: #666; }
+    html, body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* ── 배경 블롭 ── */
+    .blob { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(48px); will-change: auto; }
+    .blob-1 { width: 320px; height: 320px; background: #FDE68A; opacity: 0.22; top: -80px; right: -60px; }
+    .blob-2 { width: 240px; height: 240px; background: #FED7AA; opacity: 0.18; bottom: 60px; left: -60px; }
+    .blob-3 { width: 180px; height: 180px; background: #FEF3C7; opacity: 0.20; top: 45%; right: -40px; }
+
+    /* ── 헤더 ── */
+    header {
+        position: sticky; top: 0; z-index: 200;
+        background: rgba(255,251,240,0.92);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1.5px solid var(--border);
+    }
+    .header-inner {
+        display: flex; align-items: center; gap: 10px;
+        max-width: 900px; margin: 0 auto;
+        padding: 11px 16px;
+    }
+    .back-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 34px; height: 34px; border-radius: 10px;
+        background: var(--surface); border: 1.5px solid var(--border);
+        color: var(--text); text-decoration: none; font-size: 1.05em;
+        box-shadow: var(--shadow); flex-shrink: 0;
+        transition: background 0.15s;
+    }
+    .back-btn:active { background: var(--surface2); }
+    .header-title { font-size: 1em; font-weight: 700; color: var(--text); flex: 1; }
+    .header-shift {
+        background: var(--accent-bg); color: var(--accent); border-radius: 999px;
+        padding: 3px 10px; font-size: 0.75em; font-weight: 700;
+        border: 1.5px solid rgba(217,119,6,0.18);
+    }
+    .header-time {
+        font-size: 0.78em; color: var(--muted); font-weight: 600;
+        font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    }
+
+    /* ── 메인 ── */
+    .shell {
+        position: relative; z-index: 1;
+        max-width: 900px; margin: 0 auto;
+        padding: 18px 14px 64px;
+        display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* ── 섹션 레이블 ── */
+    .sec-label {
+        font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; color: var(--accent); margin-bottom: -6px;
+    }
+
+    /* ── 팩토리 맵 ── */
+    .factory-map-wrap {
+        background: var(--surface); border-radius: 20px;
+        border: 1.5px solid var(--border); box-shadow: var(--shadow-md);
+        padding: 16px 14px;
+    }
+    .factory-map-hint {
+        font-size: 0.72em; color: var(--muted); text-align: center;
+        margin-bottom: 12px; font-weight: 500;
+    }
+    .factory-map {
+        display: flex; flex-direction: row; justify-content: space-between; gap: 5px;
+    }
+    .map-node {
+        flex: 1; height: 62px; border-radius: 13px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-weight: 800; color: white; cursor: pointer;
+        transition: transform 0.16s, box-shadow 0.16s;
+        border: 2.5px solid transparent;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        gap: 2px;
+    }
+    .map-node .mn-id { font-size: 0.88em; line-height: 1; }
+    .map-node .mn-st { font-size: 0.62em; opacity: 0.92; line-height: 1; }
+    .map-node:active { transform: scale(0.95); }
+    .map-node.selected {
+        border-color: #fff;
+        box-shadow: 0 0 0 3px var(--accent), 0 6px 18px rgba(0,0,0,0.2);
+        transform: scale(1.07); z-index: 5;
+    }
+
+    /* ── 컨트롤 패널 ── */
+    .control-wrap {
+        background: var(--surface); border-radius: 20px;
+        border: 1.5px solid var(--border); box-shadow: var(--shadow-md);
+        padding: 16px 14px;
+    }
+    .control-header {
+        font-size: 0.82em; color: var(--muted); font-weight: 600;
+        margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .selected-line-tag {
+        font-size: 1em; font-weight: 800; color: var(--accent);
+        background: var(--accent-bg); border-radius: 7px;
+        padding: 2px 9px; border: 1.5px solid rgba(217,119,6,0.22);
+    }
+    .status-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .btn-status {
+        padding: 13px 10px; border: 1.5px solid transparent; border-radius: 14px;
+        font-weight: 700; cursor: pointer; font-size: 0.84em;
+        line-height: 1.45; transition: all 0.14s; font-family: inherit; text-align: center;
+    }
+    .btn-status:active { transform: scale(0.97); opacity: 0.85; }
+    .btn-status.run {
+        background: linear-gradient(135deg,#059669,#047857); color: white;
+        box-shadow: 0 4px 14px rgba(5,150,105,0.32);
+    }
+    .btn-status.stby {
+        background: linear-gradient(135deg,#D97706,#B45309); color: white;
+        box-shadow: 0 4px 14px rgba(217,119,6,0.32);
+    }
+    .btn-status.repair {
+        background: linear-gradient(135deg,#DC2626,#B91C1C); color: white;
+        box-shadow: 0 4px 14px rgba(220,38,38,0.32);
+    }
+    .btn-status.off {
+        background: var(--surface2); color: var(--text);
+        border-color: var(--border); box-shadow: var(--shadow);
+    }
+    .btn-temp { font-weight: 500; font-size: 0.88em; display: block; margin-top: 2px; opacity: 0.88; }
+
+    /* ── 대시보드 ── */
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .line-card {
+        background: var(--surface); border-radius: 18px;
+        border: 1.5px solid var(--border); box-shadow: var(--shadow);
+        padding: 13px; display: flex; flex-direction: column; gap: 8px;
+        border-left: 4px solid var(--off);
+    }
+    .line-card.status-run  { border-left-color: var(--run); }
+    .line-card.status-stby { border-left-color: var(--stby); }
+    .line-card.status-repair { border-left-color: var(--repair); }
+    .line-card.status-off  { border-left-color: var(--off); }
+    .lc-header { display: flex; justify-content: space-between; align-items: center; }
+    .lc-title { font-weight: 800; font-size: 1em; }
+    .lc-timer {
+        font-size: 0.72em; font-variant-numeric: tabular-nums;
+        background: var(--surface2); border: 1.5px solid var(--border);
+        padding: 3px 7px; border-radius: 7px; color: var(--muted); font-weight: 700;
+    }
+    .heater-row { display: flex; gap: 5px; }
+    .heater-chip {
+        font-size: 0.7em; font-weight: 600; padding: 3px 7px; border-radius: 7px;
+        background: var(--surface2); border: 1.5px solid var(--border); color: var(--muted);
+    }
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 10px; border-radius: 999px;
+        font-size: 0.75em; font-weight: 700;
+    }
+    .status-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: currentColor; opacity: 0.75; flex-shrink: 0;
+    }
+    .bg-run    { background: var(--run-bg);    color: var(--run); }
+    .bg-stby   { background: var(--stby-bg);   color: var(--stby); }
+    .bg-repair { background: var(--repair-bg); color: var(--repair); }
+    .bg-off    { background: var(--off-bg);    color: var(--off); }
+
+    /* ── PC 뷰 오픈 버튼 ── */
+    .pc-open-card {
+        background: linear-gradient(135deg,#1C1811,#0D0B06);
+        border-radius: 18px; padding: 13px;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        cursor: pointer; gap: 6px; border: 2px dashed rgba(245,158,11,0.45);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2); transition: all 0.18s;
+    }
+    .pc-open-card:active { transform: scale(0.97); }
+    .pc-open-icon { font-size: 1.7em; }
+    .pc-open-card span { color: #F59E0B; font-size: 0.8em; font-weight: 700; line-height: 1.4; text-align: center; }
+
+    /* ── 통계 ── */
+    .stats-wrap {
+        background: var(--surface); border-radius: 20px;
+        border: 1.5px solid var(--border); box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+    .stats-topbar {
+        padding: 13px 15px; border-bottom: 1.5px solid var(--border);
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .stats-title { font-weight: 700; font-size: 0.88em; flex: 1; }
+    .stat-period-tabs { display: flex; gap: 4px; }
+    .stat-tab {
+        padding: 5px 11px; border-radius: 8px; font-size: 0.76em; font-weight: 700;
+        border: 1.5px solid var(--border); background: var(--surface2);
+        cursor: pointer; color: var(--muted); font-family: inherit; transition: all 0.14s;
+    }
+    .stat-tab.active {
+        background: linear-gradient(135deg,#D97706,#B45309);
+        color: white; border-color: transparent;
+        box-shadow: 0 2px 8px rgba(217,119,6,0.3);
+    }
+    #stat-date-display { font-size: 0.8em; color: var(--accent); font-weight: 700; }
+    .stats-table { width: 100%; border-collapse: collapse; font-size: 0.82em; text-align: center; }
+    .stats-table th {
+        background: var(--surface2); color: var(--muted); font-weight: 700;
+        padding: 9px 6px; border-bottom: 1.5px solid var(--border);
+        font-size: 0.84em; letter-spacing: 0.04em;
+    }
+    .stats-table td { padding: 9px 6px; border-bottom: 1px solid rgba(200,140,30,0.07); }
+    .stats-table tr:last-child td { border-bottom: none; }
+    .stats-table td:first-child { font-weight: 800; }
+    .stats-run    { color: var(--run);    font-weight: 700; }
+    .stats-stby   { color: var(--stby);   font-weight: 700; }
+    .stats-repair { color: var(--repair); font-weight: 700; }
+    .stats-off    { color: var(--off); }
+
+    /* ── 로그 ── */
+    .log-wrap {
+        background: var(--surface); border-radius: 20px;
+        border: 1.5px solid var(--border); box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+    .log-topbar {
+        padding: 13px 15px; border-bottom: 1.5px solid var(--border);
+        font-weight: 700; font-size: 0.88em;
+    }
+    .log-list { list-style: none; padding: 0; margin: 0; }
+    .log-item {
+        padding: 11px 15px; border-bottom: 1px solid rgba(200,140,30,0.07);
+        transition: background 0.12s;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-item:active { background: var(--surface2); }
+    .log-row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .log-line-tag {
+        font-weight: 800; font-size: 0.84em;
+        background: var(--accent-bg); color: var(--accent);
+        border-radius: 6px; padding: 2px 8px; border: 1.5px solid rgba(217,119,6,0.15);
+    }
+    .log-time { color: var(--muted); font-size: 0.75em; }
+    .log-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.82em; }
+    .log-prev { font-weight: 700; }
+    .log-arrow { color: var(--muted); font-size: 0.9em; }
+    .log-next { font-weight: 700; }
+    .log-dur {
+        margin-left: auto; font-size: 0.76em; font-weight: 700;
+        background: var(--accent-bg); color: var(--accent);
+        padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(217,119,6,0.18);
+    }
+    .pagination {
+        display: flex; justify-content: center; gap: 5px;
+        padding: 11px 14px; border-top: 1.5px solid var(--border); flex-wrap: wrap;
+    }
+    .page-btn {
+        min-width: 32px; height: 32px; border: 1.5px solid var(--border);
+        background: var(--surface2); border-radius: 8px; cursor: pointer;
+        font-weight: 700; font-size: 0.8em; color: var(--muted); font-family: inherit;
+        display: flex; align-items: center; justify-content: center; transition: all 0.14s;
+    }
+    .page-btn.active {
+        background: linear-gradient(135deg,#D97706,#B45309);
+        color: white; border-color: transparent;
+        box-shadow: 0 2px 8px rgba(217,119,6,0.35);
+    }
+
+    /* ── PC 뷰 ── */
+    #pc-view {
+        display: none; position: fixed; inset: 0;
+        background: #0C0A06; z-index: 2000;
+        flex-direction: column; padding: 2vw; overflow: hidden;
+    }
+    .pc-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        border-bottom: 1px solid #2a2510; padding-bottom: 1.2vw; margin-bottom: 2vw;
+    }
+    .pc-title { font-size: 2.8vw; font-weight: 900; color: #F59E0B; margin: 0; letter-spacing: 3px; }
+    .pc-time-info { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .pc-clock { font-size: 2.2vw; font-variant-numeric: tabular-nums; font-weight: 800; color: #FDE68A; }
+    .pc-date-shift { font-size: 1.1vw; color: #6B5A2E; }
+    .pc-btn-close {
+        background: transparent; color: #6B5A2E; border: 1px solid #2a2510;
+        padding: 0.5vw 1.2vw; font-size: 0.9vw; border-radius: 0.5vw; cursor: pointer;
+        margin-top: 4px; font-family: inherit; transition: color 0.15s;
+    }
+    .pc-btn-close:hover { color: #F59E0B; border-color: #F59E0B; }
+    .pc-grid { display: flex; flex: 1; gap: 1.2vw; justify-content: space-between; align-items: stretch; }
+    .pc-line-card {
+        flex: 1; display: flex; flex-direction: column;
+        background: #1A1408; border-radius: 1.2vw; border: 0.4vw solid #2a2510;
+        overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: border-color 0.3s;
+    }
+    .pc-card-header {
+        background: #221C0A; padding: 1.2vw 0; text-align: center;
+        font-size: 2.3vw; font-weight: 900; color: #C99A20; letter-spacing: 2px;
+    }
+    .pc-card-status-box {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        font-size: 3.5vw; font-weight: 900; color: #3a3010;
+        background: #141008; letter-spacing: 4px; text-align: center;
+    }
+    .pc-card-footer {
+        background: #141008; padding: 1.5vw 1vw;
+        display: flex; flex-direction: column; align-items: center; gap: 0.5vw;
+        border-top: 1px solid #2a2510; text-align: center;
+    }
+    .pc-card-time { font-size: 3.8vw; font-variant-numeric: tabular-nums; font-weight: 800; color: #C99A20; }
+    .pc-card-heater { font-size: 1.1vw; color: #5A4A1A; font-weight: 600; }
+    .pc-status-run    { border-color: #00E676; }
+    .pc-status-run    .pc-card-status-box { background: #00E676; color: #001A08; }
+    .pc-status-run    .pc-card-time { color: #00E676; }
+    .pc-status-stby   { border-color: #FF9100; }
+    .pc-status-stby   .pc-card-status-box { background: #FF9100; color: #1A0800; }
+    .pc-status-stby   .pc-card-time { color: #FF9100; }
+    .pc-status-repair { border-color: #FF1744; }
+    .pc-status-repair .pc-card-status-box { background: #FF1744; color: white; }
+    .pc-status-repair .pc-card-time { color: #FF1744; }
+    .pc-status-off    { border-color: #2a2510; }
+    .pc-status-off    .pc-card-status-box { background: #0D0B06; color: #3a3010; }
     </style>
 </head>
 <body>
 
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
 <header>
-    <div>การจัดการ Wave Solder</div>
-    <div class="time-shift" id="current-time-shift">กำลังโหลด...</div>
+  <div class="header-inner">
+    <a href="../index.html" class="back-btn">←</a>
+    <span class="header-title">Wave Solder</span>
+    <span class="header-shift" id="current-shift-badge">Day Shift</span>
+    <span class="header-time" id="current-time-shift">--:--:--</span>
+  </div>
 </header>
 
-<div class="container" id="mobile-view">
-    <h2>🏭 แผนผังไลน์โรงงาน (กดเลือกไลน์ที่นี่)</h2>
+<div class="shell" id="mobile-view">
+
+  <div class="sec-label">라인 선택</div>
+  <div class="factory-map-wrap">
+    <div class="factory-map-hint">공장 배치도 — 탭하여 라인 선택</div>
     <div class="factory-map" id="factory-map"></div>
+  </div>
 
-    <div class="control-panel">
-        <label>เปลี่ยนสถานะ - กำลังเลือก: <span id="display-selected-line" style="color:var(--primary); font-size:1.2em;">Line 1</span></label>
-        <div class="status-button-group">
-            <button class="btn-status run" onclick="recordStatus('RUN')">เริ่ม RUN<br>(260℃ / 160℃)</button>
-            <button class="btn-status stby" onclick="recordStatus('STBY')">STBY<br>(180℃ / OFF)</button>
-            <button class="btn-status repair" onclick="recordStatus('REPAIR')">ซ่อมแซม REPAIR<br>(OFF / OFF)</button>
-            <button class="btn-status off" onclick="recordStatus('OFF')">ปิดเครื่อง OFF<br>(OFF / OFF)</button>
-        </div>
+  <div class="sec-label">상태 변경</div>
+  <div class="control-wrap">
+    <div class="control-header">
+      선택 라인:&nbsp;<span class="selected-line-tag" id="display-selected-line">Line 1</span>
     </div>
-
-    <h2>สถานะไลน์แบบเรียลไทม์</h2>
-    <div class="dashboard" id="dashboard"></div>
-
-    <h2>📊 통계 현황 (สถิติการทำงาน)</h2>
-    <div class="stats-controls">
-        <button class="page-btn active" onclick="changeStatPeriod('day')" id="btn-stat-day">일간</button>
-        <button class="page-btn" onclick="changeStatPeriod('week')" id="btn-stat-week">주간</button>
-        <button class="page-btn" onclick="changeStatPeriod('month')" id="btn-stat-month">월간</button>
-        <span id="stat-date-display">0월 0일</span>
+    <div class="status-button-group">
+      <button class="btn-status run" onclick="recordStatus('RUN')">▶ RUN<span class="btn-temp">260℃ / 160℃</span></button>
+      <button class="btn-status stby" onclick="recordStatus('STBY')">⏸ STBY<span class="btn-temp">180℃ / OFF</span></button>
+      <button class="btn-status repair" onclick="recordStatus('REPAIR')">🔧 REPAIR<span class="btn-temp">OFF / OFF</span></button>
+      <button class="btn-status off" onclick="recordStatus('OFF')">■ OFF<span class="btn-temp">OFF / OFF</span></button>
     </div>
-    <div style="overflow-x: auto; margin-bottom: 20px;">
-        <table class="stats-table">
-            <thead>
-                <tr>
-                    <th>Line</th>
-                    <th>RUN</th>
-                    <th>STBY</th>
-                    <th>REPAIR</th>
-                    <th>OFF</th>
-                </tr>
-            </thead>
-            <tbody id="stats-tbody"></tbody>
-        </table>
-    </div>
+  </div>
 
-    <h2>บันทึกการเปลี่ยนสถานะและระยะเวลา</h2>
+  <div class="sec-label">실시간 현황</div>
+  <div class="dashboard" id="dashboard"></div>
+
+  <div class="sec-label">통계 현황</div>
+  <div class="stats-wrap">
+    <div class="stats-topbar">
+      <span class="stats-title">가동 시간 집계</span>
+      <span id="stat-date-display">-</span>
+      <div class="stat-period-tabs">
+        <button class="stat-tab active" onclick="changeStatPeriod('day')"   id="btn-stat-day">일간</button>
+        <button class="stat-tab"        onclick="changeStatPeriod('week')"  id="btn-stat-week">주간</button>
+        <button class="stat-tab"        onclick="changeStatPeriod('month')" id="btn-stat-month">월간</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="stats-table">
+        <thead>
+          <tr><th>Line</th><th>RUN</th><th>STBY</th><th>REPAIR</th><th>OFF</th></tr>
+        </thead>
+        <tbody id="stats-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sec-label">변경 기록</div>
+  <div class="log-wrap">
+    <div class="log-topbar">상태 변경 로그</div>
     <ul class="log-list" id="log-list"></ul>
-    
     <div class="pagination" id="pagination"></div>
+  </div>
+
 </div>
 
 <div id="pc-view">
-    <div class="pc-header">
-        <h1 class="pc-title">WAVE SOLDER TIME CHECKER</h1>
-        <div class="pc-time-info">
-            <div class="pc-clock" id="pc-clock">00:00:00</div>
-            <div class="pc-date-shift" id="pc-date-shift">กำลังโหลด...</div>
-            <button class="pc-btn-close" onclick="closePCView()">❌ ปิดแดชบอร์ด (มุมมองมือถือ)</button>
-        </div>
+  <div class="pc-header">
+    <h1 class="pc-title">WAVE SOLDER TIME CHECKER</h1>
+    <div class="pc-time-info">
+      <div class="pc-clock" id="pc-clock">00:00:00</div>
+      <div class="pc-date-shift" id="pc-date-shift">กำลังโหลด...</div>
+      <button class="pc-btn-close" onclick="closePCView()">✕ 모바일 뷰로 돌아가기</button>
     </div>
-    <div class="pc-grid" id="pc-grid"></div>
+  </div>
+  <div class="pc-grid" id="pc-grid"></div>
 </div>
 
 <script>
-    // ─── 🛠️ [핵심 변경] 클라우드플레어 터널 환경 주소 설정 ───
-    // 도메인을 samhwa.cloud 로 쓰시기 때문에 주소 뒤에 하위 공정폴더 이름(구분자)만 지정해 주면 됩니다.
-    // 만약 이 파일이 SMD용 복사본이라면 끝부분을 /ws/smd 로 바꾸어 저장하시면 됩니다.
-    const TUNNEL_DOMAIN = "server.samhwa.cloud"; 
-    const ws = new WebSocket(`wss://${TUNNEL_DOMAIN}/ws/wave`); // 👈 외부 접속이므로 보안인 wss:// 로 통신합니다.
+    const TUNNEL_DOMAIN = "server.samhwa.cloud";
+    const ws = new WebSocket(`wss://${TUNNEL_DOMAIN}/ws/wave`);
 
-    let lines = Array.from({length: 7}, (_, i) => ({ id: i + 1, status: 'OFF', lastChanged: new Date().getTime() }));
+    let lines = Array.from({length: 7}, (_, i) => ({ id: i+1, status: 'OFF', lastChanged: new Date().getTime() }));
     let logs = [];
     let currentShift = "";
     let currentPage = 1;
@@ -183,15 +455,11 @@
                 }
             });
             renderUI();
-        } 
-        // 👇 이 부분이 새로 추가된 코드입니다. (서버에서 과거 기록을 받아옴)
-        else if (message.type === "INIT_LOGS") {
-            logs = message.logs; // 과거 통계용 로그 데이터를 배열에 채워넣음
+        } else if (message.type === "INIT_LOGS") {
+            logs = message.logs;
             renderLogs();
             updateStats();
-        } 
-        // 👆 
-        else if (message.type === "STATUS_CHANGED") {
+        } else if (message.type === "STATUS_CHANGED") {
             const index = lines.findIndex(l => l.id === parseInt(message.lineId));
             if (index !== -1) {
                 lines[index].status = message.status;
@@ -205,64 +473,44 @@
     };
 
     function formatDuration(ms) {
-        if(ms < 0) ms = 0;
-        let totalSec = Math.floor(ms / 1000);
-        let h = Math.floor(totalSec / 3600);
-        let m = Math.floor((totalSec % 3600) / 60);
-        let s = totalSec % 60;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        if (ms < 0) ms = 0;
+        const s = Math.floor(ms/1000);
+        return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
     }
-
     function formatDurationPC(ms) {
-        if(ms < 0) ms = 0;
-        let totalSec = Math.floor(ms / 1000);
-        let h = Math.floor(totalSec / 3600);
-        let m = Math.floor((totalSec % 3600) / 60);
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        if (ms < 0) ms = 0;
+        const s = Math.floor(ms/1000);
+        return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
     }
-
     function getStatusName(status) {
-        if (status === 'RUN') return 'RUN (กำลังเดินเครื่อง)';
-        if (status === 'STBY') return 'STBY (สแตนด์บาย)';
-        if (status === 'REPAIR') return 'REPAIR (กำลังซ่อมแซม)';
-        return 'OFF (ปิด)';
+        const m = { RUN:'RUN (가동 중)', STBY:'STBY (대기)', REPAIR:'REPAIR (수리 중)', OFF:'OFF (정지)' };
+        return m[status] || status;
     }
 
     window.selectLine = function(id) {
         selectedLineId = id;
         document.getElementById('display-selected-line').innerText = `Line ${id}`;
         renderUI();
-    }
+    };
 
     window.recordStatus = function(newStatus) {
         const lineId = selectedLineId;
         const nowMs = new Date().getTime();
         const line = lines[lineId - 1];
-
-        if(line.status === newStatus) {
-            alert(`Line ${lineId} อยู่ในสถานะ ${getStatusName(newStatus)} แล้ว`);
+        if (line.status === newStatus) {
+            alert(`Line ${lineId} 은(는) 이미 ${getStatusName(newStatus)} 상태입니다.`);
             return;
         }
-
-        let statusLabel = "";
-        if(newStatus === 'RUN') statusLabel = 'เริ่ม RUN (260℃ / 160℃)';
-        else if(newStatus === 'STBY') statusLabel = 'STBY (180℃ / OFF)';
-        else if(newStatus === 'REPAIR') statusLabel = 'ซ่อมแซม REPAIR (OFF / OFF)';
-        else statusLabel = 'ปิดเครื่อง OFF (OFF / OFF)';
-
-        const confirmMsg = `ยืนยันการเปลี่ยนสถานะ Line ${lineId}\nเป็น "${statusLabel}" หรือไม่?`;
-        if (!window.confirm(confirmMsg)) return;
+        const labelMap = { RUN:'RUN (260℃ / 160℃)', STBY:'STBY (180℃ / OFF)', REPAIR:'REPAIR (OFF / OFF)', OFF:'OFF' };
+        if (!window.confirm(`Line ${lineId} 상태를 "${labelMap[newStatus]}"(으)로 변경할까요?`)) return;
 
         const elapsedMs = nowMs - line.lastChanged;
-        const durationStr = formatDuration(elapsedMs);
-        const prevStatus = line.status;
         const now = new Date();
-
         ws.send(JSON.stringify({
             type: "UPDATE_STATUS",
             lineId: lineId,
             newStatus: newStatus,
-            durationStr: durationStr,
+            durationStr: formatDuration(elapsedMs),
             durationMs: elapsedMs,
             date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
             time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
@@ -270,88 +518,71 @@
             createdAt: nowMs
         }));
         currentPage = 1;
-    }
+    };
 
     function updateStatDateDisplay() {
         const now = new Date();
-        let displayStr = "";
+        let s = "";
         if (currentStatPeriod === 'day') {
-            displayStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+            s = `${now.getMonth()+1}월 ${now.getDate()}일`;
         } else if (currentStatPeriod === 'week') {
-            const dayOfWeek = now.getDay() || 7; 
-            const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
-            const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 7);
-            displayStr = `${monday.getMonth() + 1}월 ${monday.getDate()}일 - ${sunday.getMonth() + 1}월 ${sunday.getDate()}일`;
-        } else if (currentStatPeriod === 'month') {
-            displayStr = `${now.getMonth() + 1}월`;
+            const d = now.getDay() || 7;
+            const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate()-d+1);
+            const sun = new Date(now.getFullYear(), now.getMonth(), now.getDate()-d+7);
+            s = `${mon.getMonth()+1}월 ${mon.getDate()}일 ~ ${sun.getMonth()+1}월 ${sun.getDate()}일`;
+        } else {
+            s = `${now.getMonth()+1}월`;
         }
-        document.getElementById('stat-date-display').innerText = displayStr;
+        document.getElementById('stat-date-display').innerText = s;
     }
 
     window.changeStatPeriod = function(period) {
         currentStatPeriod = period;
-        document.getElementById('btn-stat-day').classList.remove('active');
-        document.getElementById('btn-stat-week').classList.remove('active');
-        document.getElementById('btn-stat-month').classList.remove('active');
+        ['day','week','month'].forEach(p => document.getElementById(`btn-stat-${p}`).classList.remove('active'));
         document.getElementById(`btn-stat-${period}`).classList.add('active');
         updateStatDateDisplay();
-        updateStats(); 
-    }
+        updateStats();
+    };
 
     function updateStats() {
         const tbody = document.getElementById('stats-tbody');
-        if(!tbody) return;
-
+        if (!tbody) return;
         const now = new Date();
         let startTime = 0;
-
         if (currentStatPeriod === 'day') {
             startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         } else if (currentStatPeriod === 'week') {
-            const day = now.getDay() || 7; 
-            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1).getTime(); 
-        } else if (currentStatPeriod === 'month') {
+            const d = now.getDay() || 7;
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()-d+1).getTime();
+        } else {
             startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
         }
-
-        let stats = {};
-        for(let i=1; i<=7; i++) {
-            stats[i] = { 'RUN': 0, 'STBY': 0, 'REPAIR': 0, 'OFF': 0 };
-        }
-        const currentMs = Date.now();
-
+        const stats = {};
+        for (let i=1; i<=7; i++) stats[i] = { RUN:0, STBY:0, REPAIR:0, OFF:0 };
+        const nowMs = Date.now();
         logs.forEach(log => {
-            let ms = log.durationMs || 0;
-            let logEnd = log.createdAt;
-            let logStart = logEnd - ms;
-            let overlapMs = Math.max(0, logEnd - Math.max(startTime, logStart));
-
-            if (overlapMs > 0) {
+            const ms = log.durationMs || 0;
+            const overlap = Math.max(0, log.createdAt - Math.max(startTime, log.createdAt-ms));
+            if (overlap > 0) {
                 let key = 'OFF';
-                if(log.prevStatus.includes('RUN')) key = 'RUN';
-                else if(log.prevStatus.includes('STBY')) key = 'STBY';
-                else if(log.prevStatus.includes('REPAIR')) key = 'REPAIR';
-                if(stats[log.lineId]) stats[log.lineId][key] += overlapMs;
+                if (log.prevStatus.includes('RUN')) key = 'RUN';
+                else if (log.prevStatus.includes('STBY')) key = 'STBY';
+                else if (log.prevStatus.includes('REPAIR')) key = 'REPAIR';
+                if (stats[log.lineId]) stats[log.lineId][key] += overlap;
             }
         });
-
         lines.forEach(line => {
-            let currentStart = line.lastChanged;
-            let overlapMs = Math.max(0, currentMs - Math.max(startTime, currentStart));
-            if (overlapMs > 0 && stats[line.id]) {
-                let key = line.status; 
-                stats[line.id][key] += overlapMs;
-            }
+            const overlap = Math.max(0, nowMs - Math.max(startTime, line.lastChanged));
+            if (overlap > 0 && stats[line.id]) stats[line.id][line.status] += overlap;
         });
-
         let html = '';
-        for(let i=1; i<=7; i++) {
+        for (let i=1; i<=7; i++) {
             html += `<tr>
-                <td><strong>L${i}</strong></td>
-                <td class="stats-run">${formatDuration(stats[i]['RUN'])}</td>
-                <td class="stats-stby">${formatDuration(stats[i]['STBY'])}</td>
-                <td class="stats-repair">${formatDuration(stats[i]['REPAIR'])}</td>
-                <td class="stats-off">${formatDuration(stats[i]['OFF'])}</td>
+                <td>L${i}</td>
+                <td class="stats-run">${formatDuration(stats[i].RUN)}</td>
+                <td class="stats-stby">${formatDuration(stats[i].STBY)}</td>
+                <td class="stats-repair">${formatDuration(stats[i].REPAIR)}</td>
+                <td class="stats-off">${formatDuration(stats[i].OFF)}</td>
             </tr>`;
         }
         tbody.innerHTML = html;
@@ -359,23 +590,22 @@
 
     function updateTimeAndTimers() {
         const now = new Date();
-        const hours = now.getHours();
-        currentShift = (hours >= 8 && hours < 20) ? "Day Shift" : "Night Shift";
-
+        const h = now.getHours();
+        currentShift = (h >= 8 && h < 20) ? "Day Shift" : "Night Shift";
         const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-        const timeStr = `${String(hours).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-        
-        document.getElementById('current-time-shift').innerText = `${dateStr} ${timeStr} | ${currentShift}`;
+        const timeStr = `${String(h).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+        document.getElementById('current-time-shift').innerText = timeStr;
+        document.getElementById('current-shift-badge').innerText = currentShift;
         document.getElementById('pc-clock').innerText = timeStr;
         document.getElementById('pc-date-shift').innerText = `${dateStr} | ${currentShift}`;
 
         const nowMs = now.getTime();
         lines.forEach(line => {
-            const elapsedMs = nowMs - line.lastChanged;
-            const timerElement = document.getElementById(`timer-${line.id}`);
-            if (timerElement) timerElement.innerText = `⏱ ${formatDuration(elapsedMs)}`;
-            const pcTimerElement = document.getElementById(`pc-timer-${line.id}`);
-            if (pcTimerElement) pcTimerElement.innerText = formatDurationPC(elapsedMs);
+            const el = document.getElementById(`timer-${line.id}`);
+            if (el) el.innerText = formatDuration(nowMs - line.lastChanged);
+            const pcEl = document.getElementById(`pc-timer-${line.id}`);
+            if (pcEl) pcEl.innerText = formatDurationPC(nowMs - line.lastChanged);
         });
 
         if (now.getDate() !== lastDateChecked) {
@@ -385,118 +615,130 @@
         updateStats();
     }
 
-    function renderUI() {
-        const mapContainer = document.getElementById('factory-map');
-        const dashboard = document.getElementById('dashboard');
-        const pcGrid = document.getElementById('pc-grid');
-        
-        mapContainer.innerHTML = ''; dashboard.innerHTML = ''; pcGrid.innerHTML = '';
-        const physicalOrder = [7, 6, 5, 4, 3, 2, 1]; 
-        const logicalOrder = [1, 2, 3, 4, 5, 6, 7];
+    const COLOR = { RUN:'#059669', STBY:'#D97706', REPAIR:'#DC2626', OFF:'#94A3B8' };
+    const SHORT = { RUN:'RUN', STBY:'STBY', REPAIR:'REP', OFF:'OFF' };
 
-        const getCardData = (line) => {
-            let badgeClass = '', pcClass = '', statusText = '', pcStatusText = '', heaterText = '', pcHeaterText = '';
-            if(line.status === 'RUN') {
-                badgeClass = 'bg-run'; pcClass = 'pc-status-run'; pcStatusText = 'RUN';
-                statusText = 'RUN (กำลังเดินเครื่อง)'; heaterText = 'M: 260℃<br>S: 160℃'; pcHeaterText = 'MAIN: 260℃ | SUB: 160℃';
-            } else if (line.status === 'STBY') {
-                badgeClass = 'bg-stby'; pcClass = 'pc-status-stby'; pcStatusText = 'STBY';
-                statusText = 'STBY (สแตนด์บาย)'; heaterText = 'M: 180℃<br>S: OFF'; pcHeaterText = 'MAIN: 180℃ | SUB: OFF';
-            } else if (line.status === 'REPAIR') {
-                badgeClass = 'bg-repair'; pcClass = 'pc-status-repair'; pcStatusText = 'REPAIR';
-                statusText = 'REPAIR (กำลังซ่อมแซม)'; heaterText = 'M: OFF<br>S: OFF'; pcHeaterText = 'HEATER OFF';
-            } else {
-                badgeClass = 'bg-off'; pcClass = 'pc-status-off'; pcStatusText = 'OFF';
-                statusText = 'OFF (ปิด)'; heaterText = 'M: OFF<br>S: OFF'; pcHeaterText = 'HEATER OFF';
-            }
-            return { badgeClass, pcClass, statusText, pcStatusText, heaterText, pcHeaterText };
+    function getCardData(line) {
+        const map = {
+            RUN:    { badgeClass:'bg-run',    pcClass:'pc-status-run',    pcSt:'RUN',    st:'RUN',    heaterM:'260℃', heaterS:'160℃', pcHeat:'MAIN: 260℃ | SUB: 160℃' },
+            STBY:   { badgeClass:'bg-stby',   pcClass:'pc-status-stby',   pcSt:'STBY',   st:'STBY',   heaterM:'180℃', heaterS:'OFF',  pcHeat:'MAIN: 180℃ | SUB: OFF' },
+            REPAIR: { badgeClass:'bg-repair', pcClass:'pc-status-repair', pcSt:'REPAIR', st:'REPAIR', heaterM:'OFF',  heaterS:'OFF',  pcHeat:'HEATER OFF' },
+            OFF:    { badgeClass:'bg-off',    pcClass:'pc-status-off',    pcSt:'OFF',    st:'OFF',    heaterM:'OFF',  heaterS:'OFF',  pcHeat:'HEATER OFF' }
         };
+        return map[line.status] || map.OFF;
+    }
 
-        physicalOrder.forEach(lineId => {
-            const line = lines[lineId - 1]; 
-            const { badgeClass } = getCardData(line);
-            const isSelectedClass = (line.id === selectedLineId) ? 'selected' : '';
-            const nodeWrapper = document.createElement('div');
-            nodeWrapper.innerHTML = `<div class="map-node ${badgeClass} ${isSelectedClass}" onclick="selectLine(${line.id})">L${line.id}</div>`;
-            mapContainer.appendChild(nodeWrapper);
+    function renderUI() {
+        const mapEl  = document.getElementById('factory-map');
+        const dashEl = document.getElementById('dashboard');
+        const pcEl   = document.getElementById('pc-grid');
+        mapEl.innerHTML = ''; dashEl.innerHTML = ''; pcEl.innerHTML = '';
+
+        const physOrder = [7,6,5,4,3,2,1];
+        const logOrder  = [1,2,3,4,5,6,7];
+
+        physOrder.forEach(id => {
+            const line = lines[id-1];
+            const el = document.createElement('div');
+            el.className = `map-node${line.id === selectedLineId ? ' selected' : ''}`;
+            el.style.background = COLOR[line.status];
+            el.onclick = () => selectLine(line.id);
+            el.innerHTML = `<span class="mn-id">L${line.id}</span><span class="mn-st">${SHORT[line.status]}</span>`;
+            mapEl.appendChild(el);
         });
 
-        logicalOrder.forEach(lineId => {
-            const line = lines[lineId - 1]; 
-            const { badgeClass, statusText, heaterText } = getCardData(line);
+        logOrder.forEach(id => {
+            const line = lines[id-1];
+            const d = getCardData(line);
             const card = document.createElement('div');
             card.className = `line-card status-${line.status.toLowerCase()}`;
             card.innerHTML = `
-                <div class="line-header"><span class="line-title">Line ${line.id}</span><span class="timer-badge" id="timer-${line.id}">⏱ 00:00:00</span></div>
-                <div class="heater-status">${heaterText}</div><div class="status-badge ${badgeClass}">${statusText}</div>
+                <div class="lc-header">
+                    <span class="lc-title">Line ${line.id}</span>
+                    <span class="lc-timer" id="timer-${line.id}">00:00:00</span>
+                </div>
+                <div class="heater-row">
+                    <span class="heater-chip">M: ${d.heaterM}</span>
+                    <span class="heater-chip">S: ${d.heaterS}</span>
+                </div>
+                <span class="status-badge ${d.badgeClass}"><span class="status-dot"></span>${d.st}</span>
             `;
-            dashboard.appendChild(card);
+            dashEl.appendChild(card);
         });
 
-        const pcBtnCard = document.createElement('div');
-        pcBtnCard.className = 'pc-open-card';
-        pcBtnCard.onclick = window.openPCView;
-        pcBtnCard.innerHTML = `<div class="pc-open-icon">🖥️</div><div style="font-size: 0.9em; line-height: 1.4;">แดชบอร์ด PC<br>เปิดเต็มหน้าจอ</div>`;
-        dashboard.appendChild(pcBtnCard);
+        const pcBtn = document.createElement('div');
+        pcBtn.className = 'pc-open-card';
+        pcBtn.onclick = window.openPCView;
+        pcBtn.innerHTML = `<div class="pc-open-icon">🖥️</div><span>PC 대시보드<br>전체화면</span>`;
+        dashEl.appendChild(pcBtn);
 
-        physicalOrder.forEach(lineId => {
-            const line = lines[lineId - 1];
-            const { pcClass, pcStatusText, pcHeaterText } = getCardData(line);
-            const pcCard = document.createElement('div');
-            pcCard.className = `pc-line-card ${pcClass}`;
-            pcCard.innerHTML = `
-                <div class="pc-card-header">LINE ${line.id}</div><div class="pc-card-status-box">${pcStatusText}</div>
-                <div class="pc-card-footer"><div class="pc-card-time" id="pc-timer-${line.id}">00:00</div><div class="pc-card-heater">${pcHeaterText}</div></div>
+        physOrder.forEach(id => {
+            const line = lines[id-1];
+            const d = getCardData(line);
+            const card = document.createElement('div');
+            card.className = `pc-line-card ${d.pcClass}`;
+            card.innerHTML = `
+                <div class="pc-card-header">LINE ${line.id}</div>
+                <div class="pc-card-status-box">${d.pcSt}</div>
+                <div class="pc-card-footer">
+                    <div class="pc-card-time" id="pc-timer-${line.id}">00:00</div>
+                    <div class="pc-card-heater">${d.pcHeat}</div>
+                </div>
             `;
-            pcGrid.appendChild(pcCard);
+            pcEl.appendChild(card);
         });
     }
 
     function renderLogs() {
-        const logList = document.getElementById('log-list');
-        const pagination = document.getElementById('pagination');
-        logList.innerHTML = ''; pagination.innerHTML = '';
-        
-        const totalPages = Math.ceil(logs.length / itemsPerPage) || 1;
-        if (currentPage > totalPages) currentPage = totalPages;
+        const listEl = document.getElementById('log-list');
+        const pageEl = document.getElementById('pagination');
+        listEl.innerHTML = ''; pageEl.innerHTML = '';
 
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const currentLogs = logs.slice(startIndex, startIndex + itemsPerPage);
+        const total = Math.ceil(logs.length / itemsPerPage) || 1;
+        if (currentPage > total) currentPage = total;
+        const slice = logs.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage);
 
-        currentLogs.forEach(log => {
+        slice.forEach(log => {
             const li = document.createElement('li');
             li.className = 'log-item';
-            let newStatusColor = log.newStatus.includes('REPAIR') ? 'var(--repair)' : 'var(--primary)';
+            const prevKey = Object.keys(COLOR).find(k => log.prevStatus.includes(k)) || 'OFF';
+            const nextKey = Object.keys(COLOR).find(k => log.newStatus.includes(k)) || 'OFF';
             li.innerHTML = `
-                <div class="log-header"><strong>Line ${log.lineId}</strong><span class="log-time">${log.date} ${log.time} (${log.shift})</span></div>
-                <div>${log.prevStatus} ➔ <b style="color:${newStatusColor}">${log.newStatus}</b></div>
-                <div style="margin-top:5px;"><span class="log-duration">[สถานะก่อนหน้า ${log.prevStatus} ระยะเวลา: ${log.durationStr}]</span></div>
+                <div class="log-row1">
+                    <span class="log-line-tag">Line ${log.lineId}</span>
+                    <span class="log-time">${log.date} ${log.time} · ${log.shift}</span>
+                </div>
+                <div class="log-row2">
+                    <span class="log-prev" style="color:${COLOR[prevKey]}">${log.prevStatus}</span>
+                    <span class="log-arrow">→</span>
+                    <span class="log-next" style="color:${COLOR[nextKey]}">${log.newStatus}</span>
+                    <span class="log-dur">⏱ ${log.durationStr}</span>
+                </div>
             `;
-            logList.appendChild(li);
+            listEl.appendChild(li);
         });
 
-        for (let i = 1; i <= totalPages; i++) {
+        for (let i=1; i<=total; i++) {
             const btn = document.createElement('button');
-            btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+            btn.className = `page-btn${i===currentPage ? ' active' : ''}`;
             btn.innerText = i;
-            btn.onclick = () => { currentPage = i; renderLogs(); };
-            pagination.appendChild(btn);
+            btn.onclick = () => { currentPage=i; renderLogs(); };
+            pageEl.appendChild(btn);
         }
     }
 
     window.openPCView = function() {
         document.getElementById('pc-view').style.display = 'flex';
-        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e => console.log(e));
-    }
-
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+    };
     window.closePCView = function() {
         document.getElementById('pc-view').style.display = 'none';
         if (document.fullscreenElement) document.exitFullscreen();
-    }
+    };
 
     updateStatDateDisplay();
-    setInterval(updateTimeAndTimers, 1000); 
-    renderUI(); 
+    setInterval(updateTimeAndTimers, 1000);
+    renderUI();
 </script>
 </body>
 </html>
