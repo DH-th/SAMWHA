@@ -242,53 +242,43 @@ window.applyLang = function(){
   document.querySelectorAll('.ldrop-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.lang===window.LANG);
   });
-  // update lang label if present
-  const ll=document.getElementById('lang-lbl');
-  if(ll) ll.textContent=window.LANG;
+  // update lang badge if present
+  const badge=document.getElementById('lang-badge');
+  if(badge) badge.textContent=window.LANG;
 };
 
-/* ── lang picker dropdown ── */
+/* ── lang cycle (click to rotate TH → EN → KO → TH) ── */
+window.cycleLang = function(){
+  const order = ['TH','EN','KO'];
+  const next = order[(order.indexOf(window.LANG)+1) % order.length];
+  setLang(next);
+  // briefly flash the title badge so user sees the change
+  const badge = document.getElementById('lang-badge');
+  if(badge){ badge.classList.add('pop'); setTimeout(()=>badge.classList.remove('pop'),300); }
+};
+
 (function(){
   const CSS=`
-#lang-drop{display:none;position:fixed;z-index:9999;
-  background:#fff;border:1.5px solid rgba(0,0,0,.1);
-  border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.18);
-  padding:5px;flex-direction:column;gap:2px;min-width:148px;}
-#lang-drop.open{display:flex;}
-.ldrop-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;
-  border:none;border-radius:8px;background:none;cursor:pointer;
-  font-size:13px;font-weight:700;text-align:left;font-family:inherit;
-  color:#1A2430;transition:background .12s;width:100%;}
-.ldrop-btn:hover{background:#F0F2F5;}
-.ldrop-btn.active{background:rgba(13,148,136,.1);color:#0D9488;}
-.ldrop-flag{font-size:16px;}
+#lang-badge{
+  display:inline-block;margin-left:5px;padding:1px 6px;
+  border-radius:6px;font-size:10px;font-weight:800;vertical-align:middle;
+  background:var(--accent,#0D9488);color:#fff;letter-spacing:.03em;
+  transition:transform .15s;
+}
+#lang-badge.pop{transform:scale(1.35);}
 `;
   const style=document.createElement('style');style.textContent=CSS;
   document.head.appendChild(style);
 
-  const drop=document.createElement('div');
-  drop.id='lang-drop';
-  drop.innerHTML=`
-    <button class="ldrop-btn${window.LANG==='TH'?' active':''}" data-lang="TH" onclick="setLang('TH');closeLangDrop()"><span class="ldrop-flag">🇹🇭</span>ภาษาไทย</button>
-    <button class="ldrop-btn${window.LANG==='EN'?' active':''}" data-lang="EN" onclick="setLang('EN');closeLangDrop()"><span class="ldrop-flag">🇬🇧</span>English</button>
-    <button class="ldrop-btn${window.LANG==='KO'?' active':''}" data-lang="KO" onclick="setLang('KO');closeLangDrop()"><span class="ldrop-flag">🇰🇷</span>한국어</button>
-  `;
-  document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(drop));
-  document.addEventListener('click', e=>{
-    if(!drop.contains(e.target)) drop.classList.remove('open');
+  // inject badge into the clickable title after DOM ready
+  document.addEventListener('DOMContentLoaded',()=>{
+    const trigger=document.querySelector('[data-lang-trigger]');
+    if(!trigger) return;
+    const badge=document.createElement('span');
+    badge.id='lang-badge';
+    badge.textContent=window.LANG;
+    trigger.appendChild(badge);
   });
-
-  window.openLangDrop=function(e){
-    e.stopPropagation();
-    const r=(e.currentTarget||e.target).getBoundingClientRect();
-    drop.style.left=r.left+'px';
-    drop.style.top=(r.bottom+6)+'px';
-    drop.classList.toggle('open');
-    document.querySelectorAll('.ldrop-btn').forEach(b=>{
-      b.classList.toggle('active',b.dataset.lang===window.LANG);
-    });
-  };
-  window.closeLangDrop=function(){drop.classList.remove('open');};
 })();
 
 document.addEventListener('DOMContentLoaded', ()=>applyLang());
