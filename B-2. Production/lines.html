@@ -133,13 +133,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
 
 <header>
   <a href="index.html" class="back" data-i18n="backToDash">← แดชบอร์ด</a>
-  <span class="ptitle" data-i18n="linesTitle">ตั้งค่าไลน์</span>
+  <span class="ptitle" data-i18n="linesTitle" onclick="openLangDrop(event)" style="cursor:pointer;user-select:none">ตั้งค่าไลน์</span>
   <span class="psub" data-i18n="lineSubtitle">จัดการลำดับ ชื่อ และกระบวนการ</span>
-  <div class="lang-sw" style="margin-left:auto">
-    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
-    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
-    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
-  </div>
 </header>
 
 <div class="page">

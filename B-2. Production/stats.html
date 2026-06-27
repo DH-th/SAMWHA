@@ -144,12 +144,7 @@ h1{font-size:16px;font-weight:900;}
 
 <header>
   <a href="table.html" class="back" data-i18n="backToProd">← การผลิต</a>
-  <h1 data-i18n="statsTitle">สถิติการผลิต</h1>
-  <div class="lang-sw" style="margin-left:auto">
-    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
-    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
-    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
-  </div>
+  <h1 data-i18n="statsTitle" onclick="openLangDrop(event)" style="cursor:pointer;user-select:none">สถิติการผลิต</h1>
 </header>
 
 <div class="ctrl">

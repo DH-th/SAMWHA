@@ -9,6 +9,7 @@
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="lang.js"></script>
+<script>window.LANG='EN';</script>
 <style>
 :root{
   --bg:#F5F7FA; --surface:#FFFFFF; --s2:#F0F2F5; --s3:#E8ECF0;
@@ -633,10 +634,5 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 renderQty();connect();
 window.onLangChange=()=>{renderRecords();updateSummary();};
 </script>
-<div class="lang-sw" style="position:fixed;bottom:80px;right:14px;z-index:300;flex-direction:column;gap:4px;">
-  <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
-  <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
-  <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
-</div>
 </body>
 </html>

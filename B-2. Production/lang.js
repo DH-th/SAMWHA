@@ -12,8 +12,8 @@ TH:{
   productionTitle:'Production',
   calendarTitle:'เปิดปฏิทิน', auto:'อัตโนมัติ',
   qrBtn:'🖨️ QR', excelBtn:'📥 Excel', statsBtn:'📊 สถิติ', adminBtn:'⚙ จัดการ',
-  totalProd:'ยอดผลิตรวม', s1Total:'S1 รวม', s2Total:'S2 รวม', avgPerH:'เฉลี่ย/ชม.',
-  colLine:'ไลน์', colModel:'โมเดล', colDailyTotal:'รวมวันนี้', colAvg:'เฉลี่ย/ชม.',
+  totalProd:'ยอดผลิตรวม', s1Total:'S1 รวม', s2Total:'S2 รวม', avgPerH:'Avg/h',
+  colLine:'ไลน์', colModel:'โมเดล', colDailyTotal:'รวมวันนี้', colAvg:'Avg/h',
   slideAfternoon:'→ เลื่อนดูช่วงบ่าย', slideMorning:'← เลื่อนดูช่วงเช้า',
   excelPreview:'ตัวอย่าง Excel', allLines:'ทุกไลน์', download:'⬇ ดาวน์โหลด',
   noRecordsTable:'ไม่มีข้อมูล', subtotal:'รวม',
@@ -85,7 +85,7 @@ EN:{
   productionTitle:'Production',
   calendarTitle:'Open calendar', auto:'Auto',
   qrBtn:'🖨️ QR', excelBtn:'📥 Excel', statsBtn:'📊 Stats', adminBtn:'⚙ Admin',
-  totalProd:'Total Prod', s1Total:'S1 Total', s2Total:'S2 Total', avgPerH:'Avg /h',
+  totalProd:'Total Prod', s1Total:'S1 Total', s2Total:'S2 Total', avgPerH:'Avg/h',
   colLine:'Line', colModel:'Model', colDailyTotal:'Daily Total', colAvg:'Avg/h',
   slideAfternoon:'→ Slide for afternoon', slideMorning:'← Slide for morning',
   excelPreview:'Excel Preview', allLines:'All Lines', download:'⬇ Download',
@@ -155,8 +155,8 @@ KO:{
   productionTitle:'Production',
   calendarTitle:'달력 열기', auto:'자동',
   qrBtn:'🖨️ QR', excelBtn:'📥 Excel', statsBtn:'📊 통계', adminBtn:'⚙ 관리',
-  totalProd:'총 생산', s1Total:'S1 합계', s2Total:'S2 합계', avgPerH:'평균 /h',
-  colLine:'라인', colModel:'모델', colDailyTotal:'일일 합계', colAvg:'평균/h',
+  totalProd:'총 생산', s1Total:'S1 합계', s2Total:'S2 합계', avgPerH:'Avg/h',
+  colLine:'라인', colModel:'모델', colDailyTotal:'일일 합계', colAvg:'Avg/h',
   slideAfternoon:'→ 슬라이드하여 오후 시간대 보기', slideMorning:'← 슬라이드하여 오전 시간대 보기',
   excelPreview:'Excel 미리보기', allLines:'전체 라인', download:'⬇ 다운로드',
   noRecordsTable:'기록이 없습니다.', subtotal:'소계',
@@ -238,10 +238,58 @@ window.applyLang = function(){
     else if(el.hasAttribute('data-i18n-html')) el.innerHTML=v;
     else el.textContent=v;
   });
-  document.querySelectorAll('.lang-btn').forEach(b=>{
+  // update dropdown active states
+  document.querySelectorAll('.ldrop-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.lang===window.LANG);
   });
+  // update lang label if present
+  const ll=document.getElementById('lang-lbl');
+  if(ll) ll.textContent=window.LANG;
 };
+
+/* ── lang picker dropdown ── */
+(function(){
+  const CSS=`
+#lang-drop{display:none;position:fixed;z-index:9999;
+  background:#fff;border:1.5px solid rgba(0,0,0,.1);
+  border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.18);
+  padding:5px;flex-direction:column;gap:2px;min-width:148px;}
+#lang-drop.open{display:flex;}
+.ldrop-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;
+  border:none;border-radius:8px;background:none;cursor:pointer;
+  font-size:13px;font-weight:700;text-align:left;font-family:inherit;
+  color:#1A2430;transition:background .12s;width:100%;}
+.ldrop-btn:hover{background:#F0F2F5;}
+.ldrop-btn.active{background:rgba(13,148,136,.1);color:#0D9488;}
+.ldrop-flag{font-size:16px;}
+`;
+  const style=document.createElement('style');style.textContent=CSS;
+  document.head.appendChild(style);
+
+  const drop=document.createElement('div');
+  drop.id='lang-drop';
+  drop.innerHTML=`
+    <button class="ldrop-btn${window.LANG==='TH'?' active':''}" data-lang="TH" onclick="setLang('TH');closeLangDrop()"><span class="ldrop-flag">🇹🇭</span>ภาษาไทย</button>
+    <button class="ldrop-btn${window.LANG==='EN'?' active':''}" data-lang="EN" onclick="setLang('EN');closeLangDrop()"><span class="ldrop-flag">🇬🇧</span>English</button>
+    <button class="ldrop-btn${window.LANG==='KO'?' active':''}" data-lang="KO" onclick="setLang('KO');closeLangDrop()"><span class="ldrop-flag">🇰🇷</span>한국어</button>
+  `;
+  document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(drop));
+  document.addEventListener('click', e=>{
+    if(!drop.contains(e.target)) drop.classList.remove('open');
+  });
+
+  window.openLangDrop=function(e){
+    e.stopPropagation();
+    const r=(e.currentTarget||e.target).getBoundingClientRect();
+    drop.style.left=r.left+'px';
+    drop.style.top=(r.bottom+6)+'px';
+    drop.classList.toggle('open');
+    document.querySelectorAll('.ldrop-btn').forEach(b=>{
+      b.classList.toggle('active',b.dataset.lang===window.LANG);
+    });
+  };
+  window.closeLangDrop=function(){drop.classList.remove('open');};
+})();
 
 document.addEventListener('DOMContentLoaded', ()=>applyLang());
 })();

@@ -166,13 +166,8 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
 <body>
 <header>
   <a href="index.html" class="back" data-i18n="backToDash">← แดชบอร์ด</a>
-  <div class="ptitle" data-i18n="adminTitle">จัดการ Production</div>
+  <div class="ptitle" data-i18n="adminTitle" onclick="openLangDrop(event)" style="cursor:pointer;user-select:none">จัดการ Production</div>
   <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
-  <div class="lang-sw" style="margin-left:auto">
-    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
-    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
-    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
-  </div>
 </header>
 
 <div class="tabs">

@@ -378,7 +378,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 
 <header>
   <a href="../index.html" class="back" data-i18n="home">← หน้าหลัก</a>
-  <span class="ptitle">Production</span>
+  <span class="ptitle" onclick="openLangDrop(event)" title="Language" style="cursor:pointer;user-select:none">Production</span>
   <div class="date-nav" style="position:relative">
     <button onclick="changeDate(-1)">◀</button>
     <span id="date-lbl" onclick="toggleCal(event)" id="date-lbl">-</span>
@@ -413,11 +413,6 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
     <a href="stats.html" class="adm" data-i18n="statsBtn">📊 สถิติ</a>
     <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
-  </div>
-  <div class="lang-sw">
-    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
-    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
-    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
   </div>
 </header>
 
