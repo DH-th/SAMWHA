@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>생산 입력</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="lang.js"></script>
 <style>
 :root{
   --bg:#F5F7FA; --surface:#FFFFFF; --s2:#F0F2F5; --s3:#E8ECF0;
@@ -184,18 +186,22 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
   padding:10px 18px;font-size:13px;font-weight:700;z-index:200;
   opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;}
 #toast.s{opacity:1;}
+.lang-sw{display:flex;gap:3px;}
+.lang-btn{padding:3px 8px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:11px;font-weight:700;background:var(--s2);color:var(--muted);cursor:pointer;font-family:inherit;}
+.lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
 </head>
 <body>
 
-<div id="offline">서버 연결 끊김 — 재연결 중...</div>
+<div id="offline" data-i18n="serverDisconnected">เซิร์ฟเวอร์ขาดการเชื่อมต่อ — กำลังเชื่อมต่อใหม่...</div>
 
 <!-- 헤더: 일체형 두 칸 -->
 <div class="hdr">
   <div class="hdr-cell">
     <div class="hdr-lbl">LINE</div>
     <div class="hdr-val" id="hb-line">—</div>
-    <div class="conn-row"><span class="cdot" id="cdot"></span><span class="ctxt" id="ctxt">연결 중</span></div>
+    <div class="conn-row"><span class="cdot" id="cdot"></span><span class="ctxt" id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
   </div>
   <div class="hdr-cell">
     <div class="hdr-lbl">PROCESS</div>
@@ -223,7 +229,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 <div class="model-bar" id="model-bar" onclick="openSheet()">
   <div class="mb-left">
     <div class="mb-plant" id="mb-plant">Plant</div>
-    <div class="mb-model empty" id="mb-model">모델을 선택하세요 →</div>
+    <div class="mb-model empty" id="mb-model" data-i18n="selectModel">เลือกโมเดล →</div>
   </div>
   <div class="mb-arrow">›</div>
 </div>
@@ -231,7 +237,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 <!-- 수량 입력 -->
 <div class="qty-section">
   <div class="qty-display">
-    <div class="edit-badge" id="edit-badge">수정 중</div>
+    <div class="edit-badge" id="edit-badge" data-i18n="editing">กำลังแก้ไข</div>
     <div class="qty-num zero" id="qty-disp">0</div>
     <div class="qty-unit">PCS</div>
   </div>
@@ -245,7 +251,7 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
     <div class="nk" onclick="n('7')">7</div>
     <div class="nk" onclick="n('8')">8</div>
     <div class="nk" onclick="n('9')">9</div>
-    <div class="nk clr" onclick="clr()">초기화</div>
+    <div class="nk clr" onclick="clr()" data-i18n="clear">ล้าง</div>
     <div class="nk" onclick="n('0')">0</div>
     <div class="nk del" onclick="del()">⌫</div>
   </div>
@@ -253,14 +259,14 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 
 <!-- 오늘 기록 -->
 <div class="records-section">
-  <div class="rec-title">오늘 기록</div>
-  <div class="rec-list" id="rec-list"><div class="rec-empty">등록된 기록이 없습니다</div></div>
+  <div class="rec-title" data-i18n="todayRecords">บันทึกวันนี้</div>
+  <div class="rec-list" id="rec-list"><div class="rec-empty" data-i18n="noTodayRecords">ยังไม่มีข้อมูลวันนี้</div></div>
 </div>
 
 <!-- 하단 버튼 -->
 <div class="submit-wrap">
-  <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()">취소</button>
-  <button class="submit-btn" id="submit-btn" onclick="openConfirm()" disabled>등록하기</button>
+  <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()" data-i18n="cancel">ยกเลิก</button>
+  <button class="submit-btn" id="submit-btn" onclick="openConfirm()" disabled data-i18n="register">บันทึก</button>
 </div>
 
 <!-- 모델 선택 시트 -->
@@ -268,13 +274,13 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
   <div class="sheet">
     <div class="sheet-head">
       <button class="sheet-back" id="sheet-back" onclick="sheetBack()">‹ 뒤로</button>
-      <div class="sheet-title" id="sheet-title">Plant 선택</div>
+      <div class="sheet-title" id="sheet-title" data-i18n="selectPlant">เลือกแผนก</div>
       <button class="sheet-x" onclick="closeSheet()">✕</button>
     </div>
     <div class="model-search-wrap" id="model-search-wrap">
       <div style="position:relative">
         <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none;line-height:1">🔍</span>
-        <input type="search" id="model-search" placeholder="전체 모델 검색..." autocomplete="off"
+        <input type="search" id="model-search" data-i18n="searchAllModels" placeholder="ค้นหาโมเดลทั้งหมด..." autocomplete="off"
           oninput="filterModels(this.value)"
           style="width:100%;padding:9px 14px 9px 34px;border:1.5px solid var(--border);border-radius:10px;
                  font-size:14px;font-family:inherit;background:var(--surface2);color:var(--text);outline:none;
@@ -288,22 +294,22 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 <!-- 확인 시트 -->
 <div class="sheet-bg" id="cf-bg" onclick="onCfBg(event)">
   <div class="cf-sheet">
-    <div class="cf-title" id="cf-title">등록 확인</div>
-    <div class="cf-sub">시간대를 확인하고 등록하세요.</div>
+    <div class="cf-title" id="cf-title" data-i18n="registerConfirm">ยืนยันการบันทึก</div>
+    <div class="cf-sub" data-i18n="confirmSlotHint">ตรวจสอบช่วงเวลาแล้วกดบันทึก</div>
     <div class="cf-rows">
-      <div class="cf-row"><span class="cf-lbl">라인 / 공정</span><span class="cf-val" id="cf-line">-</span></div>
-      <div class="cf-row"><span class="cf-lbl">시간대</span><select class="slot-sel" id="cf-slot"></select></div>
-      <div class="cf-row"><span class="cf-lbl">교대</span><span class="cf-val" id="cf-shift">-</span></div>
-      <div class="cf-row"><span class="cf-lbl">모델</span><span class="cf-val" id="cf-model">-</span></div>
-      <div class="cf-row"><span class="cf-lbl">수량</span><span class="cf-val" style="font-size:18px;color:var(--teal)" id="cf-qty">-</span></div>
+      <div class="cf-row"><span class="cf-lbl" data-i18n="lineProcess">ไลน์ / กระบวนการ</span><span class="cf-val" id="cf-line">-</span></div>
+      <div class="cf-row"><span class="cf-lbl" data-i18n="timeSlot">ช่วงเวลา</span><select class="slot-sel" id="cf-slot"></select></div>
+      <div class="cf-row"><span class="cf-lbl" data-i18n="shift">กะ</span><span class="cf-val" id="cf-shift">-</span></div>
+      <div class="cf-row"><span class="cf-lbl" data-i18n="model">โมเดล</span><span class="cf-val" id="cf-model">-</span></div>
+      <div class="cf-row"><span class="cf-lbl" data-i18n="qty">จำนวน</span><span class="cf-val" style="font-size:18px;color:var(--teal)" id="cf-qty">-</span></div>
       <div class="cf-row" style="flex-direction:column;align-items:flex-start;gap:4px">
         <span class="cf-lbl">Remark</span>
-        <textarea id="cf-remark" rows="2" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;resize:none;background:var(--s2);color:var(--text);outline:none" placeholder="비고 (선택)"></textarea>
+        <textarea id="cf-remark" rows="2" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;resize:none;background:var(--s2);color:var(--text);outline:none" data-i18n="remarkPlaceholder" placeholder="หมายเหตุ (ไม่จำเป็น)"></textarea>
       </div>
     </div>
     <div class="cf-btns">
-      <button class="cf-cancel" onclick="closeConfirm()">취소</button>
-      <button class="cf-ok" id="cf-ok" onclick="submit()">등록</button>
+      <button class="cf-cancel" onclick="closeConfirm()" data-i18n="cancel">ยกเลิก</button>
+      <button class="cf-ok" id="cf-ok" onclick="submit()" data-i18n="register">บันทึก</button>
     </div>
   </div>
 </div>
@@ -381,8 +387,8 @@ function updateSummary(){
   const a2=el>0?Math.round(s2/el):0;
   document.getElementById('ps-s1').textContent=s1>0?s1.toLocaleString():'—';
   document.getElementById('ps-s2').textContent=s2>0?s2.toLocaleString():'—';
-  document.getElementById('avg-s1').textContent=a1>0?`평균 ${a1}/h`:'';
-  document.getElementById('avg-s2').textContent=a2>0?`평균 ${a2}/h`:'';
+  document.getElementById('avg-s1').textContent=a1>0?`${t('avgPerH')} ${a1}/h`:'';
+  document.getElementById('avg-s2').textContent=a2>0?`${t('avgPerH')} ${a2}/h`:'';
   renderRecords();
 }
 
@@ -392,14 +398,14 @@ function renderRecords(){
     .filter(r=>r.line===LINE&&r.process===PROC&&r.prodDate===viewDate)
     .sort((a,b)=>a.slot>b.slot?1:-1);
   const el=document.getElementById('rec-list');
-  if(!myRecs.length){el.innerHTML='<div class="rec-empty">오늘 등록된 기록이 없습니다</div>';return;}
+  if(!myRecs.length){el.innerHTML=`<div class="rec-empty">${t('noTodayRecords')}</div>`;return;}
   el.innerHTML=myRecs.map(r=>{
     const nh=(parseInt(r.slot)+1)%24;
     return`<div class="rec-item">
       <div class="rec-slot">${r.slot}~${p2(nh)}:00</div>
       <div class="rec-model">${r.modelName||''}</div>
       <div class="rec-qty">${(r.qty||0).toLocaleString()}</div>
-      <button class="rec-edit" onclick="startEdit('${r.id}')">${editingId===r.id?'✓':'수정'}</button>
+      <button class="rec-edit" onclick="startEdit('${r.id}')">${editingId===r.id?'✓':t('editBtn')}</button>
     </div>`;
   }).join('');
 }
@@ -415,7 +421,7 @@ function startEdit(id){
     const mEl=document.getElementById('mb-model');mEl.textContent=sm.name;mEl.className='mb-model';}
   document.getElementById('edit-badge').classList.add('on');
   document.getElementById('submit-btn').classList.add('edit-mode');
-  document.getElementById('submit-btn').textContent='수정하기';
+  document.getElementById('submit-btn').textContent=t('update');
   document.getElementById('cancel-btn').classList.add('on');
   renderQty();renderRecords();
   window.scrollTo({top:document.querySelector('.qty-section').offsetTop-80,behavior:'smooth'});
@@ -424,7 +430,7 @@ function cancelEdit(){
   editingId=null;qtyStr='0';
   document.getElementById('edit-badge').classList.remove('on');
   document.getElementById('submit-btn').classList.remove('edit-mode');
-  document.getElementById('submit-btn').textContent='등록하기';
+  document.getElementById('submit-btn').textContent=t('register');
   document.getElementById('cancel-btn').classList.remove('on');
   renderQty();renderRecords();
 }
@@ -451,24 +457,23 @@ function renderSheet(){
   const title=document.getElementById('sheet-title');
   const q=document.getElementById('model-search').value.trim().toLowerCase();
   if(q){
-    // 전체 검색 모드
     backBtn.classList.remove('on');
-    title.textContent='모델 검색';
+    title.textContent=t('modelSelect');
     renderAllModelSearch(q);
     return;
   }
   if(sheetStep==='plant'){
-    backBtn.classList.remove('on');title.textContent='Plant 선택';
-    if(!plants.length){body.innerHTML='<div class="no-plants">등록된 Plant가 없습니다.</div>';return;}
+    backBtn.classList.remove('on');title.textContent=t('selectPlant');
+    if(!plants.length){body.innerHTML=`<div class="no-plants">${t('noPlants')}</div>`;return;}
     body.innerHTML=plants.map(pl=>`
       <div class="plant-opt" onclick="pickPlant('${pl.id}')">
         <div class="plant-opt-name">${pl.name}</div>
-        <div class="plant-opt-cnt">${(pl.models||[]).length}개 모델</div>
+        <div class="plant-opt-cnt">${(pl.models||[]).length} ${t('modelsCount')}</div>
         <div class="plant-opt-arrow">›</div>
       </div>`).join('');
   } else {
     const pl=sheetPlant;
-    backBtn.classList.add('on');title.textContent=pl.name+' 모델 선택';
+    backBtn.classList.add('on');title.textContent=pl.name+' '+t('modelSelect');
     renderModelList(pl,'');
   }
 }
@@ -490,12 +495,12 @@ function renderAllModelSearch(q){
       </div>`;
     });
   });
-  body.innerHTML=total?html:'<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">검색 결과가 없습니다.</div>';
+  body.innerHTML=total?html:`<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">${t('noSearchResults')}</div>`;
 }
 function renderModelList(pl, q){
   const body=document.getElementById('sheet-body');
   const allModels=pl.models||[];
-  if(!allModels.length){body.innerHTML='<div class="no-plants">등록된 모델이 없습니다.</div>';return;}
+  if(!allModels.length){body.innerHTML=`<div class="no-plants">${t('noModels')}</div>`;return;}
   const favs=getFavs();
   const mkRow=(m)=>{
     const isFav=!!favs[`${pl.id}:${m.id}`];
@@ -508,7 +513,7 @@ function renderModelList(pl, q){
   const favModels=allModels.filter(m=>favs[`${pl.id}:${m.id}`]);
   const restModels=allModels.filter(m=>!favs[`${pl.id}:${m.id}`]);
   body.innerHTML=
-    (favModels.length?`<div class="fav-divider">⭐ 즐겨찾기</div>${favModels.map(m=>mkRow(m)).join('')}<div class="fav-divider">전체 모델</div>`:'')
+    (favModels.length?`<div class="fav-divider">${t('favorites')}</div>${favModels.map(m=>mkRow(m)).join('')}<div class="fav-divider">${t('allModels')}</div>`:'')
     +restModels.map(m=>mkRow(m)).join('');
 }
 function filterModels(query){
@@ -535,11 +540,11 @@ function openConfirm(){
   const now=new Date();
   const{date,shift,slots}=calcDS(now);
   const isEdit=editingId!==null;
-  document.getElementById('cf-title').textContent=isEdit?'수정 확인':'등록 확인';
-  document.getElementById('cf-ok').textContent=isEdit?'수정':'등록';
+  document.getElementById('cf-title').textContent=isEdit?t('updateConfirm'):t('registerConfirm');
+  document.getElementById('cf-ok').textContent=isEdit?t('edit'):t('register');
   document.getElementById('cf-ok').className='cf-ok'+(isEdit?' edit-mode':'');
   document.getElementById('cf-line').textContent=`${LINE}${PROC?' / '+PROC:''}`;
-  document.getElementById('cf-shift').textContent=shift==='day'?'주간 ☀':'야간 🌙';
+  document.getElementById('cf-shift').textContent=shift==='day'?t('dayShiftLabel'):t('nightShiftLabel');
   document.getElementById('cf-model').textContent=`${selPlant.name} › ${selModel.name}`;
   document.getElementById('cf-qty').textContent=parseInt(qtyStr).toLocaleString()+' PCS';
   let defaultSlot=autoSlot(now,slots);
@@ -556,7 +561,7 @@ function onCfBg(e){if(e.target===document.getElementById('cf-bg'))closeConfirm()
 
 /* ── 전송 ── */
 function submit(){
-  if(!ws||ws.readyState!==1){alert('서버 연결이 끊겼습니다.');return;}
+  if(!ws||ws.readyState!==1){alert(t('alertDisconnected'));return;}
   const now=new Date();
   const{date,shift}=calcDS(now);
   const slot=document.getElementById('cf-slot').value;
@@ -574,11 +579,11 @@ function submit(){
   if(idx>-1)records[idx]=rec;else records.push(rec);
   closeConfirm();
   document.getElementById('cf-remark').value='';
-  toast(isEdit?'✓ 수정 완료':'✓ 등록 완료');
+  toast(isEdit?t('toastUpdated'):t('toastAdded'));
   editingId=null;qtyStr='0';
   document.getElementById('edit-badge').classList.remove('on');
   document.getElementById('submit-btn').classList.remove('edit-mode');
-  document.getElementById('submit-btn').textContent='등록하기';
+  document.getElementById('submit-btn').textContent=t('register');
   document.getElementById('cancel-btn').classList.remove('on');
   renderQty();updateSummary();
 }
@@ -589,7 +594,7 @@ function connect(){
   ws.onopen=()=>{
     document.getElementById('offline').style.display='none';
     document.getElementById('cdot').className='cdot';
-    document.getElementById('ctxt').textContent='연결됨';
+    document.getElementById('ctxt').textContent=t('connected');
   };
   ws.onmessage=(e)=>{
     const msg=JSON.parse(e.data);
@@ -618,7 +623,7 @@ function connect(){
   ws.onclose=()=>{
     document.getElementById('offline').style.display='';
     document.getElementById('cdot').className='cdot off';
-    document.getElementById('ctxt').textContent='연결 끊김';
+    document.getElementById('ctxt').textContent=t('disconnected');
     setTimeout(connect,3000);
   };
   ws.onerror=()=>ws.close();
@@ -626,6 +631,12 @@ function connect(){
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('s');setTimeout(()=>t.classList.remove('s'),2200);}
 
 renderQty();connect();
+window.onLangChange=()=>{renderRecords();updateSummary();};
 </script>
+<div class="lang-sw" style="position:fixed;bottom:80px;right:14px;z-index:300;flex-direction:column;gap:4px;">
+  <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
+  <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
+  <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
+</div>
 </body>
 </html>

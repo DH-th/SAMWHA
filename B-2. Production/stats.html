@@ -6,6 +6,8 @@
 <title>생산 통계 — Production</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="lang.js"></script>
 <style>
 :root{
   --bg:#F5F7FA;--surface:#FFFFFF;--s2:#F0F2F5;--s3:#E8ECF0;
@@ -131,34 +133,43 @@ h1{font-size:16px;font-weight:900;}
   .proc-sections{flex-direction:column;}
   .overall-wrap{flex-direction:column;}
 }
+.lang-sw{display:flex;gap:3px;}
+.lang-btn{padding:3px 8px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:11px;font-weight:700;background:var(--s2,var(--surface));color:var(--muted);cursor:pointer;font-family:inherit;}
+.lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
 </head>
 <body>
-<div id="ov"><div class="sp"></div><p style="font-size:13px;color:var(--muted);font-weight:600">로딩 중...</p></div>
+<div id="ov"><div class="sp"></div><p style="font-size:13px;color:var(--muted);font-weight:600" data-i18n="loading">กำลังโหลด...</p></div>
 
 <header>
-  <a href="table.html" class="back">← 생산 현황</a>
-  <h1>생산 통계</h1>
+  <a href="table.html" class="back" data-i18n="backToProd">← การผลิต</a>
+  <h1 data-i18n="statsTitle">สถิติการผลิต</h1>
+  <div class="lang-sw" style="margin-left:auto">
+    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
+    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
+    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
+  </div>
 </header>
 
 <div class="ctrl">
   <div style="display:flex;gap:4px" id="period-tabs">
-    <button class="ptab on" onclick="setPeriod('day')">일간</button>
-    <button class="ptab" onclick="setPeriod('week')">주간</button>
-    <button class="ptab" onclick="setPeriod('month')">월간</button>
+    <button class="ptab on" onclick="setPeriod('day')" data-i18n="daily">รายวัน</button>
+    <button class="ptab" onclick="setPeriod('week')" data-i18n="weekly">รายสัปดาห์</button>
+    <button class="ptab" onclick="setPeriod('month')" data-i18n="monthly">รายเดือน</button>
   </div>
   <div style="display:flex;align-items:center;gap:4px">
     <button class="dnbtn" onclick="move(-1)">◀</button>
     <span id="range-lbl">—</span>
     <button class="dnbtn" onclick="move(1)">▶</button>
-    <button class="dnbtn today" onclick="goToday()">오늘</button>
+    <button class="dnbtn today" onclick="goToday()" data-i18n="today">วันนี้</button>
   </div>
 </div>
 
 <div class="view-tabs">
-  <div class="vtab on" onclick="setView('overall')">전체 (L.1–L.7)</div>
-  <div class="vtab" onclick="setView('lines')">라인별</div>
-  <div class="vtab" onclick="setView('products')">제품별</div>
+  <div class="vtab on" onclick="setView('overall')" data-i18n="viewAll">ภาพรวม (L.1–L.7)</div>
+  <div class="vtab" onclick="setView('lines')" data-i18n="viewByLine">แยกตามไลน์</div>
+  <div class="vtab" onclick="setView('products')" data-i18n="viewByProduct">แยกตามโมเดล</div>
 </div>
 
 <div class="summary" id="summary"></div>
@@ -198,7 +209,7 @@ function getRangeLabel(){
   const d=getDates();
   if(period==='day') return d[0];
   if(period==='week') return`${d[0]} ~ ${d[6]}`;
-  return`${anchor.getFullYear()}년 ${anchor.getMonth()+1}월`;
+  return`${anchor.getFullYear()} ${t('months')[anchor.getMonth()]}`;
 }
 function move(d){
   if(period==='day') anchor=addDays(anchor,d);
@@ -259,21 +270,21 @@ function renderSummary(recs){
       <span class="top10-name" title="${m}">${m}</span>
       <span class="top10-qty" style="color:${color}">${q.toLocaleString()}</span>
     </div>`).join('')
-    :'<span style="font-size:12px;color:var(--muted)">기록 없음</span>';
+    :`<span style="font-size:12px;color:var(--muted)">${t('noRecords')}</span>`;
   document.getElementById('summary').innerHTML=`
     <div class="sum-total">
-      <div class="sum-lbl">총 생산</div>
+      <div class="sum-lbl">${t('totalProd')}</div>
       <div class="sum-val">${total.toLocaleString()}</div>
       <div class="sum-sub">PCS</div>
     </div>
     <div class="sum-top10" style="display:flex;gap:12px;flex:1;min-width:0;">
       <div style="flex:1;min-width:0;">
-        <div class="sum-top10-lbl">최다 모델 TOP 5</div>
+        <div class="sum-top10-lbl">${t('top5most')}</div>
         <div class="top10-list">${mkRows(top5,'var(--accent)')}</div>
       </div>
       <div style="width:1px;background:var(--border);flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;">
-        <div class="sum-top10-lbl">최소 모델 TOP 5</div>
+        <div class="sum-top10-lbl">${t('top5least')}</div>
         <div class="top10-list">${mkRows(bot5,'var(--muted)')}</div>
       </div>
     </div>
@@ -315,11 +326,11 @@ function renderOverall(recs){
 
     const titleEl=document.createElement('div');
     titleEl.className='oc-title';
-    titleEl.innerHTML=`L.1–L.7 합계 <span class="oc-badge ${proc==='S1'?'s1-badge':'s2-badge'}">${proc}</span>`;
+    titleEl.innerHTML=`L.1–L.7 ${t('total')} <span class="oc-badge ${proc==='S1'?'s1-badge':'s2-badge'}">${proc}</span>`;
     card.appendChild(titleEl);
 
     if(!entries.length){
-      card.innerHTML+='<div class="card-empty">기록 없음</div>';
+      card.innerHTML+=`<div class="card-empty">${t('noRecords')}</div>`;
       flex.appendChild(card);return;
     }
 
@@ -342,7 +353,7 @@ function renderOverall(recs){
     card.appendChild(legend);
 
     const footer=document.createElement('div');footer.className='oc-total';
-    footer.innerHTML=`<span class="oc-total-lbl">합계</span><span class="oc-total-val">${total.toLocaleString()} PCS</span>`;
+    footer.innerHTML=`<span class="oc-total-lbl">${t('total')}</span><span class="oc-total-val">${total.toLocaleString()} PCS</span>`;
     card.appendChild(footer);
     flex.appendChild(card);
   });
@@ -362,7 +373,7 @@ function renderLines(recs){
     const t=document.createElement('div');t.className='card-title';t.textContent=line;
     card.appendChild(t);
     if(!lr.length){
-      card.innerHTML+='<div class="card-empty">기록 없음</div>';
+      card.innerHTML+=`<div class="card-empty">${t('noRecords')}</div>`;
       grid.appendChild(card);return;
     }
     const sections=document.createElement('div');sections.className='proc-sections';
@@ -373,7 +384,7 @@ function renderLines(recs){
       const entries=aggByModel(lr,proc);
       const total=entries.reduce((s,[,q])=>s+q,0);
       if(!entries.length){
-        const e=document.createElement('div');e.className='proc-empty';e.textContent='기록 없음';
+        const e=document.createElement('div');e.className='proc-empty';e.textContent=t('noRecords');
         sec.appendChild(e);
       } else {
         const inner=document.createElement('div');inner.className='proc-inner';
@@ -393,7 +404,7 @@ function renderLines(recs){
         inner.appendChild(cWrap);inner.appendChild(legend);
         sec.appendChild(inner);
         const ft=document.createElement('div');ft.className='proc-total';
-        ft.innerHTML=`합계 <strong>${total.toLocaleString()} PCS</strong>`;
+        ft.innerHTML=`${t('total')} <strong>${total.toLocaleString()} PCS</strong>`;
         sec.appendChild(ft);
       }
       sections.appendChild(sec);
@@ -457,6 +468,7 @@ function render(recs){
 }
 
 goToday();
+window.onLangChange=()=>load();
 </script>
 </body>
 </html>

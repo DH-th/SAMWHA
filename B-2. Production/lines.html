@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>라인 설정</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="lang.js"></script>
 <style>
 :root{
   --bg:#F5F7FA;--surface:#FFFFFF;--s2:#F0F2F5;--s3:#E8ECF0;
@@ -121,41 +123,50 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
   font-size:12px;font-weight:600;z-index:200;opacity:0;transition:opacity .25s;
   pointer-events:none;white-space:nowrap;}
 #toast.s{opacity:1;}
+.lang-sw{display:flex;gap:3px;}
+.lang-btn{padding:3px 8px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:11px;font-weight:700;background:var(--s2);color:var(--muted);cursor:pointer;font-family:inherit;}
+.lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
 </head>
 <body>
 
 <header>
-  <a href="index.html" class="back">← 대시보드</a>
-  <span class="ptitle">라인 설정</span>
-  <span class="psub">순서·이름·공정 관리</span>
+  <a href="index.html" class="back" data-i18n="backToDash">← แดชบอร์ด</a>
+  <span class="ptitle" data-i18n="linesTitle">ตั้งค่าไลน์</span>
+  <span class="psub" data-i18n="lineSubtitle">จัดการลำดับ ชื่อ และกระบวนการ</span>
+  <div class="lang-sw" style="margin-left:auto">
+    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
+    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
+    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
+  </div>
 </header>
 
 <div class="page">
 
   <div class="save-bar">
-    <div class="save-info">변경 후 <span>저장</span>을 눌러야 반영됩니다.</div>
+    <div class="save-info" data-i18n-html="saveHint" data-i18n="saveHint">กดปุ่ม <b>บันทึก</b> หลังแก้ไขเพื่อให้มีผล</div>
     <div class="row-btns">
-      <button class="btn btn-reset" onclick="resetDefault()">기본값 복원</button>
-      <button class="btn btn-add" onclick="toggleAdd()">+ 라인 추가</button>
-      <button class="btn btn-save" onclick="saveConfig()">💾 저장</button>
+      <button class="btn btn-reset" onclick="resetDefault()" data-i18n="restoreDefaults">คืนค่าเริ่มต้น</button>
+      <button class="btn btn-add" onclick="toggleAdd()" data-i18n="addLine">+ เพิ่มไลน์</button>
+      <button class="btn btn-save" onclick="saveConfig()" data-i18n="saveBtn">💾 บันทึก</button>
     </div>
   </div>
 
   <!-- add form -->
   <div class="add-form" id="add-form">
-    <div class="add-form-title">새 라인 추가</div>
+    <div class="add-form-title" data-i18n="addNewLine">เพิ่มไลน์ใหม่</div>
     <div class="add-grid">
       <div class="add-field" style="flex:1;min-width:100px;">
-        <label>라인 이름</label>
-        <input class="add-inp" id="add-name" placeholder="예: L.10" style="width:100%">
+        <label data-i18n="lineName">ชื่อไลน์</label>
+        <input class="add-inp" id="add-name" data-i18n="lineNamePlaceholder" placeholder="เช่น L.10" style="width:100%">
       </div>
       <div class="add-field" style="flex:1;min-width:110px;">
-        <label>그룹</label>
-        <input class="add-inp" id="add-group" placeholder="예: 메인 라인" style="width:100%">
+        <label data-i18n="group">กลุ่ม</label>
+        <input class="add-inp" id="add-group" data-i18n="groupPlaceholder" placeholder="เช่น Main Line" style="width:100%">
       </div>
       <div class="add-field">
-        <label>공정</label>
+        <label data-i18n="processLabel">กระบวนการ</label>
         <div class="add-proc">
           <div class="add-proc-item">
             <input type="checkbox" id="add-s1" checked>
@@ -169,8 +180,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
       </div>
     </div>
     <div class="add-actions">
-      <button class="btn-sm btn btn-save" onclick="addLine()">추가</button>
-      <button class="btn-sm btn btn-reset" onclick="toggleAdd()">취소</button>
+      <button class="btn-sm btn btn-save" onclick="addLine()" data-i18n="add">เพิ่ม</button>
+      <button class="btn-sm btn btn-reset" onclick="toggleAdd()" data-i18n="cancel">ยกเลิก</button>
     </div>
   </div>
 
@@ -220,13 +231,13 @@ function render(){
       <div class="group-hd">
         <div class="group-line"></div>
         <div class="group-lbl-wrap">
-          <span class="group-lbl">그룹:</span>
-          <input class="group-name-inp" value="${g}" onchange="renameGroup('${g}',this.value)" placeholder="그룹명">
+          <span class="group-lbl">${t('groupLabel')}</span>
+          <input class="group-name-inp" value="${g}" onchange="renameGroup('${g}',this.value)" placeholder="${t('group')}">
         </div>
         <div class="group-line"></div>
       </div>`;
     if(!gl.length){
-      html+=`<div class="empty-group">이 그룹에 라인이 없습니다.</div>`;
+      html+=`<div class="empty-group">${t('noLinesInGroup')}</div>`;
     }
     gl.forEach((lc,gi)=>{
       const globalIdx=config.indexOf(lc);
@@ -261,7 +272,7 @@ function render(){
           </div>
         </div>
         <div class="del-col">
-          <button class="del-btn" onclick="deleteLine('${lc.id}')" title="삭제">🗑</button>
+          <button class="del-btn" onclick="deleteLine('${lc.id}')" title="${t('delete')}">🗑</button>
         </div>
       </div>`;
     });
@@ -290,7 +301,7 @@ function moveDown(idx){
 function reorder(){config.forEach((l,i)=>l.order=i+1);}
 
 function deleteLine(id){
-  if(!confirm(`"${config.find(l=>l.id===id)?.name}" 라인을 삭제하시겠습니까?`))return;
+  if(!confirm(t('confirmDeleteLine').replace('{name}',config.find(l=>l.id===id)?.name||'')))return;
   config=config.filter(l=>l.id!==id);
   reorder();render();
 }
@@ -306,8 +317,8 @@ function addLine(){
   const group=document.getElementById('add-group').value.trim()||'메인 라인';
   const hasS1=document.getElementById('add-s1').checked;
   const hasS2=document.getElementById('add-s2').checked;
-  if(!name){alert('라인 이름을 입력하세요.');return;}
-  if(!hasS1&&!hasS2){alert('S1 또는 S2 중 하나 이상 선택하세요.');return;}
+  if(!name){alert(t('alertLineName'));return;}
+  if(!hasS1&&!hasS2){alert(t('alertLineProcess'));return;}
   const id='line_'+Date.now().toString(36);
   config.push({id,name,order:config.length+1,hasS1,hasS2,group});
   document.getElementById('add-name').value='';
@@ -315,19 +326,19 @@ function addLine(){
   document.getElementById('add-s1').checked=true;
   document.getElementById('add-s2').checked=true;
   document.getElementById('add-form').classList.remove('on');
-  render();toast('라인 추가됨 — 저장 버튼을 눌러 반영하세요.');
+  render();toast(t('toastLineAdded'));
 }
 
 function saveConfig(){
   reorder();
   localStorage.setItem('prod_line_config',JSON.stringify(config));
-  render();toast('✓ 저장 완료');
+  render();toast(t('toastSaved'));
 }
 function resetDefault(){
-  if(!confirm('기본 라인 설정으로 복원하시겠습니까?'))return;
+  if(!confirm(t('confirmRestore')))return;
   config=JSON.parse(JSON.stringify(DEFAULT_LINE_CONFIG));
   localStorage.setItem('prod_line_config',JSON.stringify(config));
-  render();toast('기본값으로 복원되었습니다.');
+  render();toast(t('toastRestored'));
 }
 
 function toast(m){
@@ -336,6 +347,7 @@ function toast(m){
 }
 
 load();
+window.onLangChange=()=>render();
 </script>
 </body>
 </html>

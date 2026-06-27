@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Production</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="lang.js"></script>
 <style>
 :root{
   --bg:#F5F7FA;
@@ -364,64 +366,72 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
   .sc{padding:12px 18px;}
   .sc-v{font-size:26px;}
 }
+/* ── lang switcher ── */
+.lang-sw{display:flex;gap:3px;margin-left:auto;}
+.lang-btn{padding:3px 8px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:11px;font-weight:700;background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;}
+.lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
 </head>
 <body>
-<div id="ov"><div class="sp"></div><p>서버 연결 중...</p></div>
+<div id="ov"><div class="sp"></div><p data-i18n="connecting">กำลังเชื่อมต่อ</p></div>
 
 <header>
-  <a href="../index.html" class="back">← 홈</a>
+  <a href="../index.html" class="back" data-i18n="home">← หน้าหลัก</a>
   <span class="ptitle">Production</span>
   <div class="date-nav" style="position:relative">
     <button onclick="changeDate(-1)">◀</button>
-    <span id="date-lbl" onclick="toggleCal(event)" title="달력 열기">-</span>
+    <span id="date-lbl" onclick="toggleCal(event)" id="date-lbl">-</span>
     <button onclick="changeDate(1)">▶</button>
-    <button class="today-btn" onclick="goToday()">오늘</button>
+    <button class="today-btn" onclick="goToday()" data-i18n="today">วันนี้</button>
     <div id="mini-cal">
       <div id="mc-head">
         <button onclick="calShiftMonth(-1)">◀</button>
         <span id="mc-title"></span>
         <button onclick="calShiftMonth(1)">▶</button>
       </div>
-      <div id="mc-dow">
-        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-      </div>
+      <div id="mc-dow" id="mc-dow"></div>
       <div id="mc-grid"></div>
     </div>
   </div>
   <div class="shift-tabs">
-    <button class="stab" id="td" onclick="setShift('day')">☀ 주간</button>
-    <button class="stab" id="tn" onclick="setShift('night')">🌙 야간</button>
+    <button class="stab" id="td" onclick="setShift('day')" data-i18n="dayShift">☀ กะกลางวัน</button>
+    <button class="stab" id="tn" onclick="setShift('night')" data-i18n="nightShift">🌙 กะกลางคืน</button>
   </div>
   <div class="proc-tabs">
     <button class="ptab" id="pp1" onclick="setProc('S1')">S1</button>
     <button class="ptab" id="pp2" onclick="setProc('S2')">S2</button>
   </div>
   <div class="proc-auto" id="proc-auto">
-    <span id="proc-timer-lbl">자동</span>
+    <span id="proc-timer-lbl" data-i18n="auto">อัตโนมัติ</span>
     <div class="bar-bg"><div class="bar-fill" id="proc-bar" style="width:100%"></div></div>
   </div>
   <div class="hdr">
-    <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt">연결중</span></div>
+    <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
     <span id="clock"></span>
-    <a href="print-qr.html" class="adm">🖨️ QR</a>
-    <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer">📥 Excel</button>
-    <a href="stats.html" class="adm">📊 통계</a>
-    <a href="admin.html" class="adm">⚙ 관리</a>
+    <a href="print-qr.html" class="adm" data-i18n="qrBtn">🖨️ QR</a>
+    <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
+    <a href="stats.html" class="adm" data-i18n="statsBtn">📊 สถิติ</a>
+    <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
+  </div>
+  <div class="lang-sw">
+    <button class="lang-btn active" data-lang="TH" onclick="setLang('TH')">TH</button>
+    <button class="lang-btn" data-lang="EN" onclick="setLang('EN')">EN</button>
+    <button class="lang-btn" data-lang="KO" onclick="setLang('KO')">한</button>
   </div>
 </header>
 
 <div class="sumbar">
-  <div class="sc sc-tot"><div class="sc-l">총 생산</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
+  <div class="sc sc-tot"><div class="sc-l" data-i18n="totalProd">ยอดผลิตรวม</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
   <div class="sc sc-s1">
-    <div class="sc-l">S1 합계</div>
+    <div class="sc-l" data-i18n="s1Total">S1 รวม</div>
     <div class="sc-v" id="s-s1">0</div>
-    <div class="sc-s">PCS &nbsp;·&nbsp; 평균 <span id="s-a1" style="font-weight:800">0</span>/h</div>
+    <div class="sc-s">PCS &nbsp;·&nbsp; <span data-i18n="avgPerH">เฉลี่ย/ชม.</span> <span id="s-a1" style="font-weight:800">0</span>/h</div>
   </div>
   <div class="sc sc-s2">
-    <div class="sc-l">S2 합계</div>
+    <div class="sc-l" data-i18n="s2Total">S2 รวม</div>
     <div class="sc-v" id="s-s2">0</div>
-    <div class="sc-s">PCS &nbsp;·&nbsp; 평균 <span id="s-a2" style="font-weight:800">0</span>/h</div>
+    <div class="sc-s">PCS &nbsp;·&nbsp; <span data-i18n="avgPerH">เฉลี่ย/ชม.</span> <span id="s-a2" style="font-weight:800">0</span>/h</div>
   </div>
 </div>
 
@@ -451,7 +461,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
       </div>
     </div>
 
-    <div class="swipe-hint" id="shint">→ 슬라이드하여 오후 시간대 보기</div>
+    <div class="swipe-hint" id="shint"></div>
   </div>
 </div>
 
@@ -467,13 +477,13 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 <div id="xp-backdrop" onclick="closeXP()"></div>
 <div id="xp-modal">
   <div id="xp-hd">
-    <span id="xp-title">Excel 미리보기</span>
-    <select id="xp-line-sel" onchange="renderXPTable()"><option value="">전체 라인</option></select>
-    <button id="xp-dl" onclick="downloadExcel()">⬇ 다운로드</button>
+    <span id="xp-title" data-i18n="excelPreview">ตัวอย่าง Excel</span>
+    <select id="xp-line-sel" onchange="renderXPTable()"><option value="" data-i18n-opt="allLines">ทุกไลน์</option></select>
+    <button id="xp-dl" onclick="downloadExcel()" data-i18n="download">⬇ ดาวน์โหลด</button>
     <div id="xp-cls" onclick="closeXP()">✕</div>
   </div>
   <div id="xp-wrap">
-    <div id="xp-empty" style="display:none">기록이 없습니다.</div>
+    <div id="xp-empty" style="display:none" data-i18n="noRecordsTable">ไม่มีข้อมูล</div>
     <table id="xp-tbl">
       <thead><tr>
         <th>Record</th><th>Line</th><th>Time</th><th>Shift</th>
@@ -553,7 +563,7 @@ function refreshSlideLabel(){
   const tot=LINES.reduce((s,l)=>s+lineTotal(l,sec),0);
   document.getElementById('slide-sub').textContent=tot>0?`소계 ${tot.toLocaleString()} PCS`:'';
   document.getElementById('shint').textContent=
-    curSlideIdx===0?'→ 슬라이드하여 오후 시간대 보기':'← 슬라이드하여 오전 시간대 보기';
+    curSlideIdx===0?t('slideAfternoon'):t('slideMorning');
 }
 
 /* ── touch swipe ── */
@@ -714,11 +724,11 @@ function buildTableRows(slots,cur){
 }
 
 const HDR_THEAD=(slots,cur)=>`<tr>
-  <th class="col-line">라인</th>
-  <th class="col-model" style="text-align:center">모델</th>
+  <th class="col-line">${t('colLine')}</th>
+  <th class="col-model" style="text-align:center">${t('colModel')}</th>
   ${slots.map(s=>`<th class="sh">${slotLbl(s)}</th>`).join('')}
-  <th class="col-tot">일일 합계</th>
-  <th class="col-avg">평균/h</th>
+  <th class="col-tot">${t('colDailyTotal')}</th>
+  <th class="col-avg">${t('colAvg')}</th>
 </tr>`;
 
 const prevQty={};
@@ -775,7 +785,7 @@ function connect(){
   ws.onopen=()=>{
     document.getElementById('ov').classList.add('h');
     document.getElementById('cdot').className='dot dot-on';
-    document.getElementById('ctxt').textContent='연결됨';
+    document.getElementById('ctxt').textContent=t('connected');
   };
   ws.onmessage=e=>{
     const msg=JSON.parse(e.data);
@@ -793,7 +803,7 @@ function connect(){
     else if(msg.type==='PRODUCTION_ADDED'){
       const i=records.findIndex(r=>r.id===msg.record.id);
       if(i>-1)records[i]=msg.record;else records.push(msg.record);
-      renderAll();toast('✓ 생산 기록 추가');
+      renderAll();toast(t('toastAdded'));
     }
     else if(msg.type==='PRODUCTION_DELETED'){
       records=records.filter(r=>r.id!==msg.id);renderAll();
@@ -803,7 +813,7 @@ function connect(){
   ws.onclose=()=>{
     document.getElementById('ov').classList.remove('h');
     document.getElementById('cdot').className='dot dot-off';
-    document.getElementById('ctxt').textContent='연결 끊김';
+    document.getElementById('ctxt').textContent=t('disconnected');
     setTimeout(connect,3000);
   };
   ws.onerror=()=>ws.close();
@@ -833,7 +843,7 @@ function openSlotModal(line, slot){
         <span class="lm-model">${r.modelName}</span>
         <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
       </div>`).join('')
-    : `<div class="lm-empty">기록 없음</div>`;
+    : `<div class="lm-empty">${t('noRecords')}</div>`;
   document.getElementById('lm-backdrop').classList.add('on');
   document.getElementById('lm-box').style.display='flex';
   document.getElementById('lm-box').style.flexDirection='column';
@@ -848,7 +858,7 @@ function openLineModal(line){
         <span class="lm-model">${r.modelName}</span>
         <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
       </div>`).join('')
-    :`<div class="lm-empty">금일 생산 기록 없음</div>`;
+    :`<div class="lm-empty">${t('noRecords')}</div>`;
   document.getElementById('lm-backdrop').classList.add('on');
   document.getElementById('lm-box').style.display='flex';
   document.getElementById('lm-box').style.flexDirection='column';
@@ -870,7 +880,7 @@ async function exportExcel(){
     // 라인 목록 채우기
     const lines=[...new Set(xpRows.map(r=>r.line))].sort();
     const sel=document.getElementById('xp-line-sel');
-    sel.innerHTML='<option value="">전체 라인</option>'+lines.map(l=>`<option value="${l}">${l}</option>`).join('');
+    sel.innerHTML=`<option value="">${t('allLines')}</option>`+lines.map(l=>`<option value="${l}">${l}</option>`).join('');
     renderXPTable();
   }catch(e){
     document.getElementById('xp-tbody').innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">오류: ${e.message}</td></tr>`;
@@ -934,6 +944,7 @@ const{date,shift}=calcDS(new Date());
 viewDate=date;viewShift=shift;
 document.getElementById('date-lbl').textContent=viewDate;
 renderTabs();renderProc();connect();startProcTimer();
+window.onLangChange=()=>{renderTabs();renderAll();};
 setInterval(renderAll,60000);
 setInterval(autoShiftCheck,60000);
 
@@ -954,8 +965,10 @@ function calShiftMonth(d){
   renderCal();
 }
 function renderCal(){
-  const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-  document.getElementById('mc-title').textContent=calYear+'년 '+mn[calMonth];
+  const mn=t('months');
+  document.getElementById('mc-title').textContent=calYear+' '+mn[calMonth];
+  const dow=t('domDays');
+  document.getElementById('mc-dow').innerHTML=dow.map(d=>`<span>${d}</span>`).join('');
   const grid=document.getElementById('mc-grid');
   grid.innerHTML='';
   const today=fmtD(new Date());
