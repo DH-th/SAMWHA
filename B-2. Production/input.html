@@ -162,10 +162,14 @@ html,body{background:var(--bg);color:var(--text);min-height:100vh;max-width:480p
 .model-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;}
 .model-opt.selected .model-dot{background:var(--accent);border-color:var(--accent);}
 .model-opt-name{font-size:14px;font-weight:700;flex:1;}
+.model-capa{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);
+  border-radius:5px;padding:2px 6px;flex-shrink:0;}
 .model-fav{font-size:18px;padding:2px 4px;background:none;border:none;cursor:pointer;color:var(--border2);line-height:1;flex-shrink:0;}
 .model-fav.on{color:#F59E0B;}
 .fav-divider{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.08em;padding:8px 8px 2px;text-transform:uppercase;}
 .no-plants{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
+.plant-fav{font-size:18px;padding:2px 4px;background:none;border:none;cursor:pointer;color:var(--border2);line-height:1;flex-shrink:0;}
+.plant-fav.on{color:#F59E0B;}
 
 /* ── 확인 시트 ── */
 .cf-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px calc(20px + env(safe-area-inset-bottom));}
@@ -339,13 +343,22 @@ const DAY_SLOTS  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:0
 const NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 const LS_KEY='prod_last_sel';
 const FAV_KEY='prod_fav_models';
+const PLANT_FAV_KEY='prod_fav_plants';
 function getFavs(){try{return JSON.parse(localStorage.getItem(FAV_KEY)||'{}')}catch{return{}}}
+function getPlantFavs(){try{return JSON.parse(localStorage.getItem(PLANT_FAV_KEY)||'{}')}catch{return{}}}
 function toggleFav(e,pid,mid){
   e.stopPropagation();
   const favs=getFavs();
   const k=`${pid}:${mid}`;
   if(favs[k])delete favs[k];else favs[k]=1;
   localStorage.setItem(FAV_KEY,JSON.stringify(favs));
+  renderSheet();
+}
+function togglePlantFav(e,pid){
+  e.stopPropagation();
+  const favs=getPlantFavs();
+  if(favs[pid])delete favs[pid];else favs[pid]=1;
+  localStorage.setItem(PLANT_FAV_KEY,JSON.stringify(favs));
   renderSheet();
 }
 
@@ -359,7 +372,7 @@ let records=[], viewDate='';
 let editingId=null;
 
 /* ── 숫자 ── */
-function n(d){if(qtyStr==='0')qtyStr=d;else if(qtyStr.length<6)qtyStr+=d;renderQty();}
+function n(d){if(qtyStr==='0')qtyStr=d;else if(qtyStr.length<3)qtyStr+=d;renderQty();}
 function del(){qtyStr=qtyStr.length<=1?'0':qtyStr.slice(0,-1);renderQty();}
 function clr(){qtyStr='0';renderQty();}
 function renderQty(){
@@ -404,7 +417,7 @@ function updateSummary(){
   const a2=el>0?Math.round(s2/el):0;
   document.getElementById('ps-s1').textContent=s1>0?s1.toLocaleString():'—';
   document.getElementById('ps-s2').textContent=s2>0?s2.toLocaleString():'—';
-  document.getElementById('avg-s1').textContent=a1>0?`${t('avgPerH')} ${a1}/h`:'';
+  document.getElementById('avg-s1').textContent=a1>0?`AVG: ${a1}/h`:'';
   document.getElementById('avg-s2').textContent=a2>0?`${t('avgPerH')} ${a2}/h`:'';
   renderRecords();
 }
@@ -507,12 +520,21 @@ function renderSheet(){
   if(sheetStep==='plant'){
     backBtn.classList.remove('on');title.textContent=t('selectPlant');
     if(!plants.length){body.innerHTML=`<div class="no-plants">${t('noPlants')}</div>`;return;}
-    body.innerHTML=plants.map(pl=>`
-      <div class="plant-opt" onclick="pickPlant('${pl.id}')">
+    const pFavs=getPlantFavs();
+    const mkPlantRow=pl=>{
+      const isFav=!!pFavs[pl.id];
+      return`<div class="plant-opt" onclick="pickPlant('${pl.id}')">
+        <button class="plant-fav${isFav?' on':''}" onclick="togglePlantFav(event,'${pl.id}')">${isFav?'★':'☆'}</button>
         <div class="plant-opt-name">${pl.name}</div>
         <div class="plant-opt-cnt">${(pl.models||[]).length} ${t('modelsCount')}</div>
         <div class="plant-opt-arrow">›</div>
-      </div>`).join('')
+      </div>`;
+    };
+    const favPlants=plants.filter(pl=>pFavs[pl.id]);
+    const restPlants=plants.filter(pl=>!pFavs[pl.id]);
+    body.innerHTML=
+      (favPlants.length?`<div class="fav-divider">${t('favorites')}</div>${favPlants.map(mkPlantRow).join('')}<div class="fav-divider">${t('allModels')}</div>`:'')
+      +restPlants.map(mkPlantRow).join('')
       +`<button class="direct-btn" onclick="sheetStep='direct';renderSheet()">${t('directInput')}</button>`;
   } else {
     const pl=sheetPlant;
@@ -534,6 +556,7 @@ function renderAllModelSearch(q){
       html+=`<div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
         <div class="model-dot"></div>
         <div class="model-opt-name">${m.name}</div>
+        ${m.capa>0?`<span class="model-capa">${m.capa}/h</span>`:''}
         <button class="model-fav${isFav?' on':''}" onclick="toggleFav(event,'${pl.id}','${m.id}')">${isFav?'★':'☆'}</button>
       </div>`;
     });
@@ -550,6 +573,7 @@ function renderModelList(pl, q){
     return`<div class="model-opt${selModel?.id===m.id?' selected':''}" onclick="pickModel('${pl.id}','${m.id}')">
         <div class="model-dot"></div>
         <div class="model-opt-name">${m.name}</div>
+        ${m.capa>0?`<span class="model-capa">${m.capa}/h</span>`:''}
         <button class="model-fav${isFav?' on':''}" onclick="toggleFav(event,'${pl.id}','${m.id}')">${isFav?'★':'☆'}</button>
       </div>`;
   };
