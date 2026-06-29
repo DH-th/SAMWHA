@@ -278,12 +278,10 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
 
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="card-ttl" style="margin-bottom:0">📊 생산표 표시 라인 (10행)</div>
-      <button class="btn-save-lines" onclick="saveTableDisplayCfg()">💾 저장</button>
+      <div class="card-ttl" style="margin-bottom:0" data-i18n="tblDisplayTitle"></div>
+      <button class="btn-save-lines" onclick="saveTableDisplayCfg()" data-i18n="tblSave"></button>
     </div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:12px">
-      행 1–8: 메인 그룹 &nbsp;|&nbsp; 행 9–10: 별도 그룹 (하단 테두리 구분)
-    </div>
+    <div data-i18n="tblHint" style="font-size:10px;color:var(--muted);margin-bottom:12px"></div>
     <div id="table-display-cfg"></div>
   </div>
 </div>
@@ -399,18 +397,18 @@ function renderTableDisplayCfg(){
   const mkSel=(val,key,idx)=>{
     const opts=allNames.map(n=>`<option value="${n}"${n===val?' selected':''}>${n}</option>`).join('');
     return `<div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px">
-      <div style="font-size:9px;color:var(--muted);font-weight:800">${idx+(key==='extra'?9:1)}행</div>
+      <div style="font-size:9px;color:var(--muted);font-weight:800">${t('tblRowLabel')} ${idx+(key==='extra'?9:1)}</div>
       <select class="txt" style="font-size:12px;padding:6px 8px;width:100%"
         onchange="_tblDisp['${key}'][${idx}]=this.value">${opts}</select>
     </div>`;
   };
   let html='<div style="display:flex;flex-direction:column;gap:10px">';
-  html+=`<div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em">행 1–8 &nbsp;메인 그룹</div>`;
+  html+=`<div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em">${t('tblMainGroup')}</div>`;
   html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">`;
   _tblDisp.main.forEach((l,i)=>html+=mkSel(l,'main',i));
   html+=`</div>`;
   html+=`<div style="border-top:2px dashed var(--border);padding-top:10px">`;
-  html+=`<div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:8px">행 9–10 &nbsp;별도 그룹 (테두리 구분)</div>`;
+  html+=`<div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:8px">${t('tblExtraGroup')}</div>`;
   html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">`;
   _tblDisp.extra.forEach((l,i)=>html+=mkSel(l,'extra',i));
   html+=`</div></div></div>`;
@@ -419,7 +417,7 @@ function renderTableDisplayCfg(){
 
 function saveTableDisplayCfg(){
   localStorage.setItem('table_display_lines',JSON.stringify(_tblDisp));
-  toast('✅ 생산표 라인 저장 — 생산표를 새로고침하세요');
+  toast(t('tblSaveToast'));
 }
 
 function addLineCfg(){
@@ -715,7 +713,7 @@ function toast(m){
 }
 loadLinesCfg();
 connect();
-window.onLangChange=()=>renderPlants();
+window.onLangChange=()=>{renderPlants();renderTableDisplayCfg();};
 </script>
 </body>
 </html>
