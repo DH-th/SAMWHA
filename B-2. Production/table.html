@@ -501,7 +501,17 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 
 <script>
 const TUNNEL='server.samhwa.cloud';
-const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9','L.8_IN','L.8_OUT'];
+function _getTableDisplayLines(){
+  try{
+    const s=localStorage.getItem('table_display_lines');
+    if(s){const d=JSON.parse(s);if(d.main&&d.main.length&&d.extra&&d.extra.length)return d;}
+  }catch{}
+  return{main:['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9'],extra:['L.8_IN','L.8_OUT']};
+}
+const _tbl=_getTableDisplayLines();
+const MAIN_LINES=_tbl.main.slice(0,8);
+const EXTRA_LINES=_tbl.extra.slice(0,2);
+const LINES=[...MAIN_LINES,...EXTRA_LINES];
 const DAY_SLOTS  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 const NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 
@@ -671,8 +681,7 @@ function renderAll(){
   refreshSlideLabel();
 }
 
-const MAIN_LINES=LINES.filter(l=>l!=='L.8_IN'&&l!=='L.8_OUT');
-const EXTRA_LINES=['L.8_IN','L.8_OUT'];
+// MAIN_LINES / EXTRA_LINES / LINES are set at top from localStorage
 
 function buildLineRow(line,li,slots,cur){
   const cls=li%2===0?'odd':'even';

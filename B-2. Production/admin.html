@@ -275,6 +275,17 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
     </div>
     <div id="line-cfg-list"></div>
   </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="card-ttl" style="margin-bottom:0">📊 생산표 표시 라인 (10행)</div>
+      <button class="btn-save-lines" onclick="saveTableDisplayCfg()">💾 저장</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:12px">
+      행 1–8: 메인 그룹 &nbsp;|&nbsp; 행 9–10: 별도 그룹 (하단 테두리 구분)
+    </div>
+    <div id="table-display-cfg"></div>
+  </div>
 </div>
 
 <!-- ══ QR 탭 ══ -->
@@ -328,7 +339,13 @@ function loadLinesCfg(){
   lineCfg.forEach(lc=>{
     if(!lc.processes) lc.processes=[lc.hasS1&&'S1',lc.hasS2&&'S2'].filter(Boolean);
   });
-  lineCfg.sort((a,b)=>(a.order||0)-(b.order||0));
+  // merge: add any default lines missing from localStorage data
+  DEFAULT_LINES_CFG.forEach(def=>{
+    if(!lineCfg.find(l=>l.id===def.id||l.name===def.name)){
+      lineCfg.push(JSON.parse(JSON.stringify(def)));
+    }
+  });
+  lineCfg.sort((a,b)=>(a.order||999)-(b.order||999));
 }
 
 function saveLinesCfg(){
@@ -364,6 +381,45 @@ function renderLinesCfg(){
         <button class="line-del-btn" onclick="deleteLineCfg(${i})" title="삭제" style="color:var(--red)">🗑</button>
       </div>
     </div>`).join('');
+  renderTableDisplayCfg();
+}
+
+let _tblDisp={main:['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9'],extra:['L.8_IN','L.8_OUT']};
+
+function renderTableDisplayCfg(){
+  const el=document.getElementById('table-display-cfg');
+  if(!el) return;
+  try{const s=localStorage.getItem('table_display_lines');if(s){const d=JSON.parse(s);if(d.main&&d.extra)_tblDisp=d;}}catch{}
+  // ensure arrays have correct length
+  while(_tblDisp.main.length<8) _tblDisp.main.push(lineCfg[0]?.name||'L.1');
+  _tblDisp.main=_tblDisp.main.slice(0,8);
+  while(_tblDisp.extra.length<2) _tblDisp.extra.push(lineCfg[0]?.name||'L.1');
+  _tblDisp.extra=_tblDisp.extra.slice(0,2);
+  const allNames=lineCfg.map(l=>l.name);
+  const mkSel=(val,key,idx)=>{
+    const opts=allNames.map(n=>`<option value="${n}"${n===val?' selected':''}>${n}</option>`).join('');
+    return `<div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px">
+      <div style="font-size:9px;color:var(--muted);font-weight:800">${idx+(key==='extra'?9:1)}행</div>
+      <select class="txt" style="font-size:12px;padding:6px 8px;width:100%"
+        onchange="_tblDisp['${key}'][${idx}]=this.value">${opts}</select>
+    </div>`;
+  };
+  let html='<div style="display:flex;flex-direction:column;gap:10px">';
+  html+=`<div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em">행 1–8 &nbsp;메인 그룹</div>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">`;
+  _tblDisp.main.forEach((l,i)=>html+=mkSel(l,'main',i));
+  html+=`</div>`;
+  html+=`<div style="border-top:2px dashed var(--border);padding-top:10px">`;
+  html+=`<div style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:8px">행 9–10 &nbsp;별도 그룹 (테두리 구분)</div>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">`;
+  _tblDisp.extra.forEach((l,i)=>html+=mkSel(l,'extra',i));
+  html+=`</div></div></div>`;
+  el.innerHTML=html;
+}
+
+function saveTableDisplayCfg(){
+  localStorage.setItem('table_display_lines',JSON.stringify(_tblDisp));
+  toast('✅ 생산표 라인 저장 — 생산표를 새로고침하세요');
 }
 
 function addLineCfg(){
