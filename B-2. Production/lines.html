@@ -77,9 +77,16 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
 .name-inp{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;
   font-size:14px;font-weight:700;color:var(--text);background:var(--s2);outline:none;font-family:inherit;}
 .name-inp:focus{border-color:var(--accent);background:var(--surface);}
-.proc-col{display:flex;gap:10px;flex-shrink:0;}
-.proc-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
-.proc-label{font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.05em;}
+.proc-col{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;align-items:center;max-width:200px;}
+.proc-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 8px 3px 10px;
+  background:var(--accent-bg);border:1px solid rgba(37,88,212,.25);border-radius:20px;
+  font-size:11px;font-weight:700;color:var(--accent);}
+.proc-tag-del{background:none;border:none;cursor:pointer;color:var(--muted);
+  font-size:12px;line-height:1;padding:0 1px;display:flex;align-items:center;}
+.proc-tag-del:hover{color:var(--red);}
+.proc-add-btn{padding:3px 9px;border:1px dashed rgba(37,88,212,.35);border-radius:20px;
+  font-size:11px;font-weight:700;color:var(--muted);background:none;cursor:pointer;}
+.proc-add-btn:hover{border-color:var(--accent);color:var(--accent);}
 /* custom checkbox */
 .cbox{position:relative;width:36px;height:20px;}
 .cbox input{opacity:0;width:0;height:0;position:absolute;}
@@ -160,18 +167,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
         <label data-i18n="group">กลุ่ม</label>
         <input class="add-inp" id="add-group" data-i18n="groupPlaceholder" placeholder="เช่น Main Line" style="width:100%">
       </div>
-      <div class="add-field">
-        <label data-i18n="processLabel">กระบวนการ</label>
-        <div class="add-proc">
-          <div class="add-proc-item">
-            <input type="checkbox" id="add-s1" checked>
-            <label for="add-s1">S1</label>
-          </div>
-          <div class="add-proc-item">
-            <input type="checkbox" id="add-s2" checked>
-            <label for="add-s2">S2</label>
-          </div>
-        </div>
+      <div class="add-field" style="flex:1;min-width:120px;">
+        <label data-i18n="processLabel">กระบวนการ (,로 구분)</label>
+        <input class="add-inp" id="add-procs" value="S1, S2" placeholder="S1, S2" style="width:100%">
       </div>
     </div>
     <div class="add-actions">
@@ -201,11 +199,15 @@ const DEFAULT_LINE_CONFIG = [
   {id:'L.8_OUT',  name:'L.8_OUT',   order:11, hasS1:true,  hasS2:true,  group:'L.8 / L.9'},
   {id:'FGA',      name:'FGA',       order:12, hasS1:true,  hasS2:true,  group:'특수 라인'},
   {id:'Rotary',   name:'Rotary',    order:13, hasS1:true,  hasS2:true,  group:'특수 라인'},
-  {id:'SDB',      name:'SDB',       order:14, hasS1:true,  hasS2:true,  group:'특수 라인'},
+  {id:'SDB',      name:'SDB',       order:14, processes:['S1','T/U','FT'], group:'특수 라인'},
 ];
 
 let config = [];
 
+function getProcs(lc){
+  if(lc.processes&&lc.processes.length) return lc.processes;
+  return [lc.hasS1&&'S1',lc.hasS2&&'S2'].filter(Boolean);
+}
 function load(){
   try{
     const s=localStorage.getItem('prod_line_config');
@@ -213,6 +215,8 @@ function load(){
   }catch{
     config=JSON.parse(JSON.stringify(DEFAULT_LINE_CONFIG));
   }
+  // migrate hasS1/hasS2 → processes
+  config.forEach(lc=>{if(!lc.processes)lc.processes=getProcs(lc);});
   config.sort((a,b)=>a.order-b.order);
   render();
 }
@@ -249,22 +253,8 @@ function render(){
             onchange="config[${globalIdx}].name=this.value">
         </div>
         <div class="proc-col">
-          <div class="proc-item">
-            <span class="proc-label">S1</span>
-            <label class="cbox">
-              <input type="checkbox" ${lc.hasS1?'checked':''} onchange="config[${globalIdx}].hasS1=this.checked">
-              <div class="cbox-track"></div>
-              <div class="cbox-thumb"></div>
-            </label>
-          </div>
-          <div class="proc-item">
-            <span class="proc-label">S2</span>
-            <label class="cbox">
-              <input type="checkbox" ${lc.hasS2?'checked':''} onchange="config[${globalIdx}].hasS2=this.checked">
-              <div class="cbox-track"></div>
-              <div class="cbox-thumb"></div>
-            </label>
-          </div>
+          ${lc.processes.map((p,pi)=>`<span class="proc-tag">${p}<button class="proc-tag-del" onclick="removeProc(${globalIdx},${pi})" title="삭제">×</button></span>`).join('')}
+          <button class="proc-add-btn" onclick="addProc(${globalIdx})" title="공정 추가">+</button>
         </div>
         <div class="del-col">
           <button class="del-btn" onclick="deleteLine('${lc.id}')" title="${t('delete')}">🗑</button>
@@ -310,18 +300,30 @@ function toggleAdd(){
 function addLine(){
   const name=document.getElementById('add-name').value.trim();
   const group=document.getElementById('add-group').value.trim()||'메인 라인';
-  const hasS1=document.getElementById('add-s1').checked;
-  const hasS2=document.getElementById('add-s2').checked;
+  const procsRaw=document.getElementById('add-procs').value;
+  const processes=procsRaw.split(',').map(s=>s.trim()).filter(Boolean);
   if(!name){alert(t('alertLineName'));return;}
-  if(!hasS1&&!hasS2){alert(t('alertLineProcess'));return;}
+  if(!processes.length){alert(t('alertLineProcess'));return;}
   const id='line_'+Date.now().toString(36);
-  config.push({id,name,order:config.length+1,hasS1,hasS2,group});
+  config.push({id,name,order:config.length+1,processes,group});
   document.getElementById('add-name').value='';
   document.getElementById('add-group').value='';
-  document.getElementById('add-s1').checked=true;
-  document.getElementById('add-s2').checked=true;
+  document.getElementById('add-procs').value='S1, S2';
   document.getElementById('add-form').classList.remove('on');
   render();toast(t('toastLineAdded'));
+}
+function addProc(idx){
+  const name=prompt(t('promptProcName')||'공정명 입력 (예: T/U)');
+  if(!name||!name.trim())return;
+  const p=name.trim();
+  if(config[idx].processes.includes(p)){alert('이미 존재하는 공정입니다.');return;}
+  config[idx].processes.push(p);
+  render();
+}
+function removeProc(idx,pi){
+  if(config[idx].processes.length<=1){alert('최소 1개 공정이 필요합니다.');return;}
+  config[idx].processes.splice(pi,1);
+  render();
 }
 
 function saveConfig(){

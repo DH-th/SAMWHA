@@ -228,7 +228,7 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
     <div class="card-ttl" data-i18n="selectLine">เลือกไลน์</div>
     <div class="line-sel-grid" id="lsel"></div>
     <div class="card-ttl" style="margin-top:14px;" data-i18n="process">กระบวนการ</div>
-    <div class="ptoggle">
+    <div class="ptoggle" id="proc-btns">
       <button class="pbtn on" data-v="S1" onclick="pickProc('S1')">S1</button>
       <button class="pbtn"    data-v="S2" onclick="pickProc('S2')">S2</button>
     </div>
@@ -397,15 +397,33 @@ function delM(pid,mid){
 }
 
 /* ── QR ── */
+function getLineProcs(lineId){
+  try{
+    const cfg=JSON.parse(localStorage.getItem('prod_line_config')||'[]');
+    const lc=cfg.find(l=>l.id===lineId||l.name===lineId);
+    if(lc){
+      if(lc.processes&&lc.processes.length) return lc.processes;
+      return [lc.hasS1&&'S1',lc.hasS2&&'S2'].filter(Boolean);
+    }
+  }catch{}
+  return ['S1','S2'];
+}
+function renderProcBtns(){
+  const procs=qrLine?getLineProcs(qrLine):['S1','S2'];
+  if(!procs.includes(qrProc)) qrProc=procs[0]||'S1';
+  document.getElementById('proc-btns').innerHTML=procs.map(p=>
+    `<button class="pbtn${qrProc===p?' on':''}" data-v="${p}" onclick="pickProc('${p}')">${p}</button>`
+  ).join('');
+}
 function renderLSel(){
   document.getElementById('lsel').innerHTML=LINES.map(l=>
     `<button class="lbtn${qrLine===l?' on':''}" onclick="pickLine('${l}')">${l}</button>`
   ).join('');
 }
-function pickLine(l){qrLine=l;renderLSel();genQR();}
+function pickLine(l){qrLine=l;renderLSel();renderProcBtns();genQR();}
 function pickProc(v){
   qrProc=v;
-  document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('#proc-btns .pbtn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   genQR();
 }
 function genQR(){
