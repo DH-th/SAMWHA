@@ -278,10 +278,10 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
 
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="card-ttl" style="margin-bottom:0" data-i18n="tblDisplayTitle"></div>
-      <button class="btn-save-lines" onclick="saveTableDisplayCfg()" data-i18n="tblSave"></button>
+      <div class="card-ttl" style="margin-bottom:0" id="tbl-disp-title"></div>
+      <button class="btn-save-lines" onclick="saveTableDisplayCfg()" id="tbl-save-btn"></button>
     </div>
-    <div data-i18n="tblHint" style="font-size:10px;color:var(--muted);margin-bottom:12px"></div>
+    <div id="tbl-disp-hint" style="font-size:10px;color:var(--muted);margin-bottom:12px"></div>
     <div id="table-display-cfg"></div>
   </div>
 </div>
@@ -387,6 +387,12 @@ let _tblDisp={main:['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9'],extra:['L.8
 function renderTableDisplayCfg(){
   const el=document.getElementById('table-display-cfg');
   if(!el) return;
+  const titleEl=document.getElementById('tbl-disp-title');
+  const saveBtn=document.getElementById('tbl-save-btn');
+  const hintEl=document.getElementById('tbl-disp-hint');
+  if(titleEl) titleEl.textContent=t('tblDisplayTitle');
+  if(saveBtn)  saveBtn.textContent=t('tblSave');
+  if(hintEl)   hintEl.textContent=t('tblHint');
   try{const s=localStorage.getItem('table_display_lines');if(s){const d=JSON.parse(s);if(d.main&&d.extra)_tblDisp=d;}}catch{}
   // ensure arrays have correct length
   while(_tblDisp.main.length<8) _tblDisp.main.push(lineCfg[0]?.name||'L.1');
@@ -397,7 +403,7 @@ function renderTableDisplayCfg(){
   const mkSel=(val,key,idx)=>{
     const opts=allNames.map(n=>`<option value="${n}"${n===val?' selected':''}>${n}</option>`).join('');
     return `<div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px">
-      <div style="font-size:9px;color:var(--muted);font-weight:800">${t('tblRowLabel')} ${idx+(key==='extra'?9:1)}</div>
+      <div style="font-size:9px;color:var(--muted);font-weight:800">Row ${idx+(key==='extra'?9:1)}</div>
       <select class="txt" style="font-size:12px;padding:6px 8px;width:100%"
         onchange="_tblDisp['${key}'][${idx}]=this.value">${opts}</select>
     </div>`;
