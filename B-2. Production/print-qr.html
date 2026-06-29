@@ -77,20 +77,57 @@ h1{font-size:16px;font-weight:900;}
 <div id="print-area"></div>
 
 <script>
-const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.9','L.8_IN','L.8_OUT'];
 const BASE_URL=location.origin+location.pathname.replace('print-qr.html','input.html');
+
+const DEFAULT_LINES=[
+  {name:'L.1',        processes:['S1','S2']},
+  {name:'L.2',        processes:['S1','S2']},
+  {name:'L.3',        processes:['S1','S2']},
+  {name:'L.4',        processes:['S1','S2']},
+  {name:'L.5',        processes:['S1','S2']},
+  {name:'L.6',        processes:['S1','S2']},
+  {name:'L.7',        processes:['S1','S2']},
+  {name:'L.7_Display',processes:['S1','S2']},
+  {name:'L.9',        processes:['S1','S2']},
+  {name:'L.8_IN',     processes:['S1','S2']},
+  {name:'L.8_OUT',    processes:['S1','S2']},
+  {name:'FGA',        processes:['S1','S2']},
+  {name:'Rotary',     processes:['S1','S2']},
+  {name:'SDB',        processes:['S1','T/U','FT']},
+];
+
+function loadLineCfg(){
+  try{
+    const s=localStorage.getItem('prod_line_config');
+    if(s){
+      const cfg=JSON.parse(s);
+      if(cfg&&cfg.length){
+        const result=cfg.map(lc=>({
+          name:lc.name||lc.id,
+          processes:lc.processes||(lc.hasS1||lc.hasS2?[lc.hasS1&&'S1',lc.hasS2&&'S2'].filter(Boolean):['S1','S2'])
+        }));
+        // merge: add any default lines missing from saved config
+        DEFAULT_LINES.forEach(def=>{
+          if(!result.find(l=>l.name===def.name)) result.push(def);
+        });
+        return result;
+      }
+    }
+  }catch{}
+  return DEFAULT_LINES;
+}
+
+const LINE_CFG=loadLineCfg();
 
 /* 라인 체크박스 렌더 */
 const grid=document.getElementById('line-grid');
-LINES.forEach(l=>{
-  const key=l.replace(/\./g,'_');
+LINE_CFG.forEach(({name,processes})=>{
   const div=document.createElement('div');
   div.className='line-chk';
-  div.innerHTML=`<span class="line-name">${l}</span>
-    <div class="proc-group">
-      <label class="proc-lbl"><input type="checkbox" data-line="${l}" data-proc="S1" checked>S1</label>
-      <label class="proc-lbl"><input type="checkbox" data-line="${l}" data-proc="S2" checked>S2</label>
-    </div>`;
+  const procs=processes.map(p=>
+    `<label class="proc-lbl"><input type="checkbox" data-line="${name}" data-proc="${p}" checked>${p}</label>`
+  ).join('');
+  div.innerHTML=`<span class="line-name">${name}</span><div class="proc-group">${procs}</div>`;
   grid.appendChild(div);
 });
 

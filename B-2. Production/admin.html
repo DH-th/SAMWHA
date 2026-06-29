@@ -503,6 +503,8 @@ async function uploadXlsx(input){
 function renderPlants(){
   const el=document.getElementById('plant-list');
   if(!plants.length){el.innerHTML=`<div class="empty">${t('noPlants')}</div>`;return;}
+  plants.sort((a,b)=>a.name.localeCompare(b.name,'th',{sensitivity:'base'}));
+  plants.forEach(p=>{if(p.models)p.models.sort((a,b)=>a.name.localeCompare(b.name,'th',{sensitivity:'base'}));});
   el.innerHTML=plants.map(p=>{
     const open=expanded.has(p.id);
     const models=p.models||[];
@@ -577,6 +579,7 @@ function addM(pid){
   const capa=parseInt(cInp.value)||0;
   const p=JSON.parse(JSON.stringify(plants.find(p=>p.id===pid)));
   (p.models=p.models||[]).push({id:'m_'+Date.now().toString(36),name,capa});
+  p.models.sort((a,b)=>a.name.localeCompare(b.name,'th',{sensitivity:'base'}));
   ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));
   nInp.value='';cInp.value='';nInp.focus();
 }
