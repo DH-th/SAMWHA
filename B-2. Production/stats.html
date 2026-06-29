@@ -365,8 +365,8 @@ function renderLines(recs){
   ALL_LINES.forEach(line=>{
     const lr=recs.filter(r=>r.line===line);
     const card=document.createElement('div');card.className='card';
-    const t=document.createElement('div');t.className='card-title';t.textContent=line;
-    card.appendChild(t);
+    const titleEl=document.createElement('div');titleEl.className='card-title';titleEl.textContent=line;
+    card.appendChild(titleEl);
     if(!lr.length){
       card.innerHTML+=`<div class="card-empty">${t('noRecords')}</div>`;
       grid.appendChild(card);return;
