@@ -387,16 +387,26 @@ function renderQty(){
 const p2=x=>String(x).padStart(2,'0');
 const fmtD=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
 function calcDS(d){
-  const h=d.getHours();
-  if(h>=8&&h<20)return{date:fmtD(d),shift:'day',slots:DAY_SLOTS};
-  if(h>=20)return{date:fmtD(d),shift:'night',slots:NIGHT_SLOTS};
+  const h=d.getHours(),m=d.getMinutes();
+  const afterMorning=(h>8)||(h===8&&m>=20);   // 08:20 이후
+  const beforeNight=(h<20)||(h===20&&m<20);    // 20:20 이전
+  if(afterMorning&&beforeNight)return{date:fmtD(d),shift:'day',slots:DAY_SLOTS};
+  if(!beforeNight)return{date:fmtD(d),shift:'night',slots:NIGHT_SLOTS};
   const y=new Date(d);y.setDate(y.getDate()-1);
   return{date:fmtD(y),shift:'night',slots:NIGHT_SLOTS};
 }
+/* 정시(HH:00)를 기준으로 -20분~+20분 창에서 직전 완료 시간대를 자동 선택
+   예) 08:40~09:20 사이 → '08:00'(08~09시 작업) 자동 선택 */
 function autoSlot(now,slots){
   const h=now.getHours(),m=now.getMinutes();
-  const cur=p2(h)+':00',prev=p2(h===0?23:h-1)+':00';
-  return(m<=10&&slots.includes(prev))?prev:(slots.includes(cur)?cur:slots[slots.length-1]);
+  let slotHour;
+  if(m>=40)      slotHour=h;          // [HH:40,HH+1:20) → HH 시간대(곧 끝남)
+  else if(m<=20) slotHour=(h+23)%24;  // [HH:00,HH:20] → 직전 HH-1 시간대
+  else           slotHour=h;          // 20~40분: 진행 중 HH 시간대
+  const s=p2(slotHour)+':00';
+  if(slots.includes(s))return s;
+  const cur=p2(h)+':00';
+  return slots.includes(cur)?cur:slots[slots.length-1];
 }
 function elapsed(){
   const now=new Date();

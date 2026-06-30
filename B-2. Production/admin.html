@@ -204,6 +204,7 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
 <div class="tabs">
   <button class="tab on" onclick="showTab('plant')" data-i18n="tabPlant">🏭 แผนก / โมเดล</button>
   <button class="tab"    onclick="showTab('lines')" data-i18n="tabLines">⚙️ ไลน์ / กระบวนการ</button>
+  <button class="tab"    onclick="showTab('records')" data-i18n="tabRecords">📝 บันทึกการผลิต</button>
   <button class="tab"    onclick="showTab('qr')" data-i18n="tabQR">📱 QR Code</button>
 </div>
 
@@ -283,6 +284,22 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
     </div>
     <div id="tbl-disp-hint" style="font-size:10px;color:var(--muted);margin-bottom:12px"></div>
     <div id="table-display-cfg"></div>
+  </div>
+</div>
+
+<!-- ══ 생산기록 수정 탭 ══ -->
+<div id="tab-records" style="display:none">
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+      <div class="card-ttl" style="margin-bottom:0" data-i18n="recEditTitle">บันทึกการผลิต</div>
+      <input type="date" id="rec-date" class="txt" style="width:auto" onchange="loadProdRecords()">
+      <button class="add-btn" onclick="loadProdRecords()" data-i18n="recLoad">โหลด</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px" data-i18n="recEditHint">แก้ไขจำนวน·วันที่·กะ ของบันทึก แล้วกด 💾 / ลบด้วย 🗑</div>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:560px"></table>
+    <div id="rec-empty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px" data-i18n="recNone">ไม่มีบันทึก</div>
   </div>
 </div>
 
@@ -473,10 +490,12 @@ let qrLine='', qrProc='S1';
 
 /* ── 탭 ── */
 function showTab(t){
-  ['plant','lines','qr'].forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'':'none');
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',['plant','lines','qr'][i]===t));
+  const ids=['plant','lines','records','qr'];
+  ids.forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'':'none');
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',ids[i]===t));
   if(t==='qr'){loadLinesCfg();renderLSel();}
   if(t==='lines'){loadLinesCfg();renderLinesCfg();}
+  if(t==='records'){initRecDate();loadProdRecords();}
 }
 
 /* ── Excel 다운로드 ── */
@@ -693,6 +712,87 @@ async function shareToLine(label){
   toast('Line URL 공유로 전환됩니다. (이미지 공유는 모바일에서만 지원)');
 }
 
+/* ── 생산기록 수정 ── */
+const REC_DAY_SLOTS=['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+const REC_NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
+const REC_ALL_SLOTS=[...REC_DAY_SLOTS,...REC_NIGHT_SLOTS];
+let prodRecs=[], recDate='';
+
+function initRecDate(){
+  if(recDate)return;
+  const d=new Date();const p=n=>String(n).padStart(2,'0');
+  recDate=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  const inp=document.getElementById('rec-date');if(inp)inp.value=recDate;
+}
+async function loadProdRecords(){
+  const inp=document.getElementById('rec-date');
+  recDate=inp&&inp.value?inp.value:recDate;
+  try{
+    const res=await fetch(`https://${TUNNEL}/api/production/log?date=${recDate}`);
+    const j=await res.json();
+    prodRecs=j.records||[];
+  }catch(e){prodRecs=[];toast('❌ '+e.message);}
+  renderProdRecords();
+}
+function renderProdRecords(){
+  const tbl=document.getElementById('rec-tbl');
+  const empty=document.getElementById('rec-empty');
+  if(!prodRecs.length){tbl.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const sorted=[...prodRecs].sort((a,b)=>(a.slot>b.slot?1:-1)||(a.line>b.line?1:-1));
+  const slotOpts=s=>REC_ALL_SLOTS.map(x=>`<option value="${x}"${x===s?' selected':''}>${x}</option>`).join('');
+  tbl.innerHTML=`<thead><tr style="background:var(--s2,#f0f2f5);text-align:left">
+    <th style="padding:6px 8px">${t('recLine')}</th>
+    <th style="padding:6px 8px">${t('recModel')}</th>
+    <th style="padding:6px 8px">${t('recProc')}</th>
+    <th style="padding:6px 8px">${t('recSlot')}</th>
+    <th style="padding:6px 8px">${t('recShiftCol')}</th>
+    <th style="padding:6px 8px">${t('recQty')}</th>
+    <th style="padding:6px 8px">${t('recDate')}</th>
+    <th style="padding:6px 8px"></th>
+  </tr></thead><tbody>`+sorted.map(r=>`<tr data-id="${r.id}" style="border-bottom:1px solid var(--border)">
+    <td style="padding:5px 8px;font-weight:700">${r.line||''}</td>
+    <td style="padding:5px 8px">${r.modelName||''}</td>
+    <td style="padding:5px 8px">${r.process||''}</td>
+    <td style="padding:5px 8px"><select class="txt rc-slot" style="width:90px;padding:4px">${slotOpts(r.slot)}</select></td>
+    <td style="padding:5px 8px"><select class="txt rc-shift" style="width:80px;padding:4px">
+      <option value="day"${r.shift==='day'?' selected':''}>Day</option>
+      <option value="night"${r.shift==='night'?' selected':''}>Night</option></select></td>
+    <td style="padding:5px 8px"><input type="number" class="txt rc-qty" value="${r.qty||0}" min="0" style="width:80px;padding:4px"></td>
+    <td style="padding:5px 8px"><input type="date" class="txt rc-pdate" value="${r.prodDate||recDate}" style="width:140px;padding:4px"></td>
+    <td style="padding:5px 8px;white-space:nowrap">
+      <button class="add-btn" style="padding:5px 9px" onclick="saveRec('${r.id}')">💾</button>
+      <button class="add-btn" style="padding:5px 9px;background:var(--red-bg,#fee);color:var(--red,#dc2626)" onclick="delRec('${r.id}')">🗑</button>
+    </td></tr>`).join('')+`</tbody>`;
+}
+function saveRec(id){
+  const orig=prodRecs.find(r=>r.id===id);if(!orig)return;
+  const tr=document.querySelector(`#rec-tbl tr[data-id="${id}"]`);if(!tr)return;
+  const qty=parseInt(tr.querySelector('.rc-qty').value)||0;
+  const newDate=tr.querySelector('.rc-pdate').value||orig.prodDate;
+  const slot=tr.querySelector('.rc-slot').value;
+  const shift=tr.querySelector('.rc-shift').value;
+  const upd=Object.assign({},orig,{qty,prodDate:newDate,slot,shift});
+  const oldDate=orig.prodDate||recDate;
+  if(newDate!==oldDate){
+    ws.send(JSON.stringify({type:'DELETE_PRODUCTION',id,prodDate:oldDate}));
+  }
+  ws.send(JSON.stringify({type:'ADD_PRODUCTION',record:upd}));
+  // 로컬 반영
+  if(newDate!==recDate){prodRecs=prodRecs.filter(r=>r.id!==id);}
+  else{const i=prodRecs.findIndex(r=>r.id===id);if(i>-1)prodRecs[i]=upd;}
+  renderProdRecords();
+  toast(t('recSaved'));
+}
+function delRec(id){
+  if(!confirm(t('recDelConfirm')))return;
+  const orig=prodRecs.find(r=>r.id===id);
+  ws.send(JSON.stringify({type:'DELETE_PRODUCTION',id,prodDate:(orig&&orig.prodDate)||recDate}));
+  prodRecs=prodRecs.filter(r=>r.id!==id);
+  renderProdRecords();
+  toast(t('recDeleted'));
+}
+
 /* ── WS ── */
 function connect(){
   ws=new WebSocket(`wss://${TUNNEL}/ws/production`);
@@ -704,6 +804,18 @@ function connect(){
     const msg=JSON.parse(e.data);
     if(msg.type==='INIT_PLANTS'||msg.type==='PLANTS_UPDATED'){
       plants=msg.data;renderPlants();
+    }
+    else if(msg.type==='PRODUCTION_ADDED'&&msg.record){
+      if(msg.record.prodDate===recDate){
+        const i=prodRecs.findIndex(r=>r.id===msg.record.id);
+        if(i>-1)prodRecs[i]=msg.record;else prodRecs.push(msg.record);
+        if(document.getElementById('tab-records').style.display!=='none')renderProdRecords();
+      }
+    }
+    else if(msg.type==='PRODUCTION_DELETED'){
+      const before=prodRecs.length;
+      prodRecs=prodRecs.filter(r=>r.id!==msg.id);
+      if(prodRecs.length!==before&&document.getElementById('tab-records').style.display!=='none')renderProdRecords();
     }
   };
   ws.onclose=()=>{
