@@ -596,9 +596,9 @@ function lineTotalAll(line){return adr().filter(r=>r.line===line).reduce((s,r)=>
 function grandTotalAll(){return LINES.reduce((s,l)=>s+lineTotalAll(l),0);}
 function slotFact(slot){return LINES.reduce((s,l)=>s+lineSlotQty(l,slot),0);}
 function lastModel(line){
-  const recs=adr().filter(r=>r.line===line&&r.modelName);
+  // 선택된 공정(viewProc)+교대(viewShift) 기준, 가장 마지막에 '기록된' 모델
+  const recs=sr().filter(r=>r.line===line&&r.process===viewProc&&r.modelName);
   if(!recs.length)return'';
-  // 가장 마지막에 '기록된' 생산 항목의 모델 (생성 시각 기준 최신)
   return [...recs].sort((a,b)=>
     (a.serverCreatedAt||a.createdAt||'').localeCompare(b.serverCreatedAt||b.createdAt||'')
   ).at(-1).modelName;
