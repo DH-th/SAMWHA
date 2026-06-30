@@ -740,7 +740,8 @@ function renderProdRecords(){
   if(!prodRecs.length){tbl.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
   const sorted=[...prodRecs].sort((a,b)=>(a.slot>b.slot?1:-1)||(a.line>b.line?1:-1));
-  const slotOpts=s=>REC_ALL_SLOTS.map(x=>`<option value="${x}"${x===s?' selected':''}>${x}</option>`).join('');
+  const slotRange=x=>{const h=parseInt(x);return`${x} - ${String((h+1)%24).padStart(2,'0')}:00`;};
+  const slotOpts=s=>REC_ALL_SLOTS.map(x=>`<option value="${x}"${x===s?' selected':''}>${slotRange(x)}</option>`).join('');
   tbl.innerHTML=`<thead><tr style="background:var(--s2,#f0f2f5);text-align:left">
     <th style="padding:6px 8px">${t('recLine')}</th>
     <th style="padding:6px 8px">${t('recModel')}</th>
@@ -754,7 +755,7 @@ function renderProdRecords(){
     <td style="padding:5px 8px;font-weight:700">${r.line||''}</td>
     <td style="padding:5px 8px">${r.modelName||''}</td>
     <td style="padding:5px 8px">${r.process||''}</td>
-    <td style="padding:5px 8px"><select class="txt rc-slot" style="width:90px;padding:4px">${slotOpts(r.slot)}</select></td>
+    <td style="padding:5px 8px"><select class="txt rc-slot" style="width:130px;padding:4px">${slotOpts(r.slot)}</select></td>
     <td style="padding:5px 8px"><select class="txt rc-shift" style="width:80px;padding:4px">
       <option value="day"${r.shift==='day'?' selected':''}>Day</option>
       <option value="night"${r.shift==='night'?' selected':''}>Night</option></select></td>

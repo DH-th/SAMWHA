@@ -238,16 +238,6 @@ td{
 .proc-auto .bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;}
 /* ── data cells ── */
 .col-avg{min-width:52px;width:52px;border-left:1px solid var(--border)!important;font-weight:700!important;}
-/* Daily Total / Avg 의 주·야 분리 표시 */
-.dn{display:flex;flex-direction:column;gap:1px;line-height:1.1;padding:3px 1px;}
-.dn span{font-size:11px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;}
-.dn .lbl{font-size:8px;font-weight:800;opacity:.7;margin-right:2px;}
-.dn .dn-d{color:var(--amber);}
-.dn .dn-n{color:var(--accent);}
-.dn .z{color:var(--border2);font-weight:400;}
-.col-tot,.col-avg{min-width:60px!important;width:60px!important;}
-.pc-card .dn span{font-size:13px;}
-.pc-card .dn .lbl{font-size:9px;}
 .sum-row td{
   background:var(--surface3);border-top:2px solid var(--border2);
   font-size:11px;font-weight:700;padding:5px 3px;color:var(--text2);
@@ -698,18 +688,11 @@ function renderAll(){
 function buildLineRow(line,li,slots,cur){
   const cls=li%2===0?'odd':'even';
   const model=lastModel(line);
-  // Daily Total / Avg 를 주간·야간으로 분리 (현재 viewProc 기준)
-  const lineRec=adr().filter(r=>r.line===line&&r.process===viewProc);
-  const calcDN=sh=>{
-    const rs=lineRec.filter(r=>r.shift===sh);
-    const t=rs.reduce((s,r)=>s+(r.qty||0),0);
-    const fs=new Set(rs.filter(r=>(r.qty||0)>0).map(r=>r.slot)).size;
-    return{tot:t,avg:fs>0?Math.round(t/fs):0};
-  };
-  const dDN=calcDN('day'),nDN=calcDN('night');
-  const dnCell=(dv,nv)=>`<div class="dn">
-    <span class="dn-d${dv>0?'':' z'}"><span class="lbl">D</span>${dv>0?dv.toLocaleString():'—'}</span>
-    <span class="dn-n${nv>0?'':' z'}"><span class="lbl">N</span>${nv>0?nv.toLocaleString():'—'}</span></div>`;
+  // 선택된 교대(viewShift)+공정(viewProc) 기준 단일 합계/평균
+  const rs=sr().filter(r=>r.line===line&&r.process===viewProc);
+  const tot=rs.reduce((s,r)=>s+(r.qty||0),0);
+  const filledSlots=new Set(rs.filter(r=>(r.qty||0)>0).map(r=>r.slot)).size;
+  const avg=filledSlots>0?Math.round(tot/filledSlots):0;
   let row=`<tr class="${cls}">
     <td class="col-line ln-cell" onclick="openLineModal('${line}')" style="cursor:pointer">
       <span class="ln-name">${line}</span>
@@ -722,8 +705,8 @@ function buildLineRow(line,li,slots,cur){
     prevQty[key]=q;
     row+=`<td class="sv${isCur?' cur':''}"${q>0?` onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total" data-val="${q}" data-from="${prev}">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
   });
-  row+=`<td class="col-tot">${dnCell(dDN.tot,nDN.tot)}</td>`;
-  row+=`<td class="col-avg">${dnCell(dDN.avg,nDN.avg)}</td>`;
+  row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
+  row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
   row+=`</tr>`;
   return row;
 }
