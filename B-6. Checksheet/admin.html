@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checksheet 관리</title>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="lang.js"></script>
+<style>
+:root{
+  --bg:#F5F7FA;--surface:#FFFFFF;--s2:#F0F2F5;--s3:#E8ECF0;
+  --border:rgba(0,0,0,.09);--border2:rgba(0,0,0,.16);
+  --text:#1A2430;--muted:#7A8896;
+  --accent:#6366F1;--accent-bg:rgba(99,102,241,.10);
+  --ng:#DC2626;--ng-bg:#FEF2F2;--ok:#059669;
+  --sh:0 2px 8px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;}
+header{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);box-shadow:var(--sh);padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.back{padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--s2);}
+.h-title{font-size:16px;font-weight:900;cursor:pointer;user-select:none;}
+.cpill{margin-left:auto;display:flex;align-items:center;gap:5px;padding:4px 9px;border:1px solid var(--border);border-radius:999px;font-size:11px;font-weight:600;color:var(--muted);background:var(--s2);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ng);}.dot.on{background:var(--ok);}
+.wrap{max-width:880px;margin:0 auto;padding:14px 16px 60px;}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;box-shadow:var(--sh);padding:14px;margin-bottom:14px;}
+.card-ttl{font-size:14px;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.txt{padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;background:var(--surface);color:var(--text);}
+.txt:focus{border-color:var(--accent);}
+.add-btn{padding:9px 16px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+.tmpl{border:1.5px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;}
+.tmpl-hd{display:flex;align-items:center;gap:8px;padding:11px 13px;background:var(--s2);cursor:pointer;}
+.tmpl-code{font-size:11px;font-weight:800;color:var(--accent);background:var(--accent-bg);padding:3px 8px;border-radius:6px;}
+.tmpl-name{font-weight:800;font-size:14px;flex:1;}
+.tmpl-lines{font-size:11px;color:var(--muted);font-weight:600;}
+.chev{font-size:12px;color:var(--muted);transition:transform .2s;}
+.tmpl.open .chev{transform:rotate(90deg);}
+.tmpl-body{display:none;padding:13px;}
+.tmpl.open .tmpl-body{display:block;}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fld label{font-size:11px;font-weight:800;color:var(--muted);}
+.fld .txt{width:100%;}
+.items-hd{font-size:12px;font-weight:800;color:var(--muted);margin:12px 0 6px;}
+.item-line{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.item-line .no{width:26px;font-size:12px;font-weight:800;color:var(--muted);text-align:center;}
+.item-line .desc{flex:1;min-width:80px;}
+.item-line select.txt{padding:8px;}
+.item-line .unit{width:62px;}
+.item-line .spec{width:74px;}
+.idel{width:30px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--ng-bg);color:var(--ng);cursor:pointer;font-size:13px;flex-shrink:0;}
+.tbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.btn-save{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;}
+.btn-del{background:var(--ng-bg);color:var(--ng);border:1px solid var(--ng);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;}
+.btn-addi{background:var(--s2);border:1px dashed var(--border2);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer;}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;z-index:400;opacity:0;transition:opacity .25s;pointer-events:none;}
+#toast.s{opacity:1;}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="back" data-i18n="dashBtn">📊 สถานะ</a>
+  <span class="h-title" data-i18n="tmplMgmt" data-lang-trigger onclick="cycleLang()">จัดการเช็คชีท</span>
+  <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-ttl" data-i18n="addSheet">เพิ่มเช็คชีท</div>
+    <div class="row">
+      <input class="txt" id="new-code" placeholder="Code (FM-PD-xxx)" style="width:150px">
+      <input class="txt" id="new-name" placeholder="Name" style="flex:1;min-width:160px">
+      <input class="txt" id="new-lines" placeholder="L.1, L.2" style="width:140px">
+      <button class="add-btn" onclick="addTmpl()" data-i18n="addSheet">เพิ่มเช็คชีท</button>
+    </div>
+  </div>
+  <div id="tmpl-list"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const TUNNEL='server.samhwa.cloud';
+let ws, templates=[], openIds=new Set();
+
+function connect(){
+  ws=new WebSocket(`wss://${TUNNEL}/ws/checksheet`);
+  ws.onopen=()=>{document.getElementById('cdot').className='dot on';document.getElementById('ctxt').textContent=t('connected');};
+  ws.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    if(m.type==='INIT_CS_TEMPLATES'||m.type==='CS_TEMPLATES_UPDATED'){templates=m.data||[];render();}
+  };
+  ws.onclose=()=>{document.getElementById('cdot').className='dot';document.getElementById('ctxt').textContent=t('disconnected');setTimeout(connect,3000);};
+  ws.onerror=()=>ws.close();
+}
+
+function render(){
+  const el=document.getElementById('tmpl-list');
+  const sorted=[...templates].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  el.innerHTML=sorted.map(tp=>{
+    const open=openIds.has(tp.id);
+    const items=(tp.items||[]).map((it,i)=>itemRow(tp.id,it,i)).join('');
+    return `<div class="tmpl${open?' open':''}" data-id="${tp.id}">
+      <div class="tmpl-hd" onclick="toggle('${tp.id}')">
+        <span class="chev">▶</span>
+        <span class="tmpl-code">${tp.code||'-'}</span>
+        <span class="tmpl-name">${tp.name||''}</span>
+        <span class="tmpl-lines">${(tp.lines||[]).join(', ')}</span>
+      </div>
+      <div class="tmpl-body">
+        <div class="fld"><label>${t('sheetCode')}</label><input class="txt f-code" value="${tp.code||''}"></div>
+        <div class="fld"><label>${t('sheetName')}</label><input class="txt f-name" value="${tp.name||''}"></div>
+        <div class="fld"><label>${t('applyLines')}</label><input class="txt f-lines" value="${(tp.lines||[]).join(', ')}"></div>
+        <div class="items-hd">${t('items')}</div>
+        <div class="items" id="items-${tp.id}">${items}</div>
+        <button class="btn-addi" onclick="addItem('${tp.id}')">+ ${t('addItem')}</button>
+        <div class="tbtns">
+          <button class="btn-save" onclick="saveTmpl('${tp.id}')">${t('saveSheet')}</button>
+          <button class="btn-del" onclick="delTmpl('${tp.id}')">🗑 ${t('delSheet')}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || `<div style="text-align:center;padding:30px;color:var(--muted)">${t('noRecords')}</div>`;
+}
+function itemRow(tid,it,i){
+  const no=it.no!=null?it.no:(i+1);
+  return `<div class="item-line" data-iid="${it.id||''}">
+    <span class="no">${no}</span>
+    <input class="txt desc i-desc" value="${(it.desc||'').replace(/"/g,'&quot;')}" placeholder="${t('item')}">
+    <select class="txt i-type" onchange="this.closest('.item-line').dataset.type=this.value">
+      <option value="check"${it.type!=='number'?' selected':''}>${t('typeCheck')}</option>
+      <option value="number"${it.type==='number'?' selected':''}>${t('typeNumber')}</option>
+    </select>
+    <input class="txt spec i-spec" value="${(it.spec||'').replace(/"/g,'&quot;')}" placeholder="${t('spec')}">
+    <input class="txt unit i-unit" value="${(it.unit||'').replace(/"/g,'&quot;')}" placeholder="${t('unit')}">
+    <button class="idel" onclick="this.closest('.item-line').remove()">✕</button>
+  </div>`;
+}
+function toggle(id){if(openIds.has(id))openIds.delete(id);else openIds.add(id);render();}
+function addItem(tid){
+  const box=document.getElementById('items-'+tid);
+  const cnt=box.querySelectorAll('.item-line').length;
+  const div=document.createElement('div');
+  div.innerHTML=itemRow(tid,{id:'',no:cnt+1,type:'check',desc:'',spec:'',unit:''},cnt);
+  box.appendChild(div.firstElementChild||div);
+}
+function collectTmpl(id){
+  const root=document.querySelector(`.tmpl[data-id="${id}"]`);
+  const orig=templates.find(t=>t.id===id)||{};
+  const code=root.querySelector('.f-code').value.trim();
+  const name=root.querySelector('.f-name').value.trim();
+  const lines=root.querySelector('.f-lines').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const items=[...root.querySelectorAll('.item-line')].map((row,i)=>{
+    const desc=row.querySelector('.i-desc').value.trim();
+    const type=row.querySelector('.i-type').value;
+    const spec=row.querySelector('.i-spec').value.trim();
+    const unit=row.querySelector('.i-unit').value.trim();
+    if(!desc)return null;
+    return {id:row.dataset.iid||('it_'+Math.random().toString(36).slice(2,8)),no:i+1,desc,type,spec,unit};
+  }).filter(Boolean);
+  return Object.assign({},orig,{id,code,name,lines,items});
+}
+function saveTmpl(id){
+  const tmpl=collectTmpl(id);
+  if(!tmpl.name){toast('⚠ Name?');return;}
+  ws.send(JSON.stringify({type:'UPSERT_CS_TEMPLATE',template:tmpl}));
+  toast(t('saved'));
+}
+function delTmpl(id){
+  if(!confirm(t('confirmDel')))return;
+  ws.send(JSON.stringify({type:'DELETE_CS_TEMPLATE',id}));
+  openIds.delete(id);
+  toast(t('deleted'));
+}
+function addTmpl(){
+  const code=document.getElementById('new-code').value.trim();
+  const name=document.getElementById('new-name').value.trim();
+  const lines=document.getElementById('new-lines').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!name){toast('⚠ Name?');return;}
+  const tmpl={id:'tmpl_'+Date.now().toString(36),code,name,lines,items:[],order:0};
+  ws.send(JSON.stringify({type:'UPSERT_CS_TEMPLATE',template:tmpl}));
+  openIds.add(tmpl.id);
+  document.getElementById('new-code').value='';document.getElementById('new-name').value='';document.getElementById('new-lines').value='';
+  toast(t('saved'));
+}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('s');setTimeout(()=>el.classList.remove('s'),1800);}
+window.onLangChange=()=>render();
+connect();
+</script>
+</body>
+</html>
