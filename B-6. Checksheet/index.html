@@ -107,6 +107,8 @@ tbody .col-line{background:var(--surface);}
   <div class="hdr-r">
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
     <a href="input.html" class="lnk primary" data-i18n="inputBtn">✏️ บันทึกการตรวจ</a>
+    <button class="lnk" onclick="openExport()">📄 Excel</button>
+    <a href="print-qr.html" class="lnk">🖨️ QR</a>
     <a href="admin.html" class="lnk" data-i18n="adminBtn">⚙ ตั้งค่า</a>
   </div>
 </header>
@@ -121,6 +123,22 @@ tbody .col-line{background:var(--surface);}
       <span><span class="lg-dot" style="background:var(--amber)"></span>NG</span>
       <span><span class="lg-dot" style="background:var(--ng)"></span><span data-i18n="pending">ค้าง</span></span>
       <span><span class="lg-dot" style="background:var(--s3)"></span>N/A</span>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="mb-export" onclick="if(event.target===this)closeExport()">
+  <div class="modal" style="width:min(420px,96vw)">
+    <div class="m-hd"><span class="m-title">📄 Excel <span data-i18n="title">เช็คชีท</span></span><button class="m-x" onclick="closeExport()">✕</button></div>
+    <div class="m-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">원본 양식 그대로 채워서 내려받습니다 (월 단위).</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <label style="font-size:12px;font-weight:800"><span data-i18n="line">ไลน์</span>
+          <select id="exp-line" style="width:100%;margin-top:5px;padding:9px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit"></select></label>
+        <label style="font-size:12px;font-weight:800">Month
+          <input type="month" id="exp-month" style="width:100%;margin-top:5px;padding:9px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit"></label>
+        <button class="lnk primary" style="padding:13px;font-size:14px;border-radius:11px" onclick="doExport()">⬇ <span data-i18n="result">ดาวน์โหลด</span> Excel</button>
+      </div>
     </div>
   </div>
 </div>
@@ -233,6 +251,24 @@ function delRec(id){
   ws.send(JSON.stringify({type:'DELETE_CHECK',id,date:viewDate}));
   records=records.filter(r=>r.id!==id);
   closeModal();renderAll();toast(t('deleted'));
+}
+
+/* ── Excel 출력 (원본 양식 채우기) ── */
+function openExport(){
+  const lines=allLines();
+  const sel=document.getElementById('exp-line');
+  sel.innerHTML=lines.map(l=>`<option value="${l}">${l}</option>`).join('');
+  document.getElementById('exp-month').value=viewDate.slice(0,7);
+  document.getElementById('mb-export').classList.add('on');
+}
+function closeExport(){document.getElementById('mb-export').classList.remove('on');}
+function doExport(){
+  const line=document.getElementById('exp-line').value;
+  const month=document.getElementById('exp-month').value;
+  if(!line||!month){toast('?');return;}
+  const url=`https://${TUNNEL}/api/checksheet/export?line=${encodeURIComponent(line)}&month=${month}`;
+  window.open(url,'_blank');
+  closeExport();
 }
 
 function connect(){

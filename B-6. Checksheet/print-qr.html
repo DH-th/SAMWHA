@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR 인쇄 — Checksheet</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<style>
+:root{--bg:#F0EBE1;--surface:#FFFFFF;--s2:#F7F3EC;--border:#DDD7CB;
+  --text:#1A1610;--muted:#8A8278;--accent:#6366F1;--accent-bg:#EEF0FD;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Pretendard',system-ui,sans-serif;}
+body{background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.back{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--s2);}
+h1{font-size:16px;font-weight:900;}
+.ctrl{padding:16px;display:flex;flex-direction:column;gap:12px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;}
+.btn-all{background:var(--s2);border:1px solid var(--border);color:var(--muted);}
+.btn-print{background:var(--accent);color:#fff;}
+.hint{font-size:11px;color:var(--muted);}
+.line-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.line-chk{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;}
+.line-chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+.line-name{font-size:14px;font-weight:800;}
+#print-area{display:none;}
+@media print{
+  body>*:not(#print-area){display:none!important;}
+  #print-area{display:block!important;}
+  @page{size:A4 landscape;margin:8mm;}
+  .qr-grid{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr);gap:2mm;width:100%;height:192mm;}
+  .qr-item{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ccc;padding:1.5mm 2mm;page-break-inside:avoid;overflow:hidden;}
+  .qr-item canvas,.qr-item img{display:block;max-width:100%!important;max-height:46mm!important;width:auto!important;height:auto!important;}
+  .qr-cap{margin-top:1mm;font-size:10pt;font-weight:700;color:#555;text-align:center;}
+  .qr-label{margin-top:1mm;font-size:26pt;font-weight:900;text-align:center;color:#1A1610;letter-spacing:.02em;line-height:1;}
+  .page-break{page-break-before:always;}
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="back">← 현황</a>
+  <h1>QR 인쇄 — Checksheet</h1>
+</header>
+<div class="ctrl">
+  <div class="btn-row">
+    <button class="btn btn-all" onclick="toggleAll(true)">전체 선택</button>
+    <button class="btn btn-all" onclick="toggleAll(false)">전체 해제</button>
+    <button class="btn btn-print" onclick="doPrint()">🖨️ 인쇄</button>
+    <span class="hint">A4 가로 · 5열×3행 · 라인별 점검 입력 QR</span>
+  </div>
+  <div class="line-grid" id="line-grid"></div>
+</div>
+<div id="print-area"></div>
+<script>
+const TUNNEL='server.samhwa.cloud';
+const BASE_URL=location.origin+location.pathname.replace('print-qr.html','input.html');
+const DEFAULT_LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.7_Display','L.9','L.8_IN','L.8_OUT','FGA','Rotary','SDB'];
+
+async function loadLines(){
+  let lines=[];
+  try{
+    const r=await fetch(`https://${TUNNEL}/api/checksheet/templates`);
+    const j=await r.json();
+    const s=new Set();
+    (j.templates||[]).forEach(t=>(t.lines||[]).forEach(l=>s.add(l)));
+    lines=[...s];
+  }catch{}
+  if(!lines.length) lines=DEFAULT_LINES.slice();
+  lines.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const grid=document.getElementById('line-grid');
+  grid.innerHTML=lines.map(l=>`<label class="line-chk"><input type="checkbox" value="${l}" checked><span class="line-name">${l}</span></label>`).join('');
+}
+function toggleAll(v){document.querySelectorAll('#line-grid input').forEach(c=>c.checked=v);}
+function doPrint(){
+  const lines=[...document.querySelectorAll('#line-grid input:checked')].map(c=>c.value);
+  if(!lines.length){alert('라인을 선택해주세요.');return;}
+  const area=document.getElementById('print-area');area.innerHTML='';
+  const PER=15;
+  for(let pi=0;pi<Math.ceil(lines.length/PER);pi++){
+    const page=lines.slice(pi*PER,(pi+1)*PER);
+    const wrap=document.createElement('div');if(pi>0)wrap.className='page-break';
+    const g=document.createElement('div');g.className='qr-grid';
+    page.forEach(line=>{
+      const url=`${BASE_URL}?line=${encodeURIComponent(line)}`;
+      const item=document.createElement('div');item.className='qr-item';
+      const qr=document.createElement('div');
+      new QRCode(qr,{text:url,width:150,height:150,correctLevel:QRCode.CorrectLevel.M});
+      const cap=document.createElement('div');cap.className='qr-cap';cap.textContent='Checksheet';
+      const lbl=document.createElement('div');lbl.className='qr-label';lbl.textContent=line;
+      item.appendChild(qr);item.appendChild(cap);item.appendChild(lbl);g.appendChild(item);
+    });
+    wrap.appendChild(g);area.appendChild(wrap);
+  }
+  setTimeout(()=>window.print(),300);
+}
+loadLines();
+</script>
+</body>
+</html>
