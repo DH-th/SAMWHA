@@ -598,7 +598,10 @@ function slotFact(slot){return LINES.reduce((s,l)=>s+lineSlotQty(l,slot),0);}
 function lastModel(line){
   const recs=adr().filter(r=>r.line===line&&r.modelName);
   if(!recs.length)return'';
-  return recs.sort((a,b)=>a.slot>b.slot?1:-1).at(-1).modelName;
+  // 가장 마지막에 '기록된' 생산 항목의 모델 (생성 시각 기준 최신)
+  return [...recs].sort((a,b)=>
+    (a.serverCreatedAt||a.createdAt||'').localeCompare(b.serverCreatedAt||b.createdAt||'')
+  ).at(-1).modelName;
 }
 
 /* ── nav ── */
