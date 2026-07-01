@@ -159,6 +159,10 @@ h1{font-size:16px;font-weight:900;}
     <button class="dnbtn" onclick="move(1)">▶</button>
     <button class="dnbtn today" onclick="goToday()" data-i18n="today">วันนี้</button>
   </div>
+  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;margin-left:auto;white-space:nowrap">
+    <input type="checkbox" id="grp10" onchange="toggleGroup10()" style="width:15px;height:15px;accent-color:var(--accent)">
+    <span data-i18n="group10">10자 요약</span>
+  </label>
 </div>
 
 <div class="view-tabs">
@@ -188,6 +192,15 @@ const fmtD = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
 const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
 
 let period='day', anchor=new Date(), currentView='overall', allRecords=[];
+let groupBy10=false;
+function modelKey(name){const n=name||'(미등록)';return groupBy10?n.slice(0,10):n;}
+function topEtc(entries,n=10){
+  if(entries.length<=n)return entries;
+  const top=entries.slice(0,n);
+  const etc=entries.slice(n).reduce((s,[,q])=>s+q,0);
+  return etc>0?[...top,['etc',etc]]:top;
+}
+function toggleGroup10(){groupBy10=document.getElementById('grp10').checked;render(allRecords);}
 
 /* ── 기간 ── */
 function getDates(){
@@ -242,7 +255,7 @@ async function load(){
 function aggByModel(recs,proc){
   const map={};
   recs.filter(r=>!proc||r.process===proc).forEach(r=>{
-    const m=r.modelName||'(미등록)';map[m]=(map[m]||0)+(r.qty||0);
+    const m=modelKey(r.modelName);map[m]=(map[m]||0)+(r.qty||0);
   });
   return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
@@ -314,7 +327,7 @@ function renderOverall(recs){
   flex.className='overall-wrap';
 
   ['S1','S2'].forEach(proc=>{
-    const entries=aggByModel(mainRecs,proc);
+    const entries=topEtc(aggByModel(mainRecs,proc));
     const total=entries.reduce((s,[,q])=>s+q,0);
     const card=document.createElement('div');
     card.className='overall-chart-card';
@@ -376,7 +389,7 @@ function renderLines(recs){
       const sec=document.createElement('div');sec.className='proc-section';
       const lbl=document.createElement('div');lbl.className='proc-lbl';lbl.textContent=proc;
       sec.appendChild(lbl);
-      const entries=aggByModel(lr,proc);
+      const entries=topEtc(aggByModel(lr,proc));
       const total=entries.reduce((s,[,q])=>s+q,0);
       if(!entries.length){
         const e=document.createElement('div');e.className='proc-empty';e.textContent=t('noRecords');
@@ -415,17 +428,24 @@ function renderProducts(recs){
   const wrap=document.getElementById('view-products');
   wrap.innerHTML='';
 
-  // 모델별 S1/S2 집계
+  // 모델별 S1/S2 집계 (10자 요약 옵션 반영)
   const map={};
   recs.forEach(r=>{
-    const m=r.modelName||'(미등록)';
+    const m=modelKey(r.modelName);
     if(!map[m])map[m]={s1:0,s2:0};
     if(r.process==='S1')map[m].s1+=(r.qty||0);
     if(r.process==='S2')map[m].s2+=(r.qty||0);
   });
-  const entries=Object.entries(map)
+  let entries=Object.entries(map)
     .map(([m,v])=>({model:m,...v,total:v.s1+v.s2}))
     .sort((a,b)=>b.total-a.total);
+  // 상위 10 + 나머지는 etc 로 묶기
+  if(entries.length>10){
+    const top=entries.slice(0,10);
+    const rest=entries.slice(10).reduce((a,e)=>({s1:a.s1+e.s1,s2:a.s2+e.s2}),{s1:0,s2:0});
+    const etcTot=rest.s1+rest.s2;
+    entries = etcTot>0 ? [...top,{model:'etc',s1:rest.s1,s2:rest.s2,total:etcTot}] : top;
+  }
 
   if(!entries.length){
     wrap.innerHTML='<div class="card-empty" style="margin-top:20px">기록 없음</div>';return;
