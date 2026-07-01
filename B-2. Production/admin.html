@@ -89,6 +89,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
 .ibtn:hover.d{color:var(--red);border-color:rgba(185,28,28,.4);}
 .ibtn.mv{font-size:11px;color:var(--muted);}
 .ibtn.mv:hover{color:var(--text);border-color:var(--border2);}
+.ibtn.stat{color:var(--accent);border-color:rgba(13,148,136,.35);background:rgba(13,148,136,.08);}
+.ibtn.stat.off{color:var(--border2);border-color:var(--border);background:var(--surface);opacity:.55;}
+.plant-item.stats-off .pname{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--border2);}
 .model-list{display:none;padding:0 13px 12px;border-top:1px solid var(--border);}
 .model-list.open{display:block;padding-top:8px;}
 
@@ -297,9 +300,16 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
     </div>
     <div style="font-size:10px;color:var(--muted);margin-top:4px" data-i18n="recEditHint">แก้ไขจำนวน·วันที่·กะ ของบันทึก แล้วกด 💾 / ลบด้วย 🗑</div>
   </div>
-  <div class="card" style="overflow-x:auto">
-    <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:560px"></table>
-    <div id="rec-empty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px" data-i18n="recNone">ไม่มีบันทึก</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <select class="txt" id="rec-f-line" style="width:auto" onchange="renderProdRecords()"></select>
+      <input class="txt" id="rec-f-model" style="flex:1;min-width:130px" oninput="renderProdRecords()" data-i18n="recSearchModel" placeholder="🔍 โมเดล...">
+      <span id="rec-count" style="font-size:11px;color:var(--muted);font-weight:700"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:560px"></table>
+      <div id="rec-empty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px" data-i18n="recNone">ไม่มีบันทึก</div>
+    </div>
   </div>
 </div>
 
@@ -530,11 +540,13 @@ function renderPlants(){
   el.innerHTML=plants.map(p=>{
     const open=expanded.has(p.id);
     const models=p.models||[];
-    return`<div class="plant-item">
+    return`<div class="plant-item${p.statsActive===false?' stats-off':''}">
       <div class="plant-hd" onclick="toggleP('${p.id}')">
         <span class="chevron${open?' open':''}">▶</span>
         <span class="pname" id="pn-${p.id}">${p.name}</span>
         <span class="pcnt">${models.length} ${t('modelsCountLabel')}</span>
+        <button class="ibtn stat${p.statsActive===false?' off':''}" onclick="event.stopPropagation();toggleStatsActive('${p.id}')"
+          title="${p.statsActive===false?t('statsExcluded'):t('statsIncluded')}">📊</button>
         <button class="ibtn mv" onclick="event.stopPropagation();moveP('${p.id}',-1)" title="${t('moveUp')}">▲</button>
         <button class="ibtn mv" onclick="event.stopPropagation();moveP('${p.id}',1)" title="${t('moveDown')}">▼</button>
         <button class="ibtn e" onclick="event.stopPropagation();editP('${p.id}')" title="${t('rename')}">✏</button>
@@ -591,6 +603,13 @@ function saveP(id){
 function delP(id){
   if(!confirm(t('confirmDeletePlant')))return;
   ws.send(JSON.stringify({type:'DELETE_PLANT',id}));expanded.delete(id);
+}
+/* ── 통계 반영 여부 (Plant별) ── */
+function toggleStatsActive(id){
+  const p=JSON.parse(JSON.stringify(plants.find(p=>p.id===id)));
+  if(!p)return;
+  p.statsActive = p.statsActive===false ? true : false;
+  ws.send(JSON.stringify({type:'UPSERT_PLANT',plant:p}));
 }
 
 /* ── Model CRUD ── */
@@ -737,9 +756,21 @@ async function loadProdRecords(){
 function renderProdRecords(){
   const tbl=document.getElementById('rec-tbl');
   const empty=document.getElementById('rec-empty');
-  if(!prodRecs.length){tbl.innerHTML='';empty.style.display='block';return;}
+  const cnt=document.getElementById('rec-count');
+  // 라인 필터 옵션 채우기 (현재 선택 유지)
+  const fLine=document.getElementById('rec-f-line');
+  const fModel=document.getElementById('rec-f-model');
+  const lineVal=fLine?fLine.value:'';
+  if(fLine){
+    const lines=[...new Set(prodRecs.map(r=>r.line))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    fLine.innerHTML=`<option value="">${t('recAllLines')}</option>`+lines.map(l=>`<option value="${l}"${l===lineVal?' selected':''}>${l}</option>`).join('');
+  }
+  const modelQ=(fModel?fModel.value:'').trim().toLowerCase();
+  let list=prodRecs.filter(r=>(!lineVal||r.line===lineVal)&&(!modelQ||(r.modelName||'').toLowerCase().includes(modelQ)));
+  if(cnt)cnt.textContent=`${list.length} / ${prodRecs.length}`;
+  if(!list.length){tbl.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  const sorted=[...prodRecs].sort((a,b)=>(a.slot>b.slot?1:-1)||(a.line>b.line?1:-1));
+  const sorted=[...list].sort((a,b)=>(a.slot>b.slot?1:-1)||(a.line>b.line?1:-1));
   const slotRange=x=>{const h=parseInt(x);return`${x} - ${String((h+1)%24).padStart(2,'0')}:00`;};
   const slotOpts=s=>REC_ALL_SLOTS.map(x=>`<option value="${x}"${x===s?' selected':''}>${slotRange(x)}</option>`).join('');
   tbl.innerHTML=`<thead><tr style="background:var(--s2,#f0f2f5);text-align:left">

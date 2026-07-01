@@ -280,8 +280,9 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 #xp-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
 .lm-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
 .lm-row:last-child{border-bottom:none;}
-.lm-model{font-size:13px;font-weight:700;color:var(--text);}
-.lm-qty{font-size:14px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;}
+.lm-model{flex:1;min-width:0;text-align:left;padding:0 10px;font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lm-time{font-size:11px;color:var(--muted);font-weight:600;min-width:78px;flex-shrink:0;}
+.lm-qty{font-size:14px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;flex-shrink:0;white-space:nowrap;}
 .lm-empty{text-align:center;padding:24px;color:var(--muted);font-size:13px;}
 /* ── swipe hint ── */
 .swipe-hint{
@@ -675,10 +676,13 @@ function renderAll(){
   document.getElementById('s-tot').textContent=total.toLocaleString();
   document.getElementById('s-s1').textContent=s1tot.toLocaleString();
   document.getElementById('s-s2').textContent=s2tot.toLocaleString();
+  // 평균/h = 총수량 / (기록된 시간대 수 × 실제 생산한 라인 수)
   const s1Filled=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S1'&&(r.qty||0)>0).map(r=>r.slot)).size;
   const s2Filled=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S2'&&(r.qty||0)>0).map(r=>r.slot)).size;
-  document.getElementById('s-a1').textContent=(s1Filled>0?Math.round(s1cur/s1Filled):0).toLocaleString();
-  document.getElementById('s-a2').textContent=(s2Filled>0?Math.round(s2cur/s2Filled):0).toLocaleString();
+  const s1LineCnt=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S1'&&(r.qty||0)>0).map(r=>r.line)).size;
+  const s2LineCnt=new Set(curRec.filter(r=>LINES.includes(r.line)&&r.process==='S2'&&(r.qty||0)>0).map(r=>r.line)).size;
+  document.getElementById('s-a1').textContent=(s1Filled>0&&s1LineCnt>0?Math.round(s1cur/(s1Filled*s1LineCnt)):0).toLocaleString();
+  document.getElementById('s-a2').textContent=(s2Filled>0&&s2LineCnt>0?Math.round(s2cur/(s2Filled*s2LineCnt)):0).toLocaleString();
   snapQty=Object.assign({},prevQty);
   buildSlide('th0','tb0',all.slice(0,6),cur);
   buildSlide('th1','tb1',all.slice(6),cur);
@@ -700,7 +704,7 @@ function buildLineRow(line,li,slots,cur){
     <td class="col-line ln-cell" onclick="openLineModal('${line}')" style="cursor:pointer">
       <span class="ln-name">${line}</span>
     </td>
-    <td class="col-model" onclick="openLineModal('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
+    <td class="col-model" onclick="openModelTotals('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
   slots.forEach(slot=>{
     const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
     const key=`${line}|${slot}|${viewProc}`;
@@ -849,7 +853,7 @@ function openSlotModal(line, slot){
   document.getElementById('lm-title').textContent = `${line}  ${slotLabel}  ·  ${viewProc}`;
   document.getElementById('lm-body').innerHTML = sorted.length
     ? sorted.map(r=>`<div class="lm-row">
-        <span style="font-size:11px;color:var(--muted);font-weight:600;min-width:60px">${fmtRecTime(r.serverCreatedAt||r.createdAt)}</span>
+        <span class="lm-time">${fmtRecTime(r.serverCreatedAt||r.createdAt)}</span>
         <span class="lm-model">${r.modelName}</span>
         <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
       </div>`).join('')
@@ -864,9 +868,30 @@ function openLineModal(line){
   document.getElementById('lm-title').textContent=line;
   document.getElementById('lm-body').innerHTML=sorted.length
     ?sorted.map(r=>`<div class="lm-row">
-        <span style="font-size:11px;color:var(--muted);font-weight:600;min-width:60px">${fmtRecTime(r.serverCreatedAt||r.createdAt)}</span>
+        <span class="lm-time">${fmtRecTime(r.serverCreatedAt||r.createdAt)}</span>
         <span class="lm-model">${r.modelName}</span>
         <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
+      </div>`).join('')
+    :`<div class="lm-empty">${t('noRecords')}</div>`;
+  document.getElementById('lm-backdrop').classList.add('on');
+  document.getElementById('lm-box').style.display='flex';
+  document.getElementById('lm-box').style.flexDirection='column';
+}
+/* 모델 이름 칸 클릭 → 해당 라인의 모델별 금일 총 생산량 (시간 표시 없음) */
+function openModelTotals(line){
+  const recs=adr().filter(r=>r.line===line&&r.modelName);
+  const map={};
+  recs.forEach(r=>{const m=r.modelName;if(!map[m])map[m]={s1:0,s2:0};
+    if(r.process==='S1')map[m].s1+=(r.qty||0);else if(r.process==='S2')map[m].s2+=(r.qty||0);});
+  const entries=Object.entries(map).map(([m,v])=>({m,s1:v.s1,s2:v.s2,tot:v.s1+v.s2})).sort((a,b)=>b.tot-a.tot);
+  document.getElementById('lm-title').textContent=`${line} · ${t('byModelTotal')}`;
+  document.getElementById('lm-body').innerHTML=entries.length
+    ?entries.map(e=>`<div class="lm-row" style="flex-direction:column;align-items:stretch;gap:2px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="lm-model" style="padding-left:0">${e.m}</span>
+          <span class="lm-qty">${e.tot.toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);font-weight:600;padding-left:2px">S1 ${e.s1.toLocaleString()} · S2 ${e.s2.toLocaleString()}</div>
       </div>`).join('')
     :`<div class="lm-empty">${t('noRecords')}</div>`;
   document.getElementById('lm-backdrop').classList.add('on');

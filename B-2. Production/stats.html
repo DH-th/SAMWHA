@@ -169,6 +169,7 @@ h1{font-size:16px;font-weight:900;}
   <div class="vtab on" onclick="setView('overall')" data-i18n="viewAll">ภาพรวม (L.1–L.7)</div>
   <div class="vtab" onclick="setView('lines')" data-i18n="viewByLine">แยกตามไลน์</div>
   <div class="vtab" onclick="setView('products')" data-i18n="viewByProduct">แยกตามโมเดล</div>
+  <div class="vtab" onclick="setView('plants')" data-i18n="viewByPlant">ตามแผนก (Plant)</div>
 </div>
 
 <div class="summary" id="summary"></div>
@@ -176,6 +177,7 @@ h1{font-size:16px;font-weight:900;}
 <div class="view on" id="view-overall"></div>
 <div class="view" id="view-lines"></div>
 <div class="view" id="view-products"></div>
+<div class="view" id="view-plants"></div>
 
 <script>
 const TUNNEL     = 'server.samhwa.cloud';
@@ -200,7 +202,7 @@ function topEtc(entries,n=10){
   const etc=entries.slice(n).reduce((s,[,q])=>s+q,0);
   return etc>0?[...top,['etc',etc]]:top;
 }
-function toggleGroup10(){groupBy10=document.getElementById('grp10').checked;render(allRecords);}
+function toggleGroup10(){groupBy10=document.getElementById('grp10').checked;render(applyPlantFilter(allRecords));}
 
 /* ── 기간 ── */
 function getDates(){
@@ -233,8 +235,24 @@ function setPeriod(p){
 }
 function setView(v){
   currentView=v;
-  document.querySelectorAll('.vtab').forEach((b,i)=>b.classList.toggle('on',['overall','lines','products'][i]===v));
-  document.querySelectorAll('.view').forEach((el,i)=>el.classList.toggle('on',['overall','lines','products'][i]===v));
+  const order=['overall','lines','products','plants'];
+  document.querySelectorAll('.vtab').forEach((b,i)=>b.classList.toggle('on',order[i]===v));
+  document.querySelectorAll('.view').forEach((el,i)=>el.classList.toggle('on',order[i]===v));
+}
+
+/* ── Plant 통계 반영 필터 ── */
+let plantActiveMap={};
+async function fetchPlantActiveMap(){
+  try{
+    const r=await fetch(`https://${TUNNEL}/api/production/plants`);
+    const list=await r.json();
+    const map={};
+    (list||[]).forEach(p=>{map[p.id]=(p.statsActive!==false);});
+    plantActiveMap=map;
+  }catch{}
+}
+function applyPlantFilter(recs){
+  return recs.filter(r=>!r.plantId || plantActiveMap[r.plantId]!==false);
 }
 
 /* ── 로드 ── */
@@ -243,11 +261,14 @@ async function load(){
   document.getElementById('range-lbl').textContent=getRangeLabel();
   const dates=getDates();
   allRecords=[];
-  await Promise.all(dates.map(async d=>{
-    try{const r=await fetch(`https://${TUNNEL}/api/production/log?date=${d}`);
-      const j=await r.json();(j.records||[]).forEach(rec=>allRecords.push(rec));}catch{}
-  }));
-  render(allRecords);
+  await Promise.all([
+    fetchPlantActiveMap(),
+    ...dates.map(async d=>{
+      try{const r=await fetch(`https://${TUNNEL}/api/production/log?date=${d}`);
+        const j=await r.json();(j.records||[]).forEach(rec=>allRecords.push(rec));}catch{}
+    })
+  ]);
+  render(applyPlantFilter(allRecords));
   document.getElementById('ov').classList.add('h');
 }
 
@@ -474,12 +495,56 @@ function renderProducts(recs){
   wrap.appendChild(grid);
 }
 
+/* ── Plant별 뷰 ── */
+function renderPlantsView(recs){
+  const wrap=document.getElementById('view-plants');
+  wrap.innerHTML='';
+
+  const map={};
+  recs.forEach(r=>{
+    const p=r.plantName||'(미등록)';
+    if(!map[p])map[p]={s1:0,s2:0};
+    if(r.process==='S1')map[p].s1+=(r.qty||0);
+    if(r.process==='S2')map[p].s2+=(r.qty||0);
+  });
+  const entries=Object.entries(map)
+    .map(([p,v])=>({plant:p,...v,total:v.s1+v.s2}))
+    .sort((a,b)=>b.total-a.total);
+
+  if(!entries.length){
+    wrap.innerHTML=`<div class="card-empty" style="margin-top:20px">${t('noRecords')}</div>`;return;
+  }
+  const maxQty=Math.max(...entries.map(e=>Math.max(e.s1,e.s2)),1);
+
+  const grid=document.createElement('div');grid.className='product-grid';
+  entries.forEach(e=>{
+    const card=document.createElement('div');card.className='prod-card';
+    const pct1=Math.round((e.s1/maxQty)*100);
+    const pct2=Math.round((e.s2/maxQty)*100);
+    card.innerHTML=`<div class="prod-name">${e.plant}</div>
+      <div class="prod-row">
+        <span class="prod-proc-lbl">S1</span>
+        <div class="prod-bar-wrap"><div class="prod-bar prod-bar-s1" style="width:${pct1}%"></div></div>
+        <span class="prod-qty">${e.s1.toLocaleString()}</span>
+      </div>
+      <div class="prod-row">
+        <span class="prod-proc-lbl">S2</span>
+        <div class="prod-bar-wrap"><div class="prod-bar prod-bar-s2" style="width:${pct2}%"></div></div>
+        <span class="prod-qty">${e.s2.toLocaleString()}</span>
+      </div>
+      <div class="prod-total">${t('total')} <strong>${e.total.toLocaleString()} PCS</strong></div>`;
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+}
+
 function render(recs){
   destroyCharts();
   renderSummary(recs);
   renderOverall(recs);
   renderLines(recs);
   renderProducts(recs);
+  renderPlantsView(recs);
 }
 
 goToday();
