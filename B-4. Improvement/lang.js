@@ -19,7 +19,7 @@
       requirePhotoBefore:'กรุณาอัปโหลดรูป Before อย่างน้อย 1 รูป', requireTitle:'กรุณากรอกชื่อกิจกรรม', requireDate:'กรุณาเลือกวันที่กิจกรรม',
       catSafety:'ความปลอดภัย', catQuality:'คุณภาพ', catProductivity:'ผลผลิต', cat5S:'5ส', catEquipment:'เครื่องจักร', catOther:'อื่นๆ',
       removePhoto:'ลบรูปนี้', maxPhotoMsg:'สูงสุด 30 รูปต่อชุด',
-      createdOn:'สร้างเมื่อ', plannedDate:'วันแผน', completedDate:'วันเสร็จ', line:'ไลน์/หมวดหมู่',
+      createdOn:'สร้างเมื่อ', plannedDate:'วันแผน', completedDate:'วันเสร็จ', line:'ไลน์',
       noPhotos:'ยังไม่มีรูปภาพ', allCategories:'ทุกหมวดหมู่',
     },
     EN:{
@@ -39,7 +39,7 @@
       requirePhotoBefore:'Please upload at least 1 Before photo', requireTitle:'Please enter an activity title', requireDate:'Please select an activity date',
       catSafety:'Safety', catQuality:'Quality', catProductivity:'Productivity', cat5S:'5S', catEquipment:'Equipment', catOther:'Other',
       removePhoto:'Remove photo', maxPhotoMsg:'Up to 30 photos per set',
-      createdOn:'Created', plannedDate:'Planned', completedDate:'Completed', line:'Line/Category',
+      createdOn:'Created', plannedDate:'Planned', completedDate:'Completed', line:'Line',
       noPhotos:'No photos yet', allCategories:'All Categories',
     },
     KO:{
@@ -59,7 +59,7 @@
       requirePhotoBefore:'Before 사진을 1장 이상 등록해주세요', requireTitle:'활동 타이틀을 입력해주세요', requireDate:'활동 날짜를 선택해주세요',
       catSafety:'안전', catQuality:'품질', catProductivity:'생산성', cat5S:'5S', catEquipment:'설비', catOther:'기타',
       removePhoto:'사진 삭제', maxPhotoMsg:'세트당 최대 30장',
-      createdOn:'등록일', plannedDate:'계획일', completedDate:'완료일', line:'라인/분류',
+      createdOn:'등록일', plannedDate:'계획일', completedDate:'완료일', line:'라인',
       noPhotos:'등록된 사진이 없습니다', allCategories:'전체 분류',
     }
   };

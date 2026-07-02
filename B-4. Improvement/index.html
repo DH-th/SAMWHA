@@ -54,7 +54,10 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 /* ── summary ── */
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
-.sc{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:13px 16px;box-shadow:var(--sh);}
+.sc{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:13px 16px;box-shadow:var(--sh);transition:transform .12s,box-shadow .12s,border-color .12s;}
+.sc[data-f]{cursor:pointer;}
+.sc[data-f]:hover{transform:translateY(-2px);box-shadow:var(--shm);}
+.sc[data-f].sel{border-color:var(--accent2);box-shadow:0 0 0 3px var(--accent-bg);}
 .sc-l{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px;}
 .sc-v{font-size:24px;font-weight:900;letter-spacing:-.02em;color:var(--text);}
 .sc.a .sc-v{color:var(--accent);} .sc.b .sc-v{color:var(--amber);} .sc.c .sc-v{color:var(--green);}
@@ -62,28 +65,17 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 /* ── grid ── */
 .grid-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 60px;}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
-.card{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shm);
+.card{position:relative;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shm);
   cursor:pointer;opacity:0;transform:translateY(16px) scale(.98);animation:cardIn .5s cubic-bezier(.2,.8,.3,1) forwards;transition:box-shadow .2s,transform .2s;}
 .card:hover{box-shadow:0 14px 38px rgba(76,29,149,.20);transform:translateY(-3px);}
 @keyframes cardIn{to{opacity:1;transform:translateY(0) scale(1);}}
 
-/* before/after compare */
-.ba-compare{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--s3);user-select:none;}
-.ba-compare img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
-.ba-after-img{z-index:1;}
-.ba-before-wrap{position:absolute;inset:0;z-index:2;overflow:hidden;}
-.ba-before-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.ba-handle{position:absolute;top:0;bottom:0;width:0;z-index:3;pointer-events:none;}
-.ba-handle::before{content:'';position:absolute;top:0;bottom:0;left:-1.5px;width:3px;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.3);}
-.ba-handle::after{content:'⟷';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:14px;color:var(--accent);box-shadow:0 3px 10px rgba(0,0,0,.25);font-weight:900;}
-.ba-label{position:absolute;top:9px;font-size:9.5px;font-weight:900;letter-spacing:.06em;padding:3px 8px;border-radius:6px;
-  background:rgba(0,0,0,.55);color:#fff;z-index:4;}
-.ba-label.before{left:9px;} .ba-label.after{right:9px;}
-.single-photo{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--s3);}
-.single-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s;}
-.card:hover .single-photo img{transform:scale(1.05);}
+/* 큰 텍스트 타일: 라인 + 분류만 표시 (사진/타이틀 없음) */
+.big-tile{padding:30px 16px 8px;text-align:center;background:linear-gradient(160deg,var(--accent-bg),transparent 60%);}
+.big-line{font-size:38px;font-weight:900;letter-spacing:-.02em;color:var(--accent);line-height:1;margin-bottom:8px;}
+.big-cat{display:inline-block;font-size:12px;font-weight:800;color:var(--text);background:var(--s2);
+  border:1px solid var(--border);padding:4px 13px;border-radius:999px;}
+
 .progress-badge{position:absolute;top:9px;left:9px;background:var(--amber);color:#fff;font-size:10px;font-weight:900;
   padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:5px;z-index:5;box-shadow:0 2px 8px rgba(217,119,6,.4);}
 .progress-badge .pdot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.4s infinite;}
@@ -93,13 +85,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .fav-btn:hover{transform:scale(1.12);}
 .fav-btn.on{color:#F59E0B;}
 .fav-btn.detail{position:static;width:30px;height:30px;background:var(--s2);box-shadow:none;border:1px solid var(--border);margin-right:2px;}
-.no-photo-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--border2);font-size:34px;}
 
 .card-body{padding:13px 15px 15px;}
-.card-cat{display:inline-block;font-size:10px;font-weight:800;color:var(--accent);background:var(--accent-bg);
-  padding:3px 9px;border-radius:999px;margin-bottom:7px;}
-.card-title{font-size:14.5px;font-weight:800;color:var(--text);line-height:1.3;margin-bottom:5px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .card-meta{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;color:var(--muted);font-weight:600;}
 .card-status{font-weight:800;}
 .card-status.done{color:var(--green);} .card-status.pending{color:var(--amber);}
@@ -199,7 +186,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   .summary{grid-template-columns:repeat(2,1fr);}
   .card-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
   .card-body{padding:10px 11px 12px;}
-  .card-title{font-size:12.5px;}
+  .big-line{font-size:30px;}
 }
 .lang-sw{display:flex;gap:3px;}
 </style>
@@ -219,9 +206,6 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 <div class="ctrl-wrap">
   <div class="ctrl-bar">
-    <div class="ftab on" data-f="all" onclick="setFilter('all')" data-i18n="filterAll">ทั้งหมด</div>
-    <div class="ftab" data-f="planned" onclick="setFilter('planned')" data-i18n="filterPlanned">กำลังดำเนินการ</div>
-    <div class="ftab" data-f="completed" onclick="setFilter('completed')" data-i18n="filterCompleted">เสร็จแล้ว</div>
     <div class="ftab" data-f="favorite" onclick="setFilter('favorite')" data-i18n="filterFavorites">⭐ รายการโปรด</div>
     <select id="cat-filter" onchange="render()"><option value="" data-i18n-opt="allCategories">ทุกหมวดหมู่</option></select>
     <input type="search" id="search-inp" data-i18n="searchPlaceholder" placeholder="🔍 ค้นหาชื่อกิจกรรม..." oninput="render()">
@@ -240,13 +224,14 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
     <div class="m-body">
       <div class="fld"><label data-i18n="activityTitle">ชื่อกิจกรรม</label><input id="f-title" type="text" placeholder=""></div>
       <div class="fld-row">
-        <div class="fld"><label data-i18n="category">หมวดหมู่</label>
-          <select id="f-category">
-            <option value="" data-i18n-opt="catOther">อื่นๆ</option>
-          </select>
+        <div class="fld"><label data-i18n="line">ไลน์</label>
+          <select id="f-line"></select>
         </div>
-        <div class="fld"><label data-i18n="activityDate">วันที่กิจกรรม</label><input id="f-date" type="date"></div>
+        <div class="fld"><label data-i18n="category">หมวดหมู่</label>
+          <select id="f-category"></select>
+        </div>
       </div>
+      <div class="fld"><label data-i18n="activityDate">วันที่กิจกรรม</label><input id="f-date" type="date"></div>
       <div class="fld"><label data-i18n="description">รายละเอียด</label><textarea id="f-desc"></textarea></div>
       <div class="fld">
         <label data-i18n="beforePhotos">รูปก่อนปรับปรุง (Before)</label>
@@ -320,28 +305,43 @@ let ws, activities=[], curFilter='all';
 let pendingBefore=[], pendingAfter=[]; // {file, url(local preview), uploadedUrl}
 let curDetailId=null;
 let lbList=[], lbIdx=0;
+let deepLinkId=new URLSearchParams(location.search).get('open');
 
-const CATS=[
-  {v:'safety',k:'catSafety'},{v:'quality',k:'catQuality'},{v:'productivity',k:'catProductivity'},
-  {v:'5s',k:'cat5S'},{v:'equipment',k:'catEquipment'},{v:'other',k:'catOther'}
-];
+// B-1 라인 목록 (B-1 Schedule의 라인 선택과 동일하게 L.1~L.10)
+const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.8','L.9','L.10'];
+// B-1 구분(scheduleTypes) — 서버에서 동기화하여 항상 최신 상태 유지
+let scheduleTypesList=[];
+async function fetchScheduleTypes(){
+  try{
+    const r=await fetch(`https://${TUNNEL}/api/schedule/types`);
+    const j=await r.json();
+    scheduleTypesList=j.types||[];
+  }catch{}
+}
+function renderLineOptions(){
+  document.getElementById('f-line').innerHTML=LINES.map(l=>`<option value="${l}">${l}</option>`).join('');
+}
 function renderCatOptions(){
   const sel=document.getElementById('f-category');
-  sel.innerHTML=CATS.map(c=>`<option value="${t(c.k)}">${t(c.k)}</option>`).join('');
+  sel.innerHTML=scheduleTypesList.length
+    ? scheduleTypesList.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')
+    : `<option value="">${t('catOther')}</option>`;
   const cf=document.getElementById('cat-filter');
   const cur=cf.value;
   const cats=[...new Set(activities.map(a=>a.category).filter(Boolean))];
   cf.innerHTML=`<option value="">${t('allCategories')}</option>`+cats.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
 }
 
-/* ── 필터 ── */
+/* ── 필터 ──
+   전체/진행중/완료는 상단 탭 대신 요약 블록 클릭으로 전환한다.
+   즐겨찾기만 별도 토글로 남긴다. */
 function setFilter(f){
-  curFilter=f;
-  document.querySelectorAll('.ftab').forEach(el=>el.classList.toggle('on',el.dataset.f===f));
+  curFilter = curFilter===f ? 'all' : f; // 같은 걸 다시 누르면 전체로 해제
+  document.querySelectorAll('.ftab[data-f]').forEach(el=>el.classList.toggle('on',el.dataset.f===curFilter));
   render();
 }
 
-/* ── 요약 ── */
+/* ── 요약 (블록 클릭 = 필터) ── */
 function renderSummary(){
   const total=activities.length;
   const planned=activities.filter(a=>a.status!=='completed').length;
@@ -349,9 +349,9 @@ function renderSummary(){
   const nowM=new Date().toISOString().slice(0,7);
   const thisMonth=activities.filter(a=>(a.activityDate||'').startsWith(nowM)||(a.afterDate||'').startsWith(nowM)).length;
   document.getElementById('summary').innerHTML=`
-    <div class="sc"><div class="sc-l">${t('totalCount')}</div><div class="sc-v">${total}</div></div>
-    <div class="sc b"><div class="sc-l">${t('inProgressCount')}</div><div class="sc-v">${planned}</div></div>
-    <div class="sc c"><div class="sc-l">${t('completedCount')}</div><div class="sc-v">${done}</div></div>
+    <div class="sc${curFilter==='all'?' sel':''}" data-f="all" onclick="setFilter('all')"><div class="sc-l">${t('totalCount')}</div><div class="sc-v">${total}</div></div>
+    <div class="sc b${curFilter==='planned'?' sel':''}" data-f="planned" onclick="setFilter('planned')"><div class="sc-l">${t('inProgressCount')}</div><div class="sc-v">${planned}</div></div>
+    <div class="sc c${curFilter==='completed'?' sel':''}" data-f="completed" onclick="setFilter('completed')"><div class="sc-l">${t('completedCount')}</div><div class="sc-v">${done}</div></div>
     <div class="sc a"><div class="sc-l">${t('thisMonthCount')}</div><div class="sc-v">${thisMonth}</div></div>`;
 }
 
@@ -376,30 +376,12 @@ function render(){
   }
   grid.innerHTML=list.map((a,i)=>{
     const isDone=a.status==='completed';
-    const before=(a.beforePhotos||[])[0];
-    const after=(a.afterPhotos||[])[0];
-    let media;
-    if(isDone && before && after){
-      media=`<div class="ba-compare" data-id="${a.id}">
-        <img class="ba-after-img" src="${imgUrl(after)}">
-        <div class="ba-before-wrap" style="width:50%"><img src="${imgUrl(before)}"></div>
-        <div class="ba-handle" style="left:50%"></div>
-        <span class="ba-label before">${t('beforeLabel')}</span>
-        <span class="ba-label after">${t('afterLabel')}</span>
-      </div>`;
-    } else if(before){
-      media=`<div class="single-photo">${!isDone?`<span class="progress-badge"><span class="pdot"></span>${t('statusPlanned')}</span>`:''}<img src="${imgUrl(before)}"></div>`;
-    } else {
-      media=`<div class="single-photo"><div class="no-photo-ph">📷</div></div>`;
-    }
-    return `<div class="card" style="animation-delay:${Math.min(i*.05,.6)}s" onclick="openDetail('${a.id}')">
-      <div style="position:relative">
-        ${media}
-        <button class="fav-btn${a.favorite?' on':''}" onclick="event.stopPropagation();toggleFavorite('${a.id}')" title="${t('toggleFavorite')}">${a.favorite?'★':'☆'}</button>
-      </div>
+    return `<div class="card big-tile" style="animation-delay:${Math.min(i*.05,.6)}s" onclick="openDetail('${a.id}')">
+      <button class="fav-btn${a.favorite?' on':''}" onclick="event.stopPropagation();toggleFavorite('${a.id}')" title="${t('toggleFavorite')}">${a.favorite?'★':'☆'}</button>
+      ${!isDone?`<span class="progress-badge"><span class="pdot"></span>${t('statusPlanned')}</span>`:''}
+      <div class="big-line">${escapeHtml(a.line||'-')}</div>
+      <div class="big-cat">${escapeHtml(a.category||t('catOther'))}</div>
       <div class="card-body">
-        <span class="card-cat">${a.category||t('catOther')}</span>
-        <div class="card-title">${escapeHtml(a.title||'')}</div>
         <div class="card-meta">
           <span>${isDone?(a.afterDate||''):(a.activityDate||'')}</span>
           <span class="card-status ${isDone?'done':'pending'}">${isDone?t('statusCompleted'):t('statusPlanned')}</span>
@@ -407,7 +389,6 @@ function render(){
       </div>
     </div>`;
   }).join('');
-  initCompareSliders();
 }
 function imgUrl(p){ if(!p)return''; return p.startsWith('http')?p:`https://${TUNNEL}${p}`; }
 function toggleFavorite(id){
@@ -419,47 +400,14 @@ function toggleFavorite(id){
 }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-/* ── Before/After 슬라이더 ── */
-function initCompareSliders(){
-  document.querySelectorAll('.ba-compare').forEach(el=>{
-    // 마운트 애니메이션: 50%에서 살짝 스윕 후 복귀
-    let pos=50;
-    setPos(el,30); setTimeout(()=>animPos(el,30,70,700,()=>animPos(el,70,50,500)),150);
-    let dragging=false;
-    const move=(clientX)=>{
-      const r=el.getBoundingClientRect();
-      let pct=((clientX-r.left)/r.width)*100;
-      pct=Math.max(2,Math.min(98,pct));
-      setPos(el,pct);
-    };
-    el.addEventListener('mousedown',e=>{dragging=true;move(e.clientX);e.preventDefault();});
-    window.addEventListener('mousemove',e=>{if(dragging)move(e.clientX);});
-    window.addEventListener('mouseup',()=>dragging=false);
-    el.addEventListener('touchstart',e=>{dragging=true;move(e.touches[0].clientX);},{passive:true});
-    el.addEventListener('touchmove',e=>{if(dragging)move(e.touches[0].clientX);},{passive:true});
-    el.addEventListener('touchend',()=>dragging=false);
-  });
-}
-function setPos(el,pct){
-  const wrap=el.querySelector('.ba-before-wrap'); const handle=el.querySelector('.ba-handle');
-  if(wrap)wrap.style.width=pct+'%'; if(handle)handle.style.left=pct+'%';
-}
-function animPos(el,from,to,dur,cb){
-  const t0=performance.now();
-  function step(ts){
-    const p=Math.min((ts-t0)/dur,1);
-    const eased=1-Math.pow(1-p,3);
-    setPos(el,from+(to-from)*eased);
-    if(p<1)requestAnimationFrame(step); else if(cb)cb();
-  }
-  requestAnimationFrame(step);
-}
-
 /* ── 새 활동 등록 ── */
-function openNewModal(){
+async function openNewModal(){
   document.getElementById('f-title').value='';
   document.getElementById('f-desc').value='';
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  renderLineOptions();
+  await fetchScheduleTypes();
+  renderCatOptions();
   pendingBefore=[];
   renderThumbs('before');
   document.getElementById('new-mbg').classList.add('on');
@@ -518,7 +466,7 @@ async function submitNewActivity(){
   const urls=await uploadPhotos(pendingBefore);
   const activity={
     id:'imp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-    title, category:document.getElementById('f-category').value,
+    title, line:document.getElementById('f-line').value, category:document.getElementById('f-category').value,
     description:document.getElementById('f-desc').value.trim(),
     activityDate:date, status:'planned',
     beforePhotos:urls, afterPhotos:[], afterDate:null
@@ -638,7 +586,10 @@ function connect(){
   ws.onopen=()=>{document.getElementById('cdot').className='dot on';document.getElementById('ctxt').textContent=t('connected');};
   ws.onmessage=e=>{
     const m=JSON.parse(e.data);
-    if(m.type==='INIT_IMPROVEMENTS'){activities=m.data||[];render();}
+    if(m.type==='INIT_IMPROVEMENTS'){
+      activities=m.data||[];render();
+      if(deepLinkId){openDetail(deepLinkId);deepLinkId=null;}
+    }
     else if(m.type==='IMPROVEMENT_UPDATED'){
       const i=activities.findIndex(a=>a.id===m.activity.id);
       if(i>-1)activities[i]=m.activity; else activities.push(m.activity);
