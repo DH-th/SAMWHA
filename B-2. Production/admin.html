@@ -195,9 +195,39 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
 .lang-btn{padding:3px 8px;border:1.5px solid var(--border);border-radius:7px;
   font-size:11px;font-weight:700;background:var(--s2);color:var(--muted);cursor:pointer;font-family:inherit;}
 .lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* ── 비밀번호 잠금 ── */
+#admin-lock{position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;}
+#admin-lock.off{display:none;}
+.lock-box{background:var(--surface);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.12);
+  padding:36px 32px 28px;width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;text-align:center;}
+.lock-icon{font-size:36px;}
+.lock-title{font-size:17px;font-weight:900;color:var(--text);}
+.lock-sub{font-size:12px;color:var(--muted);}
+#lock-input{padding:12px 16px;border:1.5px solid var(--border);border-radius:11px;
+  font-size:18px;text-align:center;letter-spacing:6px;background:var(--s2);
+  color:var(--text);outline:none;}
+#lock-input:focus{border-color:var(--accent);}
+#lock-err{font-size:12px;color:#e53e3e;min-height:16px;}
+#lock-btn{padding:12px;background:var(--accent);color:#fff;border:none;border-radius:11px;
+  font-size:14px;font-weight:800;cursor:pointer;}
 </style>
 </head>
 <body>
+
+<!-- 비밀번호 잠금 화면 -->
+<div id="admin-lock">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-title">관리 페이지</div>
+    <div class="lock-sub">비밀번호를 입력하세요</div>
+    <input type="password" id="lock-input" placeholder="••••" maxlength="10"
+      onkeydown="if(event.key==='Enter')lockConfirm()">
+    <div id="lock-err"></div>
+    <button id="lock-btn" onclick="lockConfirm()">확인</button>
+  </div>
+</div>
 <header>
   <a href="index.html" class="back" data-i18n="backToDash">← แดชบอร์ด</a>
   <div class="ptitle" data-i18n="adminTitle" data-lang-trigger onclick="cycleLang()" style="cursor:pointer;user-select:none">จัดการ Production</div>
@@ -307,7 +337,7 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
       <span id="rec-count" style="font-size:11px;color:var(--muted);font-weight:700"></span>
     </div>
     <div style="overflow-x:auto">
-      <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:560px"></table>
+      <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:780px"></table>
       <div id="rec-empty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px" data-i18n="recNone">ไม่มีบันทึก</div>
     </div>
   </div>
@@ -334,6 +364,26 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
+/* ── 비밀번호 잠금 ── */
+(function(){
+  if(sessionStorage.getItem('admin_auth')==='1'){
+    document.getElementById('admin-lock').classList.add('off');
+  } else {
+    setTimeout(()=>document.getElementById('lock-input').focus(),200);
+  }
+})();
+function lockConfirm(){
+  const v=document.getElementById('lock-input').value;
+  if(v==='0000'){
+    sessionStorage.setItem('admin_auth','1');
+    document.getElementById('admin-lock').classList.add('off');
+  } else {
+    document.getElementById('lock-err').textContent='비밀번호가 틀렸습니다';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+  }
+}
+
 const TUNNEL   = 'server.samhwa.cloud';
 const WEB_BASE = 'https://samhwa.cloud/B-2.%20Production/input.html';
 const DEFAULT_LINES_CFG = [
