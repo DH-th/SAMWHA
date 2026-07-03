@@ -283,7 +283,7 @@ kbd{font-family:var(--mono);font-size:10.5px;background:#0c1118;border:1px solid
       <span class="filebadge">.gdo / .gbr</span> 거버 레이어 (RS-274X, 보드 뷰 오버레이)
     </p>
     <div class="drop" id="drop">파일을 여기로 드래그하거나 클릭하여 선택<br><small>여러 파일 동시 선택 가능 (Neutral + BOM + 거버)</small></div>
-    <input type="file" id="load-file" multiple style="display:none" accept=".txt,.xlsx,.ncd,.gdo,.gbr,.ger">
+    <input type="file" id="load-file" multiple style="display:none" accept=".txt,.xlsx,.ncd,.gdo,.gbr,.ger,.zip">
     <div id="load-log" class="note mono"></div>
   </div>
 </section>
@@ -1175,6 +1175,7 @@ async function handleFiles(files){
     const name=f.name.toLowerCase();
     try{
       if(name.endsWith('.xlsx')){await importBOM(f);}
+      else if(name.endsWith('.zip')){await importZIP(f);}
       else if(name.endsWith('.ncd')){importNCD(await readTxt(f),f.name);}
       else if(name.endsWith('.gdo')||name.endsWith('.gbr')||name.endsWith('.ger')){importGerber(await readTxt(f),f.name);}
       else if(name.endsWith('.txt')){
@@ -1260,6 +1261,53 @@ function importNeutral(raw,fname){
      board,pads,geoms,comps,slots:[],drills:[],drillsNP:[],bomD:D.bomD?[]:[],bomC:[]};
   D.comps.forEach(c=>{c.pr=c.g.startsWith('smd')?'SMT':'MI';});
   afterDataChange(`✓ ${fname}: 부품 ${comps.length}점, 풋프린트 ${Object.keys(geoms).length}종 로드 — BOM(.xlsx)을 추가로 올리면 공정이 매핑됩니다`);
+}
+
+/* ---- JSZip lazy loader ---- */
+let JSZipLib=null;
+function loadJSZip(){
+  if(JSZipLib)return Promise.resolve();
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload=()=>{JSZipLib=window.JSZip;res();};
+    s.onerror=()=>rej(new Error('JSZip 로드 실패 — 인터넷 연결이 필요합니다'));
+    document.head.appendChild(s);
+  });
+}
+async function importZIP(f){
+  await loadJSZip();
+  const zip=await new JSZipLib().loadAsync(await f.arrayBuffer());
+  const GERBER_EXT=/\.(gbr|gdo|ger)$/i;
+  const TXT_EXT=/\.txt$/i;
+  const NCD_EXT=/\.ncd$/i;
+  const XLSX_EXT=/\.xlsx$/i;
+  const entries=Object.values(zip.files).filter(e=>!e.dir);
+  let loaded=0;
+  for(const entry of entries){
+    const name=entry.name.toLowerCase();
+    const base=name.split('/').pop();
+    try{
+      if(GERBER_EXT.test(base)){
+        const txt=await entry.async('string');
+        importGerber(txt,base);loaded++;
+      } else if(NCD_EXT.test(base)){
+        const txt=await entry.async('string');
+        importNCD(txt,base);loaded++;
+      } else if(TXT_EXT.test(base)){
+        const txt=await entry.async('string');
+        if(txt.includes('###Component Information')||txt.includes('COMP '))importNeutral(txt,base);
+        else if(txt.includes('%FSLA')||txt.includes('D02*'))importGerber(txt,base);
+        loaded++;
+      } else if(XLSX_EXT.test(base)){
+        const ab=await entry.async('arraybuffer');
+        const blob=new Blob([ab],{type:'application/octet-stream'});
+        await importBOM(new File([blob],base));
+        loaded++;
+      }
+    }catch(err){log(`✗ ZIP내 ${base}: ${err.message}`);}
+  }
+  log(`✓ ${f.name}: ZIP에서 ${loaded}개 파일 임포트`);
 }
 
 /* ---- BOM xlsx (SheetJS lazy) ---- */
