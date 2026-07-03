@@ -288,7 +288,19 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 #xp-qty-val{font-size:16px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;}
 #xp-rows-cnt{font-size:11px;color:var(--muted);margin-left:auto;}
 #xp-wrap{overflow:auto;flex:1;}
-#xp-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+#xp-tbl{min-width:700px;border-collapse:collapse;font-size:12px;}
+/* 비밀번호 모달 */
+#pw-backdrop{position:fixed;inset:0;background:rgba(26,22,16,.55);z-index:400;display:none;}
+#pw-backdrop.on{display:block;}
+#pw-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:16px;box-shadow:0 8px 40px rgba(13,148,136,.2);padding:28px 28px 22px;width:min(340px,90vw);display:none;flex-direction:column;gap:14px;z-index:401;}
+#pw-modal.on{display:flex;}
+#pw-title{font-size:16px;font-weight:900;color:var(--text);text-align:center;}
+#pw-input{padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--surface2);color:var(--text);outline:none;text-align:center;letter-spacing:4px;}
+#pw-input:focus{border-color:var(--accent);}
+#pw-err{font-size:12px;color:#e53e3e;text-align:center;min-height:16px;}
+#pw-btns{display:flex;gap:10px;}
+#pw-cancel{flex:1;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;}
+#pw-ok{flex:1;padding:9px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
 #xp-tbl th{background:var(--accent);color:#fff;font-weight:700;font-size:11px;padding:8px 10px;white-space:nowrap;position:sticky;top:0;z-index:2;text-align:left;}
 #xp-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
 #xp-tbl tr:nth-child(even) td{background:var(--s2);}
@@ -426,7 +438,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
     <span id="clock"></span>
     <a href="print-qr.html" class="adm" data-i18n="qrBtn">🖨️ QR</a>
-    <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
+    <button onclick="pwOpen(exportExcel)" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
     <a href="stats.html" class="adm" data-i18n="statsBtn">📊 สถิติ</a>
     <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
   </div>
@@ -483,6 +495,18 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 </div>
 
 <div id="toast"></div>
+
+<!-- 비밀번호 모달 -->
+<div id="pw-backdrop"></div>
+<div id="pw-modal">
+  <div id="pw-title">🔒 생산기록</div>
+  <input type="password" id="pw-input" placeholder="비밀번호" maxlength="10" onkeydown="if(event.key==='Enter')pwConfirm()">
+  <div id="pw-err"></div>
+  <div id="pw-btns">
+    <button id="pw-cancel" onclick="pwCancel()">취소</button>
+    <button id="pw-ok" onclick="pwConfirm()">확인</button>
+  </div>
+</div>
 
 <!-- Excel 미리보기 모달 -->
 <div id="xp-backdrop" onclick="closeXP()"></div>
@@ -996,8 +1020,34 @@ function xpSetSel(field,val){
   renderXPTable();
 }
 function resetXPFilters(){
-  xpFilter.shift='';xpFilter.section=new Set();xpFilter.line='';xpFilter.plant='';xpFilter.model='';
+  xpFilter.shift='day';xpFilter.section=new Set(['S1']);xpFilter.line='';xpFilter.plant='';xpFilter.model='';
   renderXPTable();
+}
+
+/* ── 비밀번호 모달 ── */
+let _pwCallback=null;
+function pwOpen(cb){
+  _pwCallback=cb;
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-err').textContent='';
+  document.getElementById('pw-backdrop').classList.add('on');
+  document.getElementById('pw-modal').classList.add('on');
+  setTimeout(()=>document.getElementById('pw-input').focus(),100);
+}
+function pwCancel(){
+  document.getElementById('pw-backdrop').classList.remove('on');
+  document.getElementById('pw-modal').classList.remove('on');
+}
+function pwConfirm(){
+  const val=document.getElementById('pw-input').value;
+  if(val==='0000'){
+    pwCancel();
+    if(_pwCallback)_pwCallback();
+  }else{
+    document.getElementById('pw-err').textContent='비밀번호가 틀렸습니다';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
 }
 
 async function exportExcel(){
