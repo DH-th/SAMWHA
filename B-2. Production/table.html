@@ -945,8 +945,13 @@ function _xpApplyUpTo(upToIdx){
   let rows=xpRows;
   for(let i=0;i<upToIdx;i++){
     const f=XP_ORDER[i];
-    if(f==='section'){if(xpFilter.section.size>0)rows=rows.filter(r=>xpFilter.section.has(String(r.section??'')));}
-    else{if(xpFilter[f])rows=rows.filter(r=>String(r[f]??'')===xpFilter[f]);}
+    if(f==='section'){
+      if(xpFilter.section.size>0)rows=rows.filter(r=>xpFilter.section.has(String(r.section??'').toUpperCase()));
+    }else if(f==='shift'){
+      if(xpFilter.shift)rows=rows.filter(r=>String(r.shift??'').toLowerCase()===xpFilter.shift);
+    }else{
+      if(xpFilter[f])rows=rows.filter(r=>String(r[f]??'')===xpFilter[f]);
+    }
   }
   return rows;
 }
@@ -1029,7 +1034,12 @@ function renderXPTable(){
     <td>${r.section}</td><td>${r.plant}</td><td>${r.model}</td>
     <td style="text-align:right;font-weight:700">${(r.qty||0).toLocaleString()}</td>
     <td>${r.remark||''}</td>
-  </tr>`).join('');
+  </tr>`).join('')+`<tr style="background:var(--accent-bg);border-top:2px solid var(--accent);">
+    <td colspan="6"></td>
+    <td style="text-align:right;font-size:12px;font-weight:800;color:var(--muted);padding:8px 10px;">Q'ty Total</td>
+    <td style="text-align:right;font-size:14px;font-weight:900;color:var(--accent);padding:8px 10px;">${totalQty.toLocaleString()}</td>
+    <td></td>
+  </tr>`;
   document.getElementById('xp-qty-val').textContent=totalQty.toLocaleString()+' PCS';
   document.getElementById('xp-rows-cnt').textContent=rows.length.toLocaleString()+' 건';
 }
