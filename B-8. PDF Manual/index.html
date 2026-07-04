@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>PDF Manual — 설비 매뉴얼</title>
+<title>PDF Manual — 매뉴얼 · 자료실</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <style>
 :root{
@@ -248,19 +248,19 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 <header>
   <a href="../index.html" class="back">← 홈</a>
-  <span class="h-title">📕 설비 매뉴얼</span>
+  <span class="h-title">📕 매뉴얼 · 자료실</span>
   <div class="hdr-r">
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt">연결 중</span></div>
     <button class="btn btn-ghost" onclick="openCatModal()">🗂 분류 관리</button>
-    <button class="btn btn-primary" onclick="openEqModal()">+ 설비 등록</button>
+    <button class="btn btn-primary" onclick="openEqModal()">+ 항목 등록</button>
   </div>
 </header>
 
 <!-- 책장: 1차 분류 선택 -->
 <div id="shelf-view">
   <div class="shelf-hd">
-    <h2>📚 설비 매뉴얼 서재</h2>
-    <p>분류(책)를 선택하면 설비 매뉴얼이 펼쳐집니다</p>
+    <h2>📚 매뉴얼 · 자료 서재</h2>
+    <p>분류(책)를 선택하면 매뉴얼과 자료가 펼쳐집니다 — 설비 · 약품 정보 · MSDS 등</p>
   </div>
   <div class="shelf" id="shelf"></div>
 </div>
@@ -273,7 +273,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
       <span class="inner-title" id="inner-title"></span>
     </div>
     <div class="search-bar">
-      <input type="search" id="q" placeholder="🔍 설비명 · 설명 검색..." oninput="render()">
+      <input type="search" id="q" placeholder="🔍 항목명 · 설명 검색..." oninput="render()">
     </div>
   </div>
   <div class="grid-wrap">
@@ -295,11 +295,11 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 설비 등록/수정 모달 -->
 <div class="mbg" id="eq-mbg" onclick="if(event.target===this)closeEqModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title" id="eq-m-title">+ 설비 등록</span><button class="m-x" onclick="closeEqModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title" id="eq-m-title">+ 항목 등록</span><button class="m-x" onclick="closeEqModal()">✕</button></div>
     <div class="m-body">
-      <div class="fld"><label>설비명 *</label><input id="f-name" type="text" placeholder="예: LOADER, Wave Solder ..."></div>
+      <div class="fld"><label>항목명 *</label><input id="f-name" type="text" placeholder="예: LOADER, 플럭스, 솔더 MSDS ..."></div>
       <div class="fld"><label>분류 *</label><select id="f-cat1"></select></div>
-      <div class="fld"><label>설명</label><textarea id="f-desc" placeholder="설비 설명, 주의사항 등"></textarea></div>
+      <div class="fld"><label>설명</label><textarea id="f-desc" placeholder="설명, 주의사항 등"></textarea></div>
       <div class="fld">
         <label>PDF 매뉴얼</label>
         <div class="dropzone" id="dz-pdf" onclick="document.getElementById('inp-pdf').click()">
@@ -321,7 +321,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="modal">
     <div class="m-hd"><span class="m-title">📝 기록 작성</span><button class="m-x" onclick="closePostModal()">✕</button></div>
     <div class="m-body">
-      <div class="fld"><label>내용 *</label><textarea id="p-text" placeholder="설비 개선, 수리 내용 등을 기록하세요" style="min-height:110px"></textarea></div>
+      <div class="fld"><label>내용 *</label><textarea id="p-text" placeholder="개선 · 수리 · 변경 내용 등을 기록하세요" style="min-height:110px"></textarea></div>
       <div class="fld">
         <label>사진 — 올린 후 사진을 탭하면 포인트 표시(박스·원·글자) 가능</label>
         <div class="dropzone" id="dz-post" onclick="document.getElementById('inp-post').click()">
@@ -459,7 +459,7 @@ function renderShelf(){
       <div class="book-cover" style="background:linear-gradient(145deg,${g1},${g2})">
         <div class="bk-ic">🔧</div>
         <div class="bk-label"><div class="bk-name">${esc(c.name)}</div>
-        <span class="bk-count">설비 ${cnt}</span></div>
+        <span class="bk-count">자료 ${cnt}</span></div>
       </div>
     </div>`;
     i++;
@@ -471,7 +471,7 @@ function renderShelf(){
       <div class="book-cover" style="background:linear-gradient(145deg,#94A3B8,#475569)">
         <div class="bk-ic">📦</div>
         <div class="bk-label"><div class="bk-name">미분류</div>
-        <span class="bk-count">설비 ${unc}</span></div>
+        <span class="bk-count">자료 ${unc}</span></div>
       </div>
     </div>`;
     i++;
@@ -522,7 +522,7 @@ function render(){
   if(q)list=list.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.desc||'').toLowerCase().includes(q));
   const g=document.getElementById('grid');
   if(!list.length){
-    g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">📕</div><p>등록된 설비가 없습니다<br>우측 상단 [+ 설비 등록]으로 시작하세요</p></div>`;
+    g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">📕</div><p>등록된 항목이 없습니다<br>우측 상단 [+ 항목 등록]으로 시작하세요</p></div>`;
     return;
   }
   g.innerHTML=list.map((e,i)=>{
@@ -553,20 +553,20 @@ function renderCatBody(){
       <div class="cm-c1-hd" style="margin-bottom:0">
         <button class="cm-ib" onclick="moveCat1('${c1.id}',-1)" ${i===0?'disabled style="opacity:.3"':''}>▲</button>
         <button class="cm-ib" onclick="moveCat1('${c1.id}',1)" ${i===data.cat1.length-1?'disabled style="opacity:.3"':''}>▼</button>
-        <span class="cm-c1-name">${esc(c1.name)} <span style="font-size:11px;color:var(--muted);font-weight:700">· 설비 ${eqs.length}</span></span>
+        <span class="cm-c1-name">${esc(c1.name)} <span style="font-size:11px;color:var(--muted);font-weight:700">· 자료 ${eqs.length}</span></span>
         <button class="cm-ib" onclick="renameCat1('${c1.id}')">✏️</button>
         <button class="cm-ib" style="color:#DC2626" onclick="delCat1('${c1.id}')">🗑</button>
       </div>
-      ${eqs.length?`<div class="cm-sub">설비 순서</div>${eqRows(eqs)}`:''}
+      ${eqs.length?`<div class="cm-sub">항목 순서</div>${eqRows(eqs)}`:''}
     </div>`;
   }).join('');
   const unc=data.equipment.filter(e=>!e.cat1);
   if(unc.length){
     h+=`<div class="cm-c1">
       <div class="cm-c1-hd" style="margin-bottom:0">
-        <span class="cm-c1-name">📦 미분류 <span style="font-size:11px;color:var(--muted);font-weight:700">· 설비 ${unc.length}</span></span>
+        <span class="cm-c1-name">📦 미분류 <span style="font-size:11px;color:var(--muted);font-weight:700">· 자료 ${unc.length}</span></span>
       </div>
-      <div class="cm-sub">설비 순서</div>${eqRows(unc)}
+      <div class="cm-sub">항목 순서</div>${eqRows(unc)}
     </div>`;
   }
   b.innerHTML=h;
@@ -602,7 +602,7 @@ async function renameCat1(id){
 }
 async function delCat1(id){
   const c=data.cat1.find(x=>x.id===id);if(!c)return;
-  if(!confirm(`'${c.name}' 분류를 삭제할까요?\n소속 설비는 '미분류'가 됩니다.`))return;
+  if(!confirm(`'${c.name}' 분류를 삭제할까요?\n소속 항목은 '미분류'가 됩니다.`))return;
   data.cat1=data.cat1.filter(x=>x.id!==id);
   data.equipment.forEach(e=>{if(e.cat1===id)e.cat1='';});
   if(selCat1===id)selCat1='';
@@ -614,7 +614,7 @@ function openEqModal(eqId){
   editingId=eqId||null;
   uploadedThisSession=[];
   const eq=eqId?data.equipment.find(e=>e.id===eqId):null;
-  document.getElementById('eq-m-title').textContent=eq?'✏️ 설비 수정':'+ 설비 등록';
+  document.getElementById('eq-m-title').textContent=eq?'✏️ 항목 수정':'+ 항목 등록';
   document.getElementById('f-name').value=eq?.name||'';
   document.getElementById('f-desc').value=eq?.desc||'';
   pendingPdfs=[...(eq?.pdfs||[])];
@@ -661,7 +661,7 @@ async function handlePdfFiles(files){
 }
 async function saveEquipment(){
   const name=document.getElementById('f-name').value.trim();
-  if(!name){toast('설비명을 입력하세요');return;}
+  if(!name){toast('항목명을 입력하세요');return;}
   const cat1=document.getElementById('f-cat1').value;
   if(!cat1){toast('분류를 선택하세요');return;}
   const prev=editingId?data.equipment.find(e=>e.id===editingId):null;
@@ -723,7 +723,7 @@ function closeDetail(){document.getElementById('d-mbg').classList.remove('on');c
 function editFromDetail(){const id=curDetailId;closeDetail();openEqModal(id);}
 async function deleteEquipment(){
   const eq=data.equipment.find(e=>e.id===curDetailId);if(!eq)return;
-  if(!confirm(`'${eq.name}' 설비를 삭제할까요?\nPDF와 기록·사진도 함께 삭제됩니다.`))return;
+  if(!confirm(`'${eq.name}' 항목을 삭제할까요?\nPDF와 기록·사진도 함께 삭제됩니다.`))return;
   (eq.photos||[]).forEach(u=>deleteServerFile(u));
   (eq.pdfs||[]).forEach(p=>deleteServerFile(p.url));
   (eq.posts||[]).forEach(po=>(po.photos||[]).forEach(u=>deleteServerFile(u)));
