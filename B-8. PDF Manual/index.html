@@ -102,11 +102,10 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
 .card{position:relative;background:var(--surface);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--sh);cursor:pointer;
   transition:box-shadow .2s,transform .2s;opacity:0;animation:cardIn .5s cubic-bezier(.2,.8,.3,1) both;}
-.card-ord{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:4px;z-index:5;}
-.card-ord button{width:25px;height:22px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);
-  font-size:9px;cursor:pointer;opacity:.6;transition:opacity .15s,color .15s;}
-.card-ord button:hover{color:var(--accent);opacity:1;border-color:var(--accent2);}
-.card-ord button:disabled{opacity:.18;cursor:default;}
+.cm-eq{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:6px 9px;margin-top:6px;}
+.cm-eq-name{flex:1;font-size:12.5px;font-weight:700;}
+.cm-sub{font-size:10.5px;font-weight:800;color:var(--muted);margin-top:9px;letter-spacing:.03em;}
 @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:none;}}
 .card:hover{box-shadow:var(--shm);transform:translateY(-3px);}
 .card-tile{padding:30px 16px 12px;text-align:center;background:linear-gradient(160deg,var(--accent-bg),transparent 65%);}
@@ -528,10 +527,6 @@ function render(){
   }
   g.innerHTML=list.map((e,i)=>{
     return`<div class="card" style="animation-delay:${Math.min(i,12)*45}ms" onclick="openDetail('${e.id}')">
-      <div class="card-ord">
-        <button onclick="moveEq('${e.id}',-1,event)" ${i===0?'disabled':''}>▲</button>
-        <button onclick="moveEq('${e.id}',1,event)" ${i===list.length-1?'disabled':''}>▼</button>
-      </div>
       <div class="card-tile"><div class="card-tname">${esc(e.name)}</div></div>
       <div class="card-body">
         <div class="card-desc">${esc(e.desc||'')}</div>
@@ -540,8 +535,43 @@ function render(){
     </div>`;
   }).join('');
 }
-async function moveEq(id,d,ev){
-  ev.stopPropagation();
+
+// ═══════════ 분류 관리 모달 ═══════════
+function openCatModal(){renderCatBody();document.getElementById('cat-mbg').classList.add('on');}
+function closeCatModal(){document.getElementById('cat-mbg').classList.remove('on');refreshViews();}
+function renderCatBody(){
+  const b=document.getElementById('cat-body');
+  if(!data.cat1.length){b.innerHTML=`<div class="empty-state" style="padding:30px"><p>분류를 먼저 추가하세요</p></div>`;return;}
+  const eqRows=eqs=>eqs.map((e,ei)=>`<div class="cm-eq">
+      <button class="cm-ib" onclick="moveEq('${e.id}',-1)" ${ei===0?'disabled style="opacity:.3"':''}>▲</button>
+      <button class="cm-ib" onclick="moveEq('${e.id}',1)" ${ei===eqs.length-1?'disabled style="opacity:.3"':''}>▼</button>
+      <span class="cm-eq-name">${esc(e.name)}</span>
+    </div>`).join('');
+  let h=data.cat1.map((c1,i)=>{
+    const eqs=data.equipment.filter(e=>e.cat1===c1.id);
+    return`<div class="cm-c1">
+      <div class="cm-c1-hd" style="margin-bottom:0">
+        <button class="cm-ib" onclick="moveCat1('${c1.id}',-1)" ${i===0?'disabled style="opacity:.3"':''}>▲</button>
+        <button class="cm-ib" onclick="moveCat1('${c1.id}',1)" ${i===data.cat1.length-1?'disabled style="opacity:.3"':''}>▼</button>
+        <span class="cm-c1-name">${esc(c1.name)} <span style="font-size:11px;color:var(--muted);font-weight:700">· 설비 ${eqs.length}</span></span>
+        <button class="cm-ib" onclick="renameCat1('${c1.id}')">✏️</button>
+        <button class="cm-ib" style="color:#DC2626" onclick="delCat1('${c1.id}')">🗑</button>
+      </div>
+      ${eqs.length?`<div class="cm-sub">설비 순서</div>${eqRows(eqs)}`:''}
+    </div>`;
+  }).join('');
+  const unc=data.equipment.filter(e=>!e.cat1);
+  if(unc.length){
+    h+=`<div class="cm-c1">
+      <div class="cm-c1-hd" style="margin-bottom:0">
+        <span class="cm-c1-name">📦 미분류 <span style="font-size:11px;color:var(--muted);font-weight:700">· 설비 ${unc.length}</span></span>
+      </div>
+      <div class="cm-sub">설비 순서</div>${eqRows(unc)}
+    </div>`;
+  }
+  b.innerHTML=h;
+}
+async function moveEq(id,d){
   const eq=data.equipment.find(e=>e.id===id);if(!eq)return;
   // 같은 분류 안에서만 순서 교환
   const ids=data.equipment.filter(e=>(e.cat1||'')===(eq.cat1||'')).map(e=>e.id);
@@ -550,27 +580,8 @@ async function moveEq(id,d,ev){
   const i=data.equipment.findIndex(e=>e.id===ids[gi]);
   const j=data.equipment.findIndex(e=>e.id===ids[gj]);
   [data.equipment[i],data.equipment[j]]=[data.equipment[j],data.equipment[i]];
-  await saveData();render();
-}
-
-// ═══════════ 분류 관리 모달 ═══════════
-function openCatModal(){renderCatBody();document.getElementById('cat-mbg').classList.add('on');}
-function closeCatModal(){document.getElementById('cat-mbg').classList.remove('on');refreshViews();}
-function renderCatBody(){
-  const b=document.getElementById('cat-body');
-  if(!data.cat1.length){b.innerHTML=`<div class="empty-state" style="padding:30px"><p>분류를 먼저 추가하세요</p></div>`;return;}
-  b.innerHTML=data.cat1.map((c1,i)=>{
-    const cnt=data.equipment.filter(e=>e.cat1===c1.id).length;
-    return`<div class="cm-c1">
-      <div class="cm-c1-hd" style="margin-bottom:0">
-        <button class="cm-ib" onclick="moveCat1('${c1.id}',-1)" ${i===0?'disabled style="opacity:.3"':''}>▲</button>
-        <button class="cm-ib" onclick="moveCat1('${c1.id}',1)" ${i===data.cat1.length-1?'disabled style="opacity:.3"':''}>▼</button>
-        <span class="cm-c1-name">${esc(c1.name)} <span style="font-size:11px;color:var(--muted);font-weight:700">· 설비 ${cnt}</span></span>
-        <button class="cm-ib" onclick="renameCat1('${c1.id}')">✏️</button>
-        <button class="cm-ib" style="color:#DC2626" onclick="delCat1('${c1.id}')">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
+  await saveData();renderCatBody();
+  if(document.getElementById('inner-view').classList.contains('on'))render();
 }
 async function moveCat1(id,d){
   const i=data.cat1.findIndex(x=>x.id===id);
