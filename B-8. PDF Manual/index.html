@@ -39,6 +39,54 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .btn-danger{background:#FEF2F2;border:1px solid rgba(220,38,38,.25);color:var(--red);}
 
 .ctrl-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 0;position:relative;z-index:1;}
+
+/* ══ 책장 (분류 선택) ══ */
+#shelf-view{max-width:1100px;margin:0 auto;padding:30px 22px 70px;position:relative;z-index:1;}
+.shelf-hd{text-align:center;margin-bottom:30px;animation:fadeDown .6s both;}
+.shelf-hd h2{font-size:22px;font-weight:900;letter-spacing:-.02em;}
+.shelf-hd p{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:5px;}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px);}to{opacity:1;transform:none;}}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:34px 30px;perspective:1600px;justify-items:center;}
+.book{position:relative;width:100%;max-width:190px;aspect-ratio:3/4.1;transform-style:preserve-3d;cursor:pointer;
+  opacity:0;animation:bookIn .55s cubic-bezier(.2,.8,.3,1) both;}
+@keyframes bookIn{from{opacity:0;transform:translateY(26px) rotateX(8deg);}to{opacity:1;transform:none;}}
+.book-pages{position:absolute;inset:3px 3px 3px 8px;background:linear-gradient(90deg,#E8E4DA,#FDFCF8 12%,#F5F2EA);
+  border-radius:3px 12px 12px 3px;box-shadow:inset -3px 0 6px rgba(0,0,0,.08);}
+.book-pages::after{content:'';position:absolute;inset:0;border-radius:3px 12px 12px 3px;
+  background:repeating-linear-gradient(180deg,transparent 0 3px,rgba(0,0,0,.025) 3px 4px);}
+.book-cover{position:absolute;inset:0;border-radius:5px 14px 14px 5px;transform-origin:left center;
+  transition:transform .55s cubic-bezier(.4,.1,.2,1);display:flex;flex-direction:column;padding:18px 15px 15px 22px;
+  box-shadow:6px 10px 26px rgba(29,78,216,.22),inset -14px 0 22px rgba(0,0,0,.13),inset 3px 0 5px rgba(255,255,255,.22);
+  backface-visibility:hidden;}
+.book-cover::before{content:'';position:absolute;left:9px;top:0;bottom:0;width:3px;background:rgba(255,255,255,.28);border-radius:99px;}
+.book:hover .book-cover{transform:rotateY(-26deg);}
+.book.opening{z-index:50;}
+.book.opening .book-cover{transform:rotateY(-125deg);transition:transform .6s cubic-bezier(.5,.05,.3,1);}
+.book.opening .book-pages{box-shadow:0 0 0 2000px rgba(239,246,255,0);}
+.bk-label{margin-top:auto;color:#fff;}
+.bk-name{font-size:17px;font-weight:900;line-height:1.28;word-break:keep-all;text-shadow:0 2px 6px rgba(0,0,0,.25);}
+.bk-count{display:inline-block;margin-top:9px;font-size:10.5px;font-weight:800;background:rgba(255,255,255,.22);
+  padding:3px 10px;border-radius:999px;color:#fff;backdrop-filter:blur(2px);}
+.bk-ic{font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));}
+.book-inside{position:absolute;inset:3px 3px 3px 8px;border-radius:3px 12px 12px 3px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;color:#8A8272;font-size:11px;font-weight:800;}
+.book-inside span{font-size:24px;}
+.book.add-book .book-cover{background:transparent;border:2.5px dashed var(--border2);box-shadow:none;
+  align-items:center;justify-content:center;}
+.book.add-book .book-pages{display:none;}
+.book.add-book .book-cover{color:var(--muted);font-size:13px;font-weight:800;flex-direction:column;gap:8px;padding:14px;}
+.book.add-book .book-cover b{font-size:30px;font-weight:400;}
+.book.add-book:hover .book-cover{transform:none;border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
+
+/* ══ 내부 화면 ══ */
+#inner-view{display:none;}
+#inner-view.on{display:block;animation:innerIn .45s cubic-bezier(.2,.8,.3,1) both;}
+@keyframes innerIn{from{opacity:0;transform:scale(.96) translateY(14px);}to{opacity:1;transform:none;}}
+.inner-hd{display:flex;align-items:center;gap:11px;margin-bottom:12px;}
+.inner-back{padding:8px 14px;border:1.5px solid var(--border);border-radius:11px;background:var(--surface);color:var(--muted);
+  font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:var(--sh);}
+.inner-back:hover{color:var(--accent);border-color:var(--accent2);}
+.inner-title{font-size:19px;font-weight:900;letter-spacing:-.02em;}
 .cat-bar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;background:var(--surface);border:1.5px solid var(--border);
   border-radius:16px;padding:10px 12px;box-shadow:var(--sh);margin-bottom:10px;}
 .cat-lbl{font-size:11px;font-weight:800;color:var(--muted);flex-shrink:0;margin-right:2px;}
@@ -53,7 +101,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .grid-wrap{max-width:1240px;margin:0 auto;padding:14px 18px 60px;position:relative;z-index:1;}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
 .card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--sh);cursor:pointer;
-  transition:box-shadow .2s,transform .2s;}
+  transition:box-shadow .2s,transform .2s;opacity:0;animation:cardIn .5s cubic-bezier(.2,.8,.3,1) both;}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:none;}}
 .card:hover{box-shadow:var(--shm);transform:translateY(-3px);}
 .card-photo{width:100%;aspect-ratio:16/9;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;}
 .card-photo img{width:100%;height:100%;object-fit:cover;}
@@ -105,6 +154,24 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .pdf-item .pi-name{flex:1;font-size:12.5px;font-weight:700;word-break:break-all;}
 .pdf-item .pi-size{font-size:10.5px;color:var(--muted);font-weight:600;flex-shrink:0;}
 .pdf-item .rm{width:22px;height:22px;border-radius:7px;background:transparent;border:1px solid var(--border);color:var(--red);font-size:11px;cursor:pointer;flex-shrink:0;}
+.pi-cov{width:36px;height:46px;border-radius:7px;background:var(--s3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.pi-cov img{width:100%;height:100%;object-fit:cover;}
+.pi-cvbtn{padding:5px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-size:10.5px;font-weight:800;cursor:pointer;flex-shrink:0;font-family:inherit;}
+
+/* PDF 표지 카드 (상세 화면) */
+.pdfc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px;}
+.pdfc{cursor:pointer;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);
+  box-shadow:var(--sh);transition:transform .18s,box-shadow .18s;}
+.pdfc:hover{transform:translateY(-3px);box-shadow:var(--shm);}
+.pdfc-cover{aspect-ratio:3/4;background:linear-gradient(165deg,var(--s2),var(--s3));display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;font-size:30px;overflow:hidden;position:relative;}
+.pdfc-cover img{width:100%;height:100%;object-fit:cover;}
+.pdfc-cover .ph-lbl{font-size:10px;font-weight:800;color:var(--muted);}
+.pdfc-badge{position:absolute;top:7px;left:7px;background:rgba(220,38,38,.92);color:#fff;font-size:9px;font-weight:900;
+  padding:2px 8px;border-radius:99px;letter-spacing:.05em;}
+.pdfc-name{font-size:11.5px;font-weight:800;padding:8px 9px 2px;word-break:break-all;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px;}
+.pdfc-size{font-size:10px;color:var(--muted);padding:0 9px 9px;font-weight:700;}
 
 /* detail */
 .detail-cat{display:inline-block;font-size:11px;font-weight:800;color:var(--accent);background:var(--accent-bg);padding:4px 11px;border-radius:999px;margin-bottom:10px;}
@@ -193,16 +260,30 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   </div>
 </header>
 
-<div class="ctrl-wrap">
-  <div class="cat-bar" id="cat1-bar"></div>
-  <div class="cat-bar" id="cat2-bar" style="display:none"></div>
-  <div class="search-bar">
-    <input type="search" id="q" placeholder="🔍 설비명 · 설명 검색..." oninput="render()">
+<!-- 책장: 1차 분류 선택 -->
+<div id="shelf-view">
+  <div class="shelf-hd">
+    <h2>📚 설비 매뉴얼 서재</h2>
+    <p>분류(책)를 선택하면 설비 매뉴얼이 펼쳐집니다</p>
   </div>
+  <div class="shelf" id="shelf"></div>
 </div>
 
-<div class="grid-wrap">
-  <div class="card-grid" id="grid"></div>
+<!-- 내부: 2차 분류 + 설비 목록 -->
+<div id="inner-view">
+  <div class="ctrl-wrap">
+    <div class="inner-hd">
+      <button class="inner-back" onclick="backToShelf()">← 서재</button>
+      <span class="inner-title" id="inner-title"></span>
+    </div>
+    <div class="cat-bar" id="cat2-bar" style="display:none"></div>
+    <div class="search-bar">
+      <input type="search" id="q" placeholder="🔍 설비명 · 설명 검색..." oninput="render()">
+    </div>
+  </div>
+  <div class="grid-wrap">
+    <div class="card-grid" id="grid"></div>
+  </div>
 </div>
 
 <!-- 분류 관리 모달 -->
@@ -241,6 +322,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
           <div class="dz-ic">📄</div><p>탭하여 PDF 선택 또는 드래그</p>
         </div>
         <input type="file" id="inp-pdf" accept=".pdf,application/pdf" multiple style="display:none" onchange="handlePdfFiles(this.files)">
+        <input type="file" id="inp-cover" accept="image/*" style="display:none" onchange="handleCoverFile(this.files)">
         <div class="pdf-list" id="f-pdfs"></div>
       </div>
     </div>
@@ -345,7 +427,7 @@ async function loadData(){
     document.getElementById('ctxt').textContent='연결 실패';
     toast('서버 연결 실패');
   }
-  renderCatBars();render();
+  refreshViews();
 }
 async function saveData(){
   try{
@@ -356,24 +438,81 @@ async function deleteServerFile(url){
   try{await fetch(`${API}/api/manual/delete-file`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});}catch{}
 }
 
-// ═══════════ 분류 바 ═══════════
-function renderCatBars(){
-  const b1=document.getElementById('cat1-bar');
-  let h=`<span class="cat-lbl">1차 분류</span><span class="chip ${!selCat1?'on':''}" onclick="setCat1('')">전체</span>`;
-  data.cat1.forEach(c=>{h+=`<span class="chip ${selCat1===c.id?'on':''}" onclick="setCat1('${c.id}')">${esc(c.name)}</span>`;});
-  h+=`<span class="chip mg" onclick="openCatModal()">＋ 관리</span>`;
-  b1.innerHTML=h;
-
-  const b2=document.getElementById('cat2-bar');
-  if(!selCat1){b2.style.display='none';return;}
-  const kids=data.cat2.filter(c=>c.parentId===selCat1);
-  b2.style.display='flex';
-  let h2=`<span class="cat-lbl">2차 분류</span><span class="chip ${!selCat2?'on':''}" onclick="setCat2('')">전체</span>`;
-  kids.forEach(c=>{h2+=`<span class="chip ${selCat2===c.id?'on':''}" onclick="setCat2('${c.id}')">${esc(c.name)}</span>`;});
-  b2.innerHTML=h2;
+// ═══════════ 책장 (1차 분류 선택) ═══════════
+const BOOK_COLORS=[
+  ['#3B82F6','#1E40AF'],['#14B8A6','#0F766E'],['#8B5CF6','#5B21B6'],['#EC4899','#9D174D'],
+  ['#F59E0B','#B45309'],['#10B981','#047857'],['#EF4444','#991B1B'],['#6366F1','#3730A3'],
+];
+function renderShelf(){
+  const sh=document.getElementById('shelf');
+  let h='',i=0;
+  data.cat1.forEach(c=>{
+    const cnt=data.equipment.filter(e=>e.cat1===c.id).length;
+    const [g1,g2]=BOOK_COLORS[i%BOOK_COLORS.length];
+    h+=`<div class="book" style="animation-delay:${i*70}ms" onclick="openBook('${c.id}',this)">
+      <div class="book-pages"><div class="book-inside"><span>📖</span>펼치는 중...</div></div>
+      <div class="book-cover" style="background:linear-gradient(145deg,${g1},${g2})">
+        <div class="bk-ic">🔧</div>
+        <div class="bk-label"><div class="bk-name">${esc(c.name)}</div>
+        <span class="bk-count">설비 ${cnt}</span></div>
+      </div>
+    </div>`;
+    i++;
+  });
+  const unc=data.equipment.filter(e=>!e.cat1).length;
+  if(unc){
+    h+=`<div class="book" style="animation-delay:${i*70}ms" onclick="openBook('__none__',this)">
+      <div class="book-pages"><div class="book-inside"><span>📖</span>펼치는 중...</div></div>
+      <div class="book-cover" style="background:linear-gradient(145deg,#94A3B8,#475569)">
+        <div class="bk-ic">📦</div>
+        <div class="bk-label"><div class="bk-name">미분류</div>
+        <span class="bk-count">설비 ${unc}</span></div>
+      </div>
+    </div>`;
+    i++;
+  }
+  h+=`<div class="book add-book" style="animation-delay:${i*70}ms" onclick="openCatModal()">
+    <div class="book-pages"></div>
+    <div class="book-cover"><b>＋</b>분류 추가</div>
+  </div>`;
+  sh.innerHTML=h;
 }
-function setCat1(id){selCat1=id;selCat2='';renderCatBars();render();}
-function setCat2(id){selCat2=id;renderCatBars();render();}
+function openBook(id,el){
+  if(el)el.classList.add('opening');
+  setTimeout(()=>{
+    selCat1=id;selCat2='';
+    document.getElementById('q').value='';
+    document.getElementById('shelf-view').style.display='none';
+    const iv=document.getElementById('inner-view');
+    iv.classList.remove('on');void iv.offsetWidth;   // 애니메이션 재시작
+    iv.classList.add('on');
+    const c=data.cat1.find(x=>x.id===id);
+    document.getElementById('inner-title').textContent=id==='__none__'?'📦 미분류':`📖 ${c?.name||''}`;
+    renderCat2Bar();render();
+  },el?540:0);
+}
+function backToShelf(){
+  selCat1='';selCat2='';
+  document.getElementById('inner-view').classList.remove('on');
+  document.getElementById('shelf-view').style.display='block';
+  renderShelf();
+}
+function renderCat2Bar(){
+  const b2=document.getElementById('cat2-bar');
+  const kids=selCat1&&selCat1!=='__none__'?data.cat2.filter(c=>c.parentId===selCat1):[];
+  if(!kids.length){b2.style.display='none';return;}
+  b2.style.display='flex';
+  let h=`<span class="cat-lbl">2차 분류</span><span class="chip ${!selCat2?'on':''}" onclick="setCat2('')">전체</span>`;
+  kids.forEach(c=>{h+=`<span class="chip ${selCat2===c.id?'on':''}" onclick="setCat2('${c.id}')">${esc(c.name)}</span>`;});
+  b2.innerHTML=h;
+}
+function setCat2(id){selCat2=id;renderCat2Bar();render();}
+function refreshViews(){
+  const inner=document.getElementById('inner-view').classList.contains('on');
+  if(inner&&!selCat1){backToShelf();return;}
+  renderShelf();
+  if(inner){renderCat2Bar();render();}
+}
 
 // ═══════════ 설비 카드 ═══════════
 function catPath(eq){
@@ -384,7 +523,8 @@ function catPath(eq){
 function render(){
   const q=(document.getElementById('q').value||'').toLowerCase();
   let list=data.equipment;
-  if(selCat1)list=list.filter(e=>e.cat1===selCat1);
+  if(selCat1==='__none__')list=list.filter(e=>!e.cat1);
+  else if(selCat1)list=list.filter(e=>e.cat1===selCat1);
   if(selCat2)list=list.filter(e=>e.cat2===selCat2);
   if(q)list=list.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.desc||'').toLowerCase().includes(q));
   const g=document.getElementById('grid');
@@ -392,9 +532,9 @@ function render(){
     g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">📕</div><p>등록된 설비가 없습니다<br>우측 상단 [+ 설비 등록]으로 시작하세요</p></div>`;
     return;
   }
-  g.innerHTML=list.map(e=>{
-    const ph=e.photos?.[0];
-    return`<div class="card" onclick="openDetail('${e.id}')">
+  g.innerHTML=list.map((e,i)=>{
+    const ph=e.photos?.[0]||e.pdfs?.find(p=>p.cover)?.cover;
+    return`<div class="card" style="animation-delay:${Math.min(i,12)*45}ms" onclick="openDetail('${e.id}')">
       <div class="card-photo">${ph?`<img src="${fileUrl(ph)}" loading="lazy">`:'🔧'}</div>
       <div class="card-body">
         <div class="card-name">${esc(e.name)}</div>
@@ -408,7 +548,7 @@ function render(){
 
 // ═══════════ 분류 관리 모달 ═══════════
 function openCatModal(){renderCatBody();document.getElementById('cat-mbg').classList.add('on');}
-function closeCatModal(){document.getElementById('cat-mbg').classList.remove('on');renderCatBars();render();}
+function closeCatModal(){document.getElementById('cat-mbg').classList.remove('on');refreshViews();}
 function renderCatBody(){
   const b=document.getElementById('cat-body');
   if(!data.cat1.length){b.innerHTML=`<div class="empty-state" style="padding:30px"><p>1차 분류를 먼저 추가하세요</p></div>`;return;}
@@ -503,9 +643,31 @@ function renderPendingThumbs(){
 }
 function renderPendingPdfs(){
   document.getElementById('f-pdfs').innerHTML=pendingPdfs.map((p,i)=>
-    `<div class="pdf-item" style="cursor:default"><span class="pi-ic">📄</span>
+    `<div class="pdf-item" style="cursor:default">
+      <span class="pi-cov">${p.cover?`<img src="${fileUrl(p.cover)}">`:'📄'}</span>
       <span class="pi-name">${esc(p.name)}</span><span class="pi-size">${fmtSize(p.size)}</span>
+      <button class="pi-cvbtn" onclick="pickPdfCover(${i})">📷 표지</button>
       <button class="rm" onclick="rmPendingPdf(${i})">✕</button></div>`).join('');
+}
+let coverTargetIdx=-1;
+function pickPdfCover(i){coverTargetIdx=i;document.getElementById('inp-cover').click();}
+async function handleCoverFile(files){
+  if(!files?.length||coverTargetIdx<0)return;
+  const fd=new FormData();fd.append('files',files[0]);
+  toast('표지 업로드 중...');
+  try{
+    const r=await fetch(`${API}/api/manual/upload-photo`,{method:'POST',body:fd});
+    const j=await r.json();
+    const url=j.urls?.[0];if(!url)throw new Error();
+    const p=pendingPdfs[coverTargetIdx];
+    if(p.cover&&uploadedThisSession.includes(p.cover)){
+      deleteServerFile(p.cover);
+      uploadedThisSession=uploadedThisSession.filter(x=>x!==p.cover);
+    }
+    p.cover=url;uploadedThisSession.push(url);
+    renderPendingPdfs();toast('표지 등록 완료');
+  }catch{toast('표지 업로드 실패');}
+  document.getElementById('inp-cover').value='';coverTargetIdx=-1;
 }
 function rmPendingPhoto(i){
   const u=pendingPhotos.splice(i,1)[0];
@@ -515,6 +677,7 @@ function rmPendingPhoto(i){
 function rmPendingPdf(i){
   const p=pendingPdfs.splice(i,1)[0];
   if(uploadedThisSession.includes(p.url)){deleteServerFile(p.url);uploadedThisSession=uploadedThisSession.filter(x=>x!==p.url);}
+  if(p.cover&&uploadedThisSession.includes(p.cover)){deleteServerFile(p.cover);uploadedThisSession=uploadedThisSession.filter(x=>x!==p.cover);}
   renderPendingPdfs();
 }
 async function handlePhotoFiles(files){
@@ -567,7 +730,7 @@ async function saveEquipment(){
   uploadedThisSession=[];   // 저장됨 → 정리 대상 아님
   await saveData();
   document.getElementById('eq-mbg').classList.remove('on');
-  renderCatBars();render();
+  refreshViews();
   toast('저장 완료');
   if(curDetailId===rec.id)openDetail(rec.id);
 }
@@ -580,10 +743,16 @@ function openDetail(id){
   let h=`<span class="detail-cat">${esc(catPath(eq))}</span>`;
   if(eq.desc)h+=`<div class="detail-desc">${esc(eq.desc)}</div>`;
   if(eq.pdfs?.length){
-    h+=`<div class="gal-title">📄 PDF 매뉴얼</div><div class="pdf-list">`;
+    h+=`<div class="gal-title">📄 PDF 매뉴얼</div><div class="pdfc-grid">`;
     eq.pdfs.forEach((p,i)=>{
-      h+=`<div class="pdf-item" onclick="openPdfViewer('${eq.id}',${i})"><span class="pi-ic">📄</span>
-        <span class="pi-name">${esc(p.name)}</span><span class="pi-size">${fmtSize(p.size)}</span></div>`;
+      h+=`<div class="pdfc" onclick="openPdfViewer('${eq.id}',${i})">
+        <div class="pdfc-cover">${p.cover
+          ?`<img src="${fileUrl(p.cover)}" loading="lazy">`
+          :`📄<span class="ph-lbl">표지 없음</span>`}
+          <span class="pdfc-badge">PDF</span></div>
+        <div class="pdfc-name">${esc(p.name)}</div>
+        <div class="pdfc-size">${fmtSize(p.size)}</div>
+      </div>`;
     });
     h+=`</div>`;
   }
@@ -603,7 +772,7 @@ async function deleteEquipment(){
   const eq=data.equipment.find(e=>e.id===curDetailId);if(!eq)return;
   if(!confirm(`'${eq.name}' 설비를 삭제할까요?\nPDF와 사진 파일도 함께 삭제됩니다.`))return;
   (eq.photos||[]).forEach(u=>deleteServerFile(u));
-  (eq.pdfs||[]).forEach(p=>deleteServerFile(p.url));
+  (eq.pdfs||[]).forEach(p=>{deleteServerFile(p.url);if(p.cover)deleteServerFile(p.cover);});
   data.equipment=data.equipment.filter(e=>e.id!==curDetailId);
   await saveData();closeDetail();render();toast('삭제 완료');
 }
