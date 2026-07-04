@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>PDF Manual — 매뉴얼 · 자료실</title>
+<title>PDF Manual — 메뉴얼 자료실</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <style>
 :root{
@@ -248,7 +248,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 <header>
   <a href="../index.html" class="back">← 홈</a>
-  <span class="h-title">📕 매뉴얼 · 자료실</span>
+  <span class="h-title">📕 메뉴얼 자료실</span>
   <div class="hdr-r">
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt">연결 중</span></div>
     <button class="btn btn-ghost" onclick="openCatModal()">🗂 분류 관리</button>
@@ -259,8 +259,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 책장: 1차 분류 선택 -->
 <div id="shelf-view">
   <div class="shelf-hd">
-    <h2>📚 매뉴얼 · 자료 서재</h2>
-    <p>분류(책)를 선택하면 매뉴얼과 자료가 펼쳐집니다 — 설비 · 약품 정보 · MSDS 등</p>
+    <h2>📚 메뉴얼 자료실</h2>
+    <p>분류(책)를 선택하면 매뉴얼과 자료가 펼쳐집니다</p>
   </div>
   <div class="shelf" id="shelf"></div>
 </div>
@@ -633,7 +633,8 @@ function closeEqModal(){
 function renderPendingPdfs(){
   document.getElementById('f-pdfs').innerHTML=pendingPdfs.map((p,i)=>
     `<div class="pdf-item" style="cursor:default"><span class="pi-ic">📄</span>
-      <span class="pi-name">${esc(p.name)}</span><span class="pi-size">${fmtSize(p.size)}</span>
+      <span class="pi-name">${esc(p.name)}</span>
+      <span class="pi-size">${p.uploadedAt?esc(p.uploadedAt)+' · ':''}${fmtSize(p.size)}</span>
       <button class="rm" onclick="rmPendingPdf(${i})">✕</button></div>`).join('');
 }
 function rmPendingPdf(i){
@@ -651,7 +652,10 @@ async function handlePdfFiles(files){
       const r=await fetch(`${API}/api/manual/upload-pdf`,{method:'POST',body:fd});
       const j=await r.json();
       if(j.error){toast(j.error);continue;}
-      pendingPdfs.push({name:j.name,url:j.url,size:j.size});
+      const now=new Date();
+      const pad=n=>String(n).padStart(2,'0');
+      pendingPdfs.push({name:j.name,url:j.url,size:j.size,
+        uploadedAt:`${String(now.getFullYear()).slice(2)}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`});
       uploadedThisSession.push(j.url);
       renderPendingPdfs();
     }catch{toast('PDF 업로드 실패');}
@@ -688,13 +692,14 @@ function openDetail(id){
   const eq=data.equipment.find(e=>e.id===id);if(!eq)return;
   curDetailId=id;
   document.getElementById('d-title').textContent=eq.name;
-  let h=`<span class="detail-cat">${esc(catPath(eq))}</span>`;
+  let h='';
   if(eq.desc)h+=`<div class="detail-desc">${esc(eq.desc)}</div>`;
   if(eq.pdfs?.length){
     h+=`<div class="gal-title">📄 PDF 매뉴얼</div><div class="pdf-list">`;
     eq.pdfs.forEach((p,i)=>{
       h+=`<div class="pdf-item" onclick="openPdfViewer('${eq.id}',${i})"><span class="pi-ic">📄</span>
-        <span class="pi-name">${esc(p.name)}</span><span class="pi-size">${fmtSize(p.size)}</span></div>`;
+        <span class="pi-name">${esc(p.name)}</span>
+        <span class="pi-size">${p.uploadedAt?esc(p.uploadedAt)+' · ':''}${fmtSize(p.size)}</span></div>`;
     });
     h+=`</div>`;
   }
