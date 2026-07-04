@@ -3711,17 +3711,18 @@ function renderEquipment() {
     ? baseFiltered.filter(eq => (eq.status||'active') === eqStatusFilter)
     : baseFiltered;
 
-  // 정렬: 상태 순 → 1차분류 → 2차분류 → 라인 순
+  // 정렬: 항목(1차분류 → 2차분류) → 라인 순차 → 상태 순
   const statusOrder = { active:0, spare:1, repair:2, ng:3 };
   const cat1Order = Object.fromEntries((eqCategories.cat1||[]).map((c,i)=>[c.id,i]));
   const cat2Order = Object.fromEntries((eqCategories.cat2||[]).map((c,i)=>[c.id,i]));
-  const lineOrder = Object.fromEntries(lines.map((l,i)=>[l,i]));
+  const lineOrder = Object.fromEntries(
+    [...lines].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map((l,i)=>[l,i]));
   filtered.sort((a,b) => {
-    const sa = a.status||(a.line?'active':'spare'), sb = b.status||(b.line?'active':'spare');
-    const sc = (statusOrder[sa]??9) - (statusOrder[sb]??9); if(sc) return sc;
     const c1 = (cat1Order[a.cat1]??999) - (cat1Order[b.cat1]??999); if(c1) return c1;
     const c2 = (cat2Order[a.cat2]??999) - (cat2Order[b.cat2]??999); if(c2) return c2;
-    return (lineOrder[a.line]??999) - (lineOrder[b.line]??999);
+    const lc = (lineOrder[a.line]??999) - (lineOrder[b.line]??999); if(lc) return lc;
+    const sa = a.status||(a.line?'active':'spare'), sb = b.status||(b.line?'active':'spare');
+    return (statusOrder[sa]??9) - (statusOrder[sb]??9);
   });
 
   renderEqPageChart(baseFiltered);
@@ -3752,6 +3753,7 @@ function renderEquipment() {
       </td>
       <td style="font-weight:700">${eq.qty||1}</td>
       <td style="font-size:11px;color:var(--muted)">${escapeHtml(eq.serial||'-')}</td>
+      <td style="font-weight:800;font-size:11px">${escapeHtml(eq.line||'-')}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
@@ -3759,7 +3761,7 @@ function renderEquipment() {
   wrap.innerHTML = `<table class="eq-table">
     <colgroup>
       <col class="col-no"><col class="col-photo"><col class="col-name">
-      <col class="col-qty"><col class="col-sn"><col class="col-state">
+      <col class="col-qty"><col class="col-sn"><col class="col-line"><col class="col-state">
     </colgroup>
     <thead><tr>
       <th>No.</th>
@@ -3767,6 +3769,7 @@ function renderEquipment() {
       <th class="left">Name</th>
       <th>Qty</th>
       <th>S/N</th>
+      <th>Line</th>
       <th>${t('eq_col_status')}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
