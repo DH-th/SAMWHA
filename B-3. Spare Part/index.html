@@ -4027,8 +4027,7 @@ function deleteEqCat2(id) {
 //  INIT
 // ═══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  applyI18n();
-  renderAll();
+  setLang('th');   // 기본 언어: 태국어 (버튼 active·번역·렌더 일괄 적용)
   connectWS();
   connectEqWS();
 });

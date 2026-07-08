@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>PDF Manual — 메뉴얼 자료실</title>
+<title>PDF Manual — Reference Library</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <style>
 :root{
@@ -247,20 +247,20 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <div class="blob blob-2"></div>
 
 <header>
-  <a href="../index.html" class="back">← 홈</a>
-  <span class="h-title">📕 메뉴얼 자료실</span>
+  <a href="../index.html" class="back">← Home</a>
+  <span class="h-title">📕 Manual Library</span>
   <div class="hdr-r">
-    <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt">연결 중</span></div>
-    <button class="btn btn-ghost" onclick="openCatModal()">🗂 분류 관리</button>
-    <button class="btn btn-primary" onclick="openEqModal()">+ 항목 등록</button>
+    <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt">Connecting</span></div>
+    <button class="btn btn-ghost" onclick="openCatModal()">🗂 Categories</button>
+    <button class="btn btn-primary" onclick="openEqModal()">+ Add Item</button>
   </div>
 </header>
 
 <!-- 책장: 1차 분류 선택 -->
 <div id="shelf-view">
   <div class="shelf-hd">
-    <h2>📚 메뉴얼 자료실</h2>
-    <p>분류(책)를 선택하면 매뉴얼과 자료가 펼쳐집니다</p>
+    <h2>📚 Manual Library</h2>
+    <p>Select a category (book) to open its manuals and documents</p>
   </div>
   <div class="shelf" id="shelf"></div>
 </div>
@@ -269,11 +269,11 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <div id="inner-view">
   <div class="ctrl-wrap">
     <div class="inner-hd">
-      <button class="inner-back" onclick="backToShelf()">← 서재</button>
+      <button class="inner-back" onclick="backToShelf()">← Library</button>
       <span class="inner-title" id="inner-title"></span>
     </div>
     <div class="search-bar">
-      <input type="search" id="q" placeholder="🔍 항목명 · 설명 검색..." oninput="render()">
+      <input type="search" id="q" placeholder="🔍 Search name · description..." oninput="render()">
     </div>
   </div>
   <div class="grid-wrap">
@@ -284,10 +284,10 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 분류 관리 모달 -->
 <div class="mbg" id="cat-mbg" onclick="if(event.target===this)closeCatModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title">🗂 분류 관리</span><button class="m-x" onclick="closeCatModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title">🗂 Manage Categories</span><button class="m-x" onclick="closeCatModal()">✕</button></div>
     <div class="m-body" id="cat-body"></div>
     <div class="m-foot">
-      <button class="btn btn-primary" onclick="addCat1()">+ 분류 추가</button>
+      <button class="btn btn-primary" onclick="addCat1()">+ Add Category</button>
     </div>
   </div>
 </div>
@@ -295,23 +295,23 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 설비 등록/수정 모달 -->
 <div class="mbg" id="eq-mbg" onclick="if(event.target===this)closeEqModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title" id="eq-m-title">+ 항목 등록</span><button class="m-x" onclick="closeEqModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title" id="eq-m-title">+ Add Item</span><button class="m-x" onclick="closeEqModal()">✕</button></div>
     <div class="m-body">
-      <div class="fld"><label>항목명 *</label><input id="f-name" type="text" placeholder="예: LOADER, 플럭스, 솔더 MSDS ..."></div>
-      <div class="fld"><label>분류 *</label><select id="f-cat1"></select></div>
-      <div class="fld"><label>설명</label><textarea id="f-desc" placeholder="설명, 주의사항 등"></textarea></div>
+      <div class="fld"><label>Item name *</label><input id="f-name" type="text" placeholder="e.g. LOADER, Flux, Solder MSDS ..."></div>
+      <div class="fld"><label>Category *</label><select id="f-cat1"></select></div>
+      <div class="fld"><label>Description</label><textarea id="f-desc" placeholder="Description, cautions, etc."></textarea></div>
       <div class="fld">
-        <label>PDF 매뉴얼</label>
+        <label>PDF manuals</label>
         <div class="dropzone" id="dz-pdf" onclick="document.getElementById('inp-pdf').click()">
-          <div class="dz-ic">📄</div><p>탭하여 PDF 선택 또는 드래그</p>
+          <div class="dz-ic">📄</div><p>Tap to select PDF or drag &amp; drop</p>
         </div>
         <input type="file" id="inp-pdf" accept=".pdf,application/pdf" multiple style="display:none" onchange="handlePdfFiles(this.files)">
         <div class="pdf-list" id="f-pdfs"></div>
       </div>
     </div>
     <div class="m-foot">
-      <button class="btn btn-ghost" onclick="closeEqModal()">취소</button>
-      <button class="btn btn-primary" id="eq-save-btn" onclick="saveEquipment()">저장</button>
+      <button class="btn btn-ghost" onclick="closeEqModal()">Cancel</button>
+      <button class="btn btn-primary" id="eq-save-btn" onclick="saveEquipment()">Save</button>
     </div>
   </div>
 </div>
@@ -319,21 +319,21 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 기록 작성 모달 -->
 <div class="mbg" id="post-mbg" onclick="if(event.target===this)closePostModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title">📝 기록 작성</span><button class="m-x" onclick="closePostModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title">📝 New Record</span><button class="m-x" onclick="closePostModal()">✕</button></div>
     <div class="m-body">
-      <div class="fld"><label>내용 *</label><textarea id="p-text" placeholder="개선 · 수리 · 변경 내용 등을 기록하세요" style="min-height:110px"></textarea></div>
+      <div class="fld"><label>Content *</label><textarea id="p-text" placeholder="Record improvements, repairs, changes, etc." style="min-height:110px"></textarea></div>
       <div class="fld">
-        <label>사진 — 올린 후 사진을 탭하면 포인트 표시(박스·원·글자) 가능</label>
+        <label>Photos — after uploading, tap a photo to annotate (box · circle · text)</label>
         <div class="dropzone" id="dz-post" onclick="document.getElementById('inp-post').click()">
-          <div class="dz-ic">📷</div><p>탭하여 사진 선택 또는 드래그</p>
+          <div class="dz-ic">📷</div><p>Tap to select photos or drag &amp; drop</p>
         </div>
         <input type="file" id="inp-post" accept="image/*" multiple style="display:none" onchange="handlePostPhotoFiles(this.files)">
         <div class="thumb-grid" id="p-thumbs"></div>
       </div>
     </div>
     <div class="m-foot">
-      <button class="btn btn-ghost" onclick="closePostModal()">취소</button>
-      <button class="btn btn-primary" onclick="submitPost()">등록</button>
+      <button class="btn btn-ghost" onclick="closePostModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitPost()">Submit</button>
     </div>
   </div>
 </div>
@@ -342,8 +342,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <div class="mbg" id="d-mbg" onclick="if(event.target===this)closeDetail()">
   <div class="modal">
     <div class="m-hd"><span class="m-title" id="d-title">-</span>
-      <button class="m-x" onclick="editFromDetail()" title="수정">✏️</button>
-      <button class="m-x" onclick="deleteEquipment()" title="삭제" style="color:#DC2626">🗑</button>
+      <button class="m-x" onclick="editFromDetail()" title="Edit">✏️</button>
+      <button class="m-x" onclick="deleteEquipment()" title="Delete" style="color:#DC2626">🗑</button>
       <button class="m-x" onclick="closeDetail()">✕</button>
     </div>
     <div class="m-body" id="d-body"></div>
@@ -357,7 +357,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <img id="lb-img" src="">
   <button class="lb-nav lb-next" onclick="lbMove(1)">›</button>
   <div class="lb-bar">
-    <button class="lb-btn pri" onclick="openAnnotatorFromLb()">✏️ 포인트 표시</button>
+    <button class="lb-btn pri" onclick="openAnnotatorFromLb()">✏️ Annotate</button>
     <span class="lb-btn" id="lb-count" style="cursor:default"></span>
   </div>
 </div>
@@ -365,37 +365,37 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- ══ PDF 뷰어 ══ -->
 <div id="pv">
   <div class="pv-top">
-    <button class="pv-btn" onclick="closePdfViewer()">✕ 닫기</button>
+    <button class="pv-btn" onclick="closePdfViewer()">✕ Close</button>
     <span class="pv-name" id="pv-name"></span>
     <button class="pv-btn" onclick="pvZoom(-1)">－</button>
     <span class="pv-mcount" id="pv-zoom-lbl">100%</span>
     <button class="pv-btn" onclick="pvZoom(1)">＋</button>
   </div>
   <div class="pv-search-row">
-    <input type="search" id="pv-q" placeholder="🔍 키워드 검색 (Enter)" onkeydown="if(event.key==='Enter')pvSearch()">
-    <button class="pv-btn" onclick="pvSearch()">검색</button>
+    <input type="search" id="pv-q" placeholder="🔍 Keyword search (Enter)" onkeydown="if(event.key==='Enter')pvSearch()">
+    <button class="pv-btn" onclick="pvSearch()">Search</button>
     <button class="pv-btn" onclick="pvNav(-1)">▲</button>
     <button class="pv-btn" onclick="pvNav(1)">▼</button>
     <span class="pv-mcount" id="pv-mcount">-</span>
   </div>
-  <div id="pv-scroll"><div id="pv-loading">PDF 불러오는 중...</div></div>
+  <div id="pv-scroll"><div id="pv-loading">Loading PDF...</div></div>
 </div>
 
 <!-- ══ 사진 주석 편집기 ══ -->
 <div id="anno">
   <div class="an-top">
     <button class="an-tool" onclick="closeAnnotator()">✕</button>
-    <button class="an-tool" data-tool="rect" onclick="anSetTool('rect')">▭ 박스</button>
-    <button class="an-tool" data-tool="ellipse" onclick="anSetTool('ellipse')">◯ 원</button>
-    <button class="an-tool" data-tool="arrow" onclick="anSetTool('arrow')">↗ 화살표</button>
-    <button class="an-tool" data-tool="text" onclick="anSetTool('text')">T 텍스트</button>
+    <button class="an-tool" data-tool="rect" onclick="anSetTool('rect')">▭ Box</button>
+    <button class="an-tool" data-tool="ellipse" onclick="anSetTool('ellipse')">◯ Circle</button>
+    <button class="an-tool" data-tool="arrow" onclick="anSetTool('arrow')">↗ Arrow</button>
+    <button class="an-tool" data-tool="text" onclick="anSetTool('text')">T Text</button>
     <div class="an-color on" style="background:#EF4444" data-c="#EF4444" onclick="anSetColor(this)"></div>
     <div class="an-color" style="background:#F59E0B" data-c="#F59E0B" onclick="anSetColor(this)"></div>
     <div class="an-color" style="background:#2563EB" data-c="#2563EB" onclick="anSetColor(this)"></div>
     <div class="an-color" style="background:#10B981" data-c="#10B981" onclick="anSetColor(this)"></div>
     <span class="an-sp"></span>
-    <button class="an-tool" onclick="anUndo()">↩ 되돌리기</button>
-    <button class="an-tool" style="background:rgba(37,99,235,.55)" onclick="anSave()">💾 저장</button>
+    <button class="an-tool" onclick="anUndo()">↩ Undo</button>
+    <button class="an-tool" style="background:rgba(37,99,235,.55)" onclick="anSave()">💾 Save</button>
   </div>
   <div id="anno-wrap"><canvas id="anno-cv"></canvas></div>
 </div>
@@ -427,17 +427,17 @@ async function loadData(){
     const r=await fetch(`${API}/api/manual/data`);
     data=await r.json();
     document.getElementById('cdot').classList.add('on');
-    document.getElementById('ctxt').textContent='연결됨';
+    document.getElementById('ctxt').textContent='Connected';
   }catch{
-    document.getElementById('ctxt').textContent='연결 실패';
-    toast('서버 연결 실패');
+    document.getElementById('ctxt').textContent='Connection failed';
+    toast('Server connection failed');
   }
   refreshViews();
 }
 async function saveData(){
   try{
     await fetch(`${API}/api/manual/data`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  }catch{toast('저장 실패 — 네트워크 확인');}
+  }catch{toast('Save failed — check network');}
 }
 async function deleteServerFile(url){
   try{await fetch(`${API}/api/manual/delete-file`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});}catch{}
@@ -455,11 +455,11 @@ function renderShelf(){
     const cnt=data.equipment.filter(e=>e.cat1===c.id).length;
     const [g1,g2]=BOOK_COLORS[i%BOOK_COLORS.length];
     h+=`<div class="book" style="animation-delay:${i*70}ms" onclick="openBook('${c.id}',this)">
-      <div class="book-pages"><div class="book-inside"><span>📖</span>펼치는 중...</div></div>
+      <div class="book-pages"><div class="book-inside"><span>📖</span>Opening...</div></div>
       <div class="book-cover" style="background:linear-gradient(145deg,${g1},${g2})">
         <div class="bk-ic">🔧</div>
         <div class="bk-label"><div class="bk-name">${esc(c.name)}</div>
-        <span class="bk-count">자료 ${cnt}</span></div>
+        <span class="bk-count">Docs ${cnt}</span></div>
       </div>
     </div>`;
     i++;
@@ -467,18 +467,18 @@ function renderShelf(){
   const unc=data.equipment.filter(e=>!e.cat1).length;
   if(unc){
     h+=`<div class="book" style="animation-delay:${i*70}ms" onclick="openBook('__none__',this)">
-      <div class="book-pages"><div class="book-inside"><span>📖</span>펼치는 중...</div></div>
+      <div class="book-pages"><div class="book-inside"><span>📖</span>Opening...</div></div>
       <div class="book-cover" style="background:linear-gradient(145deg,#94A3B8,#475569)">
         <div class="bk-ic">📦</div>
-        <div class="bk-label"><div class="bk-name">미분류</div>
-        <span class="bk-count">자료 ${unc}</span></div>
+        <div class="bk-label"><div class="bk-name">Uncategorized</div>
+        <span class="bk-count">Docs ${unc}</span></div>
       </div>
     </div>`;
     i++;
   }
   h+=`<div class="book add-book" style="animation-delay:${i*70}ms" onclick="openCatModal()">
     <div class="book-pages"></div>
-    <div class="book-cover"><b>＋</b>분류 추가</div>
+    <div class="book-cover"><b>＋</b>Add category</div>
   </div>`;
   sh.innerHTML=h;
 }
@@ -492,7 +492,7 @@ function openBook(id,el){
     iv.classList.remove('on');void iv.offsetWidth;   // 애니메이션 재시작
     iv.classList.add('on');
     const c=data.cat1.find(x=>x.id===id);
-    document.getElementById('inner-title').textContent=id==='__none__'?'📦 미분류':`📖 ${c?.name||''}`;
+    document.getElementById('inner-title').textContent=id==='__none__'?'📦 Uncategorized':`📖 ${c?.name||''}`;
     render();
   },el?540:0);
 }
@@ -512,7 +512,7 @@ function refreshViews(){
 // ═══════════ 설비 카드 ═══════════
 function catPath(eq){
   const c1=data.cat1.find(c=>c.id===eq.cat1);
-  return c1?.name||'미분류';
+  return c1?.name||'Uncategorized';
 }
 function render(){
   const q=(document.getElementById('q').value||'').toLowerCase();
@@ -522,7 +522,7 @@ function render(){
   if(q)list=list.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.desc||'').toLowerCase().includes(q));
   const g=document.getElementById('grid');
   if(!list.length){
-    g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">📕</div><p>등록된 항목이 없습니다<br>우측 상단 [+ 항목 등록]으로 시작하세요</p></div>`;
+    g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">📕</div><p>No items yet<br>Start with [+ Add Item] at the top right</p></div>`;
     return;
   }
   g.innerHTML=list.map((e,i)=>{
@@ -530,7 +530,7 @@ function render(){
       <div class="card-tile"><div class="card-tname">${esc(e.name)}</div></div>
       <div class="card-body">
         <div class="card-desc">${esc(e.desc||'')}</div>
-        <div class="card-meta"><span>📄 PDF ${e.pdfs?.length||0}</span><span>📝 기록 ${e.posts?.length||0}</span></div>
+        <div class="card-meta"><span>📄 PDF ${e.pdfs?.length||0}</span><span>📝 Records ${e.posts?.length||0}</span></div>
       </div>
     </div>`;
   }).join('');
@@ -541,7 +541,7 @@ function openCatModal(){renderCatBody();document.getElementById('cat-mbg').class
 function closeCatModal(){document.getElementById('cat-mbg').classList.remove('on');refreshViews();}
 function renderCatBody(){
   const b=document.getElementById('cat-body');
-  if(!data.cat1.length){b.innerHTML=`<div class="empty-state" style="padding:30px"><p>분류를 먼저 추가하세요</p></div>`;return;}
+  if(!data.cat1.length){b.innerHTML=`<div class="empty-state" style="padding:30px"><p>Add a category first</p></div>`;return;}
   const eqRows=eqs=>eqs.map((e,ei)=>`<div class="cm-eq">
       <button class="cm-ib" onclick="moveEq('${e.id}',-1)" ${ei===0?'disabled style="opacity:.3"':''}>▲</button>
       <button class="cm-ib" onclick="moveEq('${e.id}',1)" ${ei===eqs.length-1?'disabled style="opacity:.3"':''}>▼</button>
@@ -553,20 +553,20 @@ function renderCatBody(){
       <div class="cm-c1-hd" style="margin-bottom:0">
         <button class="cm-ib" onclick="moveCat1('${c1.id}',-1)" ${i===0?'disabled style="opacity:.3"':''}>▲</button>
         <button class="cm-ib" onclick="moveCat1('${c1.id}',1)" ${i===data.cat1.length-1?'disabled style="opacity:.3"':''}>▼</button>
-        <span class="cm-c1-name">${esc(c1.name)} <span style="font-size:11px;color:var(--muted);font-weight:700">· 자료 ${eqs.length}</span></span>
+        <span class="cm-c1-name">${esc(c1.name)} <span style="font-size:11px;color:var(--muted);font-weight:700">· Docs ${eqs.length}</span></span>
         <button class="cm-ib" onclick="renameCat1('${c1.id}')">✏️</button>
         <button class="cm-ib" style="color:#DC2626" onclick="delCat1('${c1.id}')">🗑</button>
       </div>
-      ${eqs.length?`<div class="cm-sub">항목 순서</div>${eqRows(eqs)}`:''}
+      ${eqs.length?`<div class="cm-sub">Item order</div>${eqRows(eqs)}`:''}
     </div>`;
   }).join('');
   const unc=data.equipment.filter(e=>!e.cat1);
   if(unc.length){
     h+=`<div class="cm-c1">
       <div class="cm-c1-hd" style="margin-bottom:0">
-        <span class="cm-c1-name">📦 미분류 <span style="font-size:11px;color:var(--muted);font-weight:700">· 자료 ${unc.length}</span></span>
+        <span class="cm-c1-name">📦 Uncategorized <span style="font-size:11px;color:var(--muted);font-weight:700">· Docs ${unc.length}</span></span>
       </div>
-      <div class="cm-sub">항목 순서</div>${eqRows(unc)}
+      <div class="cm-sub">Item order</div>${eqRows(unc)}
     </div>`;
   }
   b.innerHTML=h;
@@ -591,18 +591,18 @@ async function moveCat1(id,d){
   await saveData();renderCatBody();
 }
 async function addCat1(){
-  const n=prompt('분류 이름');if(!n?.trim())return;
+  const n=prompt('Category name');if(!n?.trim())return;
   data.cat1.push({id:uid('c1'),name:n.trim()});
   await saveData();renderCatBody();
 }
 async function renameCat1(id){
   const c=data.cat1.find(x=>x.id===id);if(!c)return;
-  const n=prompt('분류 이름 수정',c.name);if(!n?.trim())return;
+  const n=prompt('Edit category name',c.name);if(!n?.trim())return;
   c.name=n.trim();await saveData();renderCatBody();
 }
 async function delCat1(id){
   const c=data.cat1.find(x=>x.id===id);if(!c)return;
-  if(!confirm(`'${c.name}' 분류를 삭제할까요?\n소속 항목은 '미분류'가 됩니다.`))return;
+  if(!confirm(`Delete category '${c.name}'?\nIts items will become 'Uncategorized'.`))return;
   data.cat1=data.cat1.filter(x=>x.id!==id);
   data.equipment.forEach(e=>{if(e.cat1===id)e.cat1='';});
   if(selCat1===id)selCat1='';
@@ -614,12 +614,12 @@ function openEqModal(eqId){
   editingId=eqId||null;
   uploadedThisSession=[];
   const eq=eqId?data.equipment.find(e=>e.id===eqId):null;
-  document.getElementById('eq-m-title').textContent=eq?'✏️ 항목 수정':'+ 항목 등록';
+  document.getElementById('eq-m-title').textContent=eq?'✏️ Edit Item':'+ Add Item';
   document.getElementById('f-name').value=eq?.name||'';
   document.getElementById('f-desc').value=eq?.desc||'';
   pendingPdfs=[...(eq?.pdfs||[])];
   const s1=document.getElementById('f-cat1');
-  s1.innerHTML=`<option value="">— 선택 —</option>`+data.cat1.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  s1.innerHTML=`<option value="">— Select —</option>`+data.cat1.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
   s1.value=eq?.cat1||(selCat1!=='__none__'?selCat1:'')||'';
   renderPendingPdfs();
   document.getElementById('eq-mbg').classList.add('on');
@@ -645,8 +645,8 @@ function rmPendingPdf(i){
 async function handlePdfFiles(files){
   if(!files?.length)return;
   for(const f of [...files]){
-    if(!/\.pdf$/i.test(f.name)){toast(`${f.name}: PDF가 아닙니다`);continue;}
-    toast(`${f.name} 업로드 중...`);
+    if(!/\.pdf$/i.test(f.name)){toast(`${f.name}: not a PDF`);continue;}
+    toast(`Uploading ${f.name}...`);
     const fd=new FormData();fd.append('file',f);
     try{
       const r=await fetch(`${API}/api/manual/upload-pdf`,{method:'POST',body:fd});
@@ -658,16 +658,16 @@ async function handlePdfFiles(files){
         uploadedAt:`${String(now.getFullYear()).slice(2)}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`});
       uploadedThisSession.push(j.url);
       renderPendingPdfs();
-    }catch{toast('PDF 업로드 실패');}
+    }catch{toast('PDF upload failed');}
   }
-  toast('PDF 업로드 완료');
+  toast('PDF upload complete');
   document.getElementById('inp-pdf').value='';
 }
 async function saveEquipment(){
   const name=document.getElementById('f-name').value.trim();
-  if(!name){toast('항목명을 입력하세요');return;}
+  if(!name){toast('Enter an item name');return;}
   const cat1=document.getElementById('f-cat1').value;
-  if(!cat1){toast('분류를 선택하세요');return;}
+  if(!cat1){toast('Select a category');return;}
   const prev=editingId?data.equipment.find(e=>e.id===editingId):null;
   const rec={
     id:editingId||uid('eq'),
@@ -683,7 +683,7 @@ async function saveEquipment(){
   await saveData();
   document.getElementById('eq-mbg').classList.remove('on');
   refreshViews();
-  toast('저장 완료');
+  toast('Saved');
   if(curDetailId===rec.id)openDetail(rec.id);
 }
 
@@ -695,7 +695,7 @@ function openDetail(id){
   let h='';
   if(eq.desc)h+=`<div class="detail-desc">${esc(eq.desc)}</div>`;
   if(eq.pdfs?.length){
-    h+=`<div class="gal-title">📄 PDF 매뉴얼</div><div class="pdf-list">`;
+    h+=`<div class="gal-title">📄 PDF Manuals</div><div class="pdf-list">`;
     eq.pdfs.forEach((p,i)=>{
       h+=`<div class="pdf-item" onclick="openPdfViewer('${eq.id}',${i})"><span class="pi-ic">📄</span>
         <span class="pi-name">${esc(p.name)}</span>
@@ -703,8 +703,8 @@ function openDetail(id){
     });
     h+=`</div>`;
   }
-  h+=`<div class="gal-title">📝 기록 (개선 · 수리)</div>`;
-  h+=`<button class="post-write" onclick="openPostModal('${eq.id}')">＋ 기록 작성</button>`;
+  h+=`<div class="gal-title">📝 Records (improvement · repair)</div>`;
+  h+=`<button class="post-write" onclick="openPostModal('${eq.id}')">＋ New Record</button>`;
   if(eq.posts?.length){
     eq.posts.forEach(po=>{
       h+=`<div class="post">
@@ -718,9 +718,9 @@ function openDetail(id){
       </div>`;
     });
   }else{
-    h+=`<div style="font-size:12px;color:var(--muted);font-weight:600;text-align:center;padding:8px 0 4px">아직 기록이 없습니다</div>`;
+    h+=`<div style="font-size:12px;color:var(--muted);font-weight:600;text-align:center;padding:8px 0 4px">No records yet</div>`;
   }
-  h+=`<div style="font-size:10.5px;color:var(--muted);margin-top:14px;font-weight:600">최종 수정: ${esc(eq.updatedAt||'-')}</div>`;
+  h+=`<div style="font-size:10.5px;color:var(--muted);margin-top:14px;font-weight:600">Last updated: ${esc(eq.updatedAt||'-')}</div>`;
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('d-mbg').classList.add('on');
 }
@@ -728,12 +728,12 @@ function closeDetail(){document.getElementById('d-mbg').classList.remove('on');c
 function editFromDetail(){const id=curDetailId;closeDetail();openEqModal(id);}
 async function deleteEquipment(){
   const eq=data.equipment.find(e=>e.id===curDetailId);if(!eq)return;
-  if(!confirm(`'${eq.name}' 항목을 삭제할까요?\nPDF와 기록·사진도 함께 삭제됩니다.`))return;
+  if(!confirm(`Delete item '${eq.name}'?\nIts PDFs, records and photos will also be deleted.`))return;
   (eq.photos||[]).forEach(u=>deleteServerFile(u));
   (eq.pdfs||[]).forEach(p=>deleteServerFile(p.url));
   (eq.posts||[]).forEach(po=>(po.photos||[]).forEach(u=>deleteServerFile(u)));
   data.equipment=data.equipment.filter(e=>e.id!==curDetailId);
-  await saveData();closeDetail();render();toast('삭제 완료');
+  await saveData();closeDetail();render();toast('Deleted');
 }
 
 // ═══════════ 기록 게시물 ═══════════
@@ -750,7 +750,7 @@ function closePostModal(){
 }
 function renderPostThumbs(){
   document.getElementById('p-thumbs').innerHTML=postPhotos.map((u,i)=>
-    `<div class="thumb"><img src="${fileUrl(u)}" style="cursor:pointer" onclick="annotatePostPhoto(${i})" title="탭하여 포인트 표시">
+    `<div class="thumb"><img src="${fileUrl(u)}" style="cursor:pointer" onclick="annotatePostPhoto(${i})" title="Tap to annotate">
      <button class="rm" onclick="rmPostPhoto(${i})">✕</button></div>`).join('');
 }
 function rmPostPhoto(i){
@@ -762,13 +762,13 @@ async function handlePostPhotoFiles(files){
   if(!files?.length)return;
   const fd=new FormData();
   [...files].slice(0,20-postPhotos.length).forEach(f=>fd.append('files',f));
-  toast('사진 업로드 중...');
+  toast('Uploading photos...');
   try{
     const r=await fetch(`${API}/api/manual/upload-photo`,{method:'POST',body:fd});
     const j=await r.json();
     (j.urls||[]).forEach(u=>{postPhotos.push(u);postUploaded.push(u);});
-    renderPostThumbs();toast(`사진 ${j.urls?.length||0}장 업로드 완료 — 탭하면 포인트 표시`);
-  }catch{toast('사진 업로드 실패');}
+    renderPostThumbs();toast(`${j.urls?.length||0} photo(s) uploaded — tap to annotate`);
+  }catch{toast('Photo upload failed');}
   document.getElementById('inp-post').value='';
 }
 function annotatePostPhoto(i){
@@ -782,7 +782,7 @@ function annotatePostPhoto(i){
 }
 async function submitPost(){
   const text=document.getElementById('p-text').value.trim();
-  if(!text&&!postPhotos.length){toast('내용 또는 사진을 입력하세요');return;}
+  if(!text&&!postPhotos.length){toast('Enter text or add a photo');return;}
   const eq=data.equipment.find(e=>e.id===postEqId);if(!eq)return;
   if(!eq.posts)eq.posts=[];
   const now=new Date();
@@ -797,17 +797,17 @@ async function submitPost(){
   document.getElementById('post-mbg').classList.remove('on');
   render();
   if(curDetailId===postEqId)openDetail(postEqId);
-  toast('기록 등록 완료');
+  toast('Record added');
 }
 async function deletePost(eqId,postId){
   const eq=data.equipment.find(e=>e.id===eqId);if(!eq)return;
   const po=(eq.posts||[]).find(p=>p.id===postId);if(!po)return;
-  if(!confirm('이 기록을 삭제할까요?'))return;
+  if(!confirm('Delete this record?'))return;
   (po.photos||[]).forEach(u=>deleteServerFile(u));
   eq.posts=eq.posts.filter(p=>p.id!==postId);
   await saveData();render();
   if(curDetailId===eqId)openDetail(eqId);
-  toast('기록 삭제 완료');
+  toast('Record deleted');
 }
 function openPostLightbox(eqId,postId,idx){
   const eq=data.equipment.find(e=>e.id===eqId);if(!eq)return;
@@ -851,7 +851,7 @@ function loadPdfJs(){
       window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       res();
     };
-    s.onerror=()=>rej(new Error('pdf.js 로드 실패'));
+    s.onerror=()=>rej(new Error('Failed to load pdf.js'));
     document.head.appendChild(s);
   });
   return pdfjsReady;
@@ -864,7 +864,7 @@ async function openPdfViewer(eqId,pdfIdx){
   const pdf=eq.pdfs[pdfIdx];if(!pdf)return;
   document.getElementById('pv').classList.add('on');
   document.getElementById('pv-name').textContent=pdf.name;
-  document.getElementById('pv-scroll').innerHTML=`<div id="pv-loading">PDF 불러오는 중...</div>`;
+  document.getElementById('pv-scroll').innerHTML=`<div id="pv-loading">Loading PDF...</div>`;
   document.getElementById('pv-q').value='';
   document.getElementById('pv-mcount').textContent='-';
   pvZoomLv=1.0;pvPageTexts=[];pvMatches=[];pvCurMatch=-1;pvQuery='';
@@ -874,7 +874,7 @@ async function openPdfViewer(eqId,pdfIdx){
     pvDoc=await window.pdfjsLib.getDocument({url:fileUrl(pdf.url)}).promise;
     buildPvPages();
   }catch(e){
-    document.getElementById('pv-scroll').innerHTML=`<div id="pv-loading">PDF를 열 수 없습니다<br>${esc(e.message||'')}</div>`;
+    document.getElementById('pv-scroll').innerHTML=`<div id="pv-loading">Cannot open PDF<br>${esc(e.message||'')}</div>`;
   }
 }
 function closePdfViewer(){
@@ -941,14 +941,14 @@ async function pvSearch(){
   pvQuery=q;pvMatches=[];pvCurMatch=-1;
   document.querySelectorAll('.pv-hl').forEach(e=>e.remove());
   if(!q){document.getElementById('pv-mcount').textContent='-';return;}
-  document.getElementById('pv-mcount').textContent='검색 중...';
+  document.getElementById('pv-mcount').textContent='Searching...';
   for(let p=1;p<=pvDoc.numPages;p++){
     const t=await getPageText(p);
     t.items.forEach((it,idx)=>{
       if((it.str||'').toLowerCase().includes(q))pvMatches.push({pg:p,idx});
     });
   }
-  if(!pvMatches.length){document.getElementById('pv-mcount').textContent='0건';toast('검색 결과가 없습니다');return;}
+  if(!pvMatches.length){document.getElementById('pv-mcount').textContent='0';toast('No results found');return;}
   // 이미 렌더링된 페이지에 하이라이트 적용
   for(const pg of pvRendered){
     const el=document.querySelector(`.pv-page[data-pg="${pg}"]`);
@@ -1027,11 +1027,11 @@ function openAnnotator(url,onSave){
     anRedraw();
     document.getElementById('anno').classList.add('on');
   };
-  anImg.onerror=()=>toast('사진을 불러올 수 없습니다');
+  anImg.onerror=()=>toast('Cannot load photo');
   anImg.src=fileUrl(url)+'?t='+Date.now();
 }
 function closeAnnotator(){
-  if(anShapes.length&&!confirm('저장하지 않은 표시가 있습니다. 닫을까요?'))return;
+  if(anShapes.length&&!confirm('You have unsaved annotations. Close anyway?'))return;
   document.getElementById('anno').classList.remove('on');
 }
 function anSetTool(t){
@@ -1053,7 +1053,7 @@ anCv.addEventListener('pointerdown',ev=>{
   ev.preventDefault();
   const p=anPos(ev);
   if(anTool==='text'){
-    const txt=prompt('표시할 텍스트 입력');
+    const txt=prompt('Enter text to display');
     if(txt?.trim()){anShapes.push({type:'text',x:p.x,y:p.y,text:txt.trim(),color:anColor});anRedraw();}
     return;
   }
@@ -1110,10 +1110,10 @@ function anDrawShape(s){
 }
 function anUndo(){anShapes.pop();anRedraw();}
 async function anSave(){
-  if(!anShapes.length){toast('추가된 표시가 없습니다');return;}
-  toast('저장 중...');
+  if(!anShapes.length){toast('No annotations added');return;}
+  toast('Saving...');
   anCv.toBlob(async blob=>{
-    if(!blob){toast('저장 실패 (이미지 변환 오류)');return;}
+    if(!blob){toast('Save failed (image conversion error)');return;}
     const fd=new FormData();
     fd.append('files',new File([blob],'annotated.jpg',{type:'image/jpeg'}));
     try{
@@ -1124,8 +1124,8 @@ async function anSave(){
       if(anOnSave)await anOnSave(newUrl);
       anShapes=[];
       document.getElementById('anno').classList.remove('on');
-      toast('포인트 표시 저장 완료');
-    }catch{toast('저장 실패 — 네트워크 확인');}
+      toast('Annotation saved');
+    }catch{toast('Save failed — check network');}
   },'image/jpeg',.9);
 }
 
