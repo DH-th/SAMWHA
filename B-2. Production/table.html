@@ -115,6 +115,11 @@ header{
   padding:5px 10px;border:1px solid var(--border);border-radius:6px;
   background:var(--surface2);font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;
 }
+#test-btn{cursor:pointer;font-family:inherit;}
+#test-btn.on{background:#F59E0B;border-color:#F59E0B;color:#fff;}
+#test-banner{display:none;align-items:center;justify-content:center;gap:8px;
+  background:#FEF3C7;color:#92400E;border-bottom:1px solid #F59E0B;
+  font-size:12px;font-weight:800;padding:7px 12px;}
 
 /* ── summary ── */
 .sumbar{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap;}
@@ -441,8 +446,10 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
     <a href="stats.html" class="adm" data-i18n="statsBtn">📊 สถิติ</a>
     <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
+    <button id="test-btn" class="adm" onclick="toggleTest()" title="바코드 스캔 테스트 데이터 보기">🧪 TEST</button>
   </div>
 </header>
+<div id="test-banner">🧪 TEST 모드 — 바코드 스캔 데이터 (실제 현황표 아님) · 30초마다 자동 갱신</div>
 
 <div class="sumbar">
   <div class="sc sc-tot"><div class="sc-l" data-i18n="totalProd">ยอดผลิตรวม</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
@@ -684,8 +691,27 @@ function renderTabs(){
   document.getElementById('tn').className='stab'+(viewShift==='night'?' n':'');
 }
 function fetchLog(){
-  fetch(`https://${TUNNEL}/api/production/log?date=${viewDate}`)
+  const url=testMode
+    ? `https://${TUNNEL}/api/production/scan-test?date=${viewDate}`
+    : `https://${TUNNEL}/api/production/log?date=${viewDate}`;
+  fetch(url)
     .then(r=>r.json()).then(j=>{records=j.records||[];renderAll();});
+}
+
+/* ── 🧪 TEST 모드: 바코드 스캔 데이터(분리 저장)를 현황표로 미리보기 ── */
+let testMode=false, testPollHandle=null;
+function toggleTest(){
+  testMode=!testMode;
+  document.getElementById('test-btn').classList.toggle('on',testMode);
+  document.getElementById('test-banner').style.display=testMode?'flex':'none';
+  if(testMode){
+    if(testPollHandle)clearInterval(testPollHandle);
+    testPollHandle=setInterval(fetchLog,30000);   // 스캔 업로드 반영
+    if(viewProc!=='S2')setProc('S2',false);        // 스캔은 S2 공정
+  }else{
+    if(testPollHandle){clearInterval(testPollHandle);testPollHandle=null;}
+  }
+  fetchLog();
 }
 
 /* ── 공정 전환 ── */
@@ -867,6 +893,8 @@ function connect(){
     const msg=JSON.parse(e.data);
     if(msg.type==='INIT_PLANTS'){plants=msg.data;}
     else if(msg.type==='INIT_PRODUCTION'){
+      if(!viewDate){viewDate=msg.prodDate;viewShift=msg.shift;document.getElementById('date-lbl').textContent=viewDate;}
+      if(testMode){renderTabs();return;}   // 테스트 모드 중엔 실데이터로 덮어쓰지 않음
       records=msg.data;viewDate=msg.prodDate;viewShift=msg.shift;
       document.getElementById('date-lbl').textContent=viewDate;
       renderTabs();renderAll();
@@ -877,11 +905,13 @@ function connect(){
       }
     }
     else if(msg.type==='PRODUCTION_ADDED'){
+      if(testMode)return;
       const i=records.findIndex(r=>r.id===msg.record.id);
       if(i>-1)records[i]=msg.record;else records.push(msg.record);
       renderAll();toast(t('toastAdded'));
     }
     else if(msg.type==='PRODUCTION_DELETED'){
+      if(testMode)return;
       records=records.filter(r=>r.id!==msg.id);renderAll();
     }
     else if(msg.type==='PLANTS_UPDATED'){plants=msg.data;}
