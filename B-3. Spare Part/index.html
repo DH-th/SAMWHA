@@ -1001,6 +1001,9 @@
           <select class="form-control" id="eq-cat2-filter" onchange="renderEquipment()" style="flex:1;min-width:0">
             <option value="" data-i18n="eq_filter_cat2">전체 2차</option>
           </select>
+          <select class="form-control" id="eq-line-filter" onchange="renderEquipment()" style="flex:1;min-width:0">
+            <option value="" data-i18n="eq_filter_line">전체 라인</option>
+          </select>
           <button class="btn btn-outline btn-sm" onclick="openEqCatSettings()" style="flex-shrink:0" title="분류 관리">⚙️</button>
         </div>
       </div>
@@ -1804,7 +1807,7 @@ const i18n = {
     msg_confirm_delete_cat:'이 항목을 삭제하시겠습니까?', msg_qty_zero:'수량을 입력하세요.',
     months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
     nav_equipment:'Jig&Fixture',
-    eq_add_btn:'설비 등록', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
+    eq_add_btn:'설비 등록', eq_filter_cat1:'1st', eq_filter_cat2:'2nd', eq_filter_line:'전체 라인',
     eq_search_ph:'설비명 / 시리얼 검색',
     eq_modal_title:'설비 등록', eq_modal_edit_title:'설비 수정',
     eq_lbl_cat1:'1차 분류', eq_lbl_cat2:'2차 분류', eq_lbl_name:'설비명',
@@ -1865,7 +1868,7 @@ const i18n = {
     msg_confirm_delete_cat:'Delete this entry?', msg_qty_zero:'Please enter a quantity.',
     months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     nav_equipment:'Jig&Fixture',
-    eq_add_btn:'Add Equipment', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
+    eq_add_btn:'Add Equipment', eq_filter_cat1:'1st', eq_filter_cat2:'2nd', eq_filter_line:'All Lines',
     eq_search_ph:'Search equipment / serial',
     eq_modal_title:'Register Equipment', eq_modal_edit_title:'Edit Equipment',
     eq_lbl_cat1:'Category 1', eq_lbl_cat2:'Category 2', eq_lbl_name:'Equipment Name',
@@ -1926,7 +1929,7 @@ const i18n = {
     msg_confirm_delete_cat:'ต้องการลบรายการนี้หรือไม่?', msg_qty_zero:'กรุณาระบุจำนวน',
     months:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
     nav_equipment:'Jig&Fixture',
-    eq_add_btn:'เพิ่มอุปกรณ์', eq_filter_cat1:'1st', eq_filter_cat2:'2nd',
+    eq_add_btn:'เพิ่มอุปกรณ์', eq_filter_cat1:'1st', eq_filter_cat2:'2nd', eq_filter_line:'ทุกไลน์',
     eq_search_ph:'ค้นหาอุปกรณ์ / ซีเรียล',
     eq_modal_title:'ลงทะเบียนอุปกรณ์', eq_modal_edit_title:'แก้ไขอุปกรณ์',
     eq_lbl_cat1:'ประเภท 1', eq_lbl_cat2:'ประเภท 2', eq_lbl_name:'ชื่ออุปกรณ์',
@@ -2161,6 +2164,7 @@ function updateSelects() {
 
   // 사용 라인
   fillSelect('out-line', lines, t('ph_select_line'));
+  renderEqLineFilterSelect();
 
   // 입/출고 모달의 품목 선택: [코드] 품목명 포맷
   const itemOptions = items.map(i => ({ value: i.id, label: `${i.code ? '[' + i.code + '] ' : ''}${i.name}` }));
@@ -2346,8 +2350,10 @@ function renderRecentTransactions() {
       }).join('')}</tbody>
     </table>`;
   }
-  const recentIn  = [...inbounds].sort((a,b) => b.ts - a.ts);
-  const recentOut = [...outbounds].sort((a,b) => b.ts - a.ts);
+  // 레코드는 date("YYYY-MM-DD") + time("HH:MM:SS") 문자열로 저장되며 ts 필드는 없음
+  const stampOf = r => `${r.date||''} ${r.time||''}`;
+  const recentIn  = [...inbounds].sort((a,b) => stampOf(b).localeCompare(stampOf(a)));
+  const recentOut = [...outbounds].sort((a,b) => stampOf(b).localeCompare(stampOf(a)));
   const inEl  = document.getElementById('dash-recent-in');
   const outEl = document.getElementById('dash-recent-out');
   if (inEl)  inEl.innerHTML  = rows(recentIn,  'in');
@@ -3694,8 +3700,9 @@ function renderEquipment() {
   const search = (document.getElementById('eq-search')||{}).value||'';
   const cat1F  = (document.getElementById('eq-cat1-filter')||{}).value||'';
   const cat2F  = (document.getElementById('eq-cat2-filter')||{}).value||'';
+  const lineF  = (document.getElementById('eq-line-filter')||{}).value||'';
 
-  // 검색+분류 필터 (그래프 기준)
+  // 검색+분류+라인 필터 (그래프 기준)
   const baseFiltered = eqItems.filter(eq => {
     const q = search.toLowerCase();
     const c1n = eqCat1Name(eq.cat1).toLowerCase();
@@ -3703,7 +3710,8 @@ function renderEquipment() {
     const matchSearch = !q || c1n.includes(q) || c2n.includes(q) || (eq.name||'').toLowerCase().includes(q) || (eq.serial||'').toLowerCase().includes(q);
     const matchCat1 = !cat1F || eq.cat1 === cat1F;
     const matchCat2 = !cat2F || eq.cat2 === cat2F;
-    return matchSearch && matchCat1 && matchCat2;
+    const matchLine = !lineF || eq.line === lineF;
+    return matchSearch && matchCat1 && matchCat2 && matchLine;
   });
 
   // 상태 필터 (테이블 기준)
@@ -3788,6 +3796,17 @@ function renderEqCat1Selects() {
   });
   onEqCat1FilterChange();
   onEqCat1Change();
+  renderEqLineFilterSelect();
+}
+
+// ── 렌더: 필터 라인 셀렉트 (사용 라인 리스트 기준, 숫자 자연 정렬) ──
+function renderEqLineFilterSelect() {
+  const sel = document.getElementById('eq-line-filter');
+  if (!sel) return;
+  const prev = sel.value;
+  const sorted = [...lines].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  sel.innerHTML = `<option value="">${t('eq_filter_line')}</option>` +
+    sorted.map(l=>`<option value="${escapeHtml(l)}"${l===prev?' selected':''}>${escapeHtml(l)}</option>`).join('');
 }
 
 function onEqCat1FilterChange() {
