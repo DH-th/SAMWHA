@@ -219,6 +219,12 @@
         .type-info { display: flex; align-items: center; gap: 10px; font-weight: 600; }
         .type-color-box { width: 16px; height: 16px; border-radius: 4px; }
         .type-del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .line-ord-btns { display: flex; flex-direction: column; gap: 2px; }
+        .line-ord-btns button { width: 22px; height: 18px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #64748b; font-size: 10px; line-height: 1; cursor: pointer; padding: 0; }
+        .line-ord-btns button:hover { color: #3b82f6; border-color: #3b82f6; }
+        .line-ord-btns button:disabled { opacity: .3; cursor: default; }
+        .line-name-input { border: none; background: transparent; font-weight: 600; font-size: 14px; width: 100%; outline: none; padding: 2px 4px; border-radius: 4px; }
+        .line-name-input:focus { background: #fff; box-shadow: 0 0 0 2px #93c5fd; }
         .type-add-row { display: flex; gap: 10px; }
         .type-add-row input[type="color"] { width: 40px; height: 40px; padding: 0; border: none; border-radius: 8px; cursor: pointer; }
 
@@ -801,6 +807,17 @@
                 <button class="btn btn-primary" onclick="addType()">추가</button>
             </div>
         </div>
+        <div class="form-group" style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+            <label data-i18n="currentLines">현재 등록된 라인 (순서 변경 가능)</label>
+            <ul class="type-list" id="line-list-container"></ul>
+        </div>
+        <div class="form-group">
+            <label data-i18n="addLine">새 라인 추가</label>
+            <div class="type-add-row">
+                <input type="text" id="new-line-name" class="form-control" placeholder="새로운 라인명 입력 (예: L.11)" onkeydown="if(event.key==='Enter')addLine()">
+                <button class="btn btn-primary" onclick="addLine()">추가</button>
+            </div>
+        </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('settings-modal'); initRender();">닫기 및 적용</button>
         </div>
@@ -1052,6 +1069,8 @@ var LANG = {
         settingsTitle:'일정 항목(구분) 관리',
         currentItems: '현재 등록된 항목',
         addItem:      '새 항목 추가',
+        currentLines: '현재 등록된 라인 (순서 변경 가능)',
+        addLine:      '새 라인 추가',
         phNewType:    '새로운 구분명 입력',
         btnAdd:       '추가',
         btnApply:     '닫기 및 적용',
@@ -1223,6 +1242,8 @@ var LANG = {
         settingsTitle:'Manage Schedule Types',
         currentItems: 'Registered Types',
         addItem:      'Add New Type',
+        currentLines: 'Registered Lines (drag order with ▲▼)',
+        addLine:      'Add New Line',
         phNewType:    'Enter new type name',
         btnAdd:       'Add',
         btnApply:     'Close & Apply',
@@ -1383,6 +1404,8 @@ var LANG = {
         settingsTitle:'จัดการประเภทกำหนดการ',
         currentItems: 'ประเภทที่ลงทะเบียน',
         addItem:      'เพิ่มประเภทใหม่',
+        currentLines: 'ไลน์ที่ลงทะเบียน (เรียงลำดับด้วย ▲▼)',
+        addLine:      'เพิ่มไลน์ใหม่',
         phNewType:    'กรอกชื่อประเภทใหม่',
         btnAdd:       'เพิ่ม',
         btnApply:     'ปิดและใช้งาน',
@@ -1836,6 +1859,8 @@ async function loadSensorHistory() {
 
     // 서버(schedule_types.json)에서 INIT_SCHEDULE_TYPES로 동기화됨 — B-4 Improvement와 공유
     let scheduleTypes = [];
+    // 서버(schedule_lines.json)에서 INIT_SCHEDULE_LINES로 동기화됨 — 항목 관리에서 추가/수정/삭제/순서변경
+    let scheduleLines = [];
 
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();
@@ -1917,6 +1942,14 @@ ws.onmessage = (event) => {
         initRender();
         const typeListEl = document.getElementById('type-list-container');
         if (typeListEl) renderTypeManagerList();
+    }
+    // 🌟 라인(scheduleLines) 서버 동기화 — 항목 관리에서 추가/수정/삭제/순서변경
+    else if (msg.type === 'INIT_SCHEDULE_LINES' || msg.type === 'SCHEDULE_LINES_UPDATED') {
+        scheduleLines = msg.data || [];
+        renderFormLineOptions();
+        const lineListEl = document.getElementById('line-list-container');
+        if (lineListEl) renderLineManagerList();
+        if (document.getElementById('pm-modal').style.display === 'flex') renderPmTable();
     }
 };
 
@@ -2918,7 +2951,8 @@ function fetchSchedules() {}
     //    - 행 = L.1 ~ L.10 고정 (라인)
     //    - 셀 = schedules에서 해당 type & line의 가장 최근 date 자동 계산
     // ─────────────────────────────────────────
-    const PM_LINES = ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.8','L.9','L.10'];
+    // 항목 관리에서 추가/수정/삭제/순서변경한 scheduleLines를 그대로 사용
+    function getPmLines() { return scheduleLines.length ? scheduleLines : ['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.8','L.9','L.10']; }
     let pmTrackedTypes = {};   // { '5S': 30, 'Wave PM': 60, ... }
     let pmCurrentType  = null;
 
@@ -2976,7 +3010,7 @@ function fetchSchedules() {}
         today.setHours(0, 0, 0, 0);
         const todayStr2 = today.toISOString().slice(0,10);
 
-        tbody.innerHTML = PM_LINES.map((line, idx) => {
+        tbody.innerHTML = getPmLines().map((line, idx) => {
             // ① 완료된 일정 중 가장 최근 날짜 → 최종 실시일
             const completedMatched = schedules
                 .filter(s => s.type === type && s.line === line && s.date && s.completed === true)
@@ -3302,6 +3336,7 @@ function fetchSchedules() {}
 
     function openSettingsModal() {
         renderTypeManagerList();
+        renderLineManagerList();
         document.getElementById('settings-modal').style.display = 'flex';
     }
 
@@ -3337,6 +3372,78 @@ function fetchSchedules() {}
             renderTypeManagerList();
             ws.send(JSON.stringify({ type: 'UPDATE_SCHEDULE_TYPES', types: scheduleTypes }));
         }
+    }
+
+    // ── 라인(scheduleLines) 관리: 추가 / 이름수정 / 삭제 / 순서변경 ──
+    function renderLineManagerList() {
+        const container = document.getElementById('line-list-container');
+        if (!container) return;
+        container.innerHTML = scheduleLines.map((line, i) => `
+            <li class="type-item">
+                <div class="line-ord-btns">
+                    <button onclick="moveLine(${i}, -1)" ${i === 0 ? 'disabled' : ''}>▲</button>
+                    <button onclick="moveLine(${i}, 1)" ${i === scheduleLines.length - 1 ? 'disabled' : ''}>▼</button>
+                </div>
+                <div class="type-info" style="flex:1">
+                    <input type="text" class="line-name-input" value="${line}"
+                        onchange="renameLine(${i}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+                </div>
+                <button class="type-del-btn" onclick="deleteLine(${i})">×</button>
+            </li>
+        `).join('');
+    }
+
+    function saveLines() {
+        ws.send(JSON.stringify({ type: 'UPDATE_SCHEDULE_LINES', lines: scheduleLines }));
+    }
+
+    function addLine() {
+        const input = document.getElementById('new-line-name');
+        const name = input.value.trim();
+        if (!name) return alert(T('typeNameRequired'));
+        if (scheduleLines.includes(name)) return alert(T('typeExists'));
+        scheduleLines.push(name);
+        input.value = '';
+        renderLineManagerList();
+        renderFormLineOptions();
+        saveLines();
+    }
+
+    function renameLine(idx, newName) {
+        const name = (newName || '').trim();
+        if (!name || name === scheduleLines[idx]) { renderLineManagerList(); return; }
+        if (scheduleLines.includes(name)) { alert(T('typeExists')); renderLineManagerList(); return; }
+        scheduleLines[idx] = name;
+        renderLineManagerList();
+        renderFormLineOptions();
+        saveLines();
+    }
+
+    function deleteLine(idx) {
+        const name = scheduleLines[idx];
+        if (!confirm(T('deleteTypeConfirmFn', name))) return;
+        scheduleLines.splice(idx, 1);
+        renderLineManagerList();
+        renderFormLineOptions();
+        saveLines();
+    }
+
+    function moveLine(idx, dir) {
+        const j = idx + dir;
+        if (j < 0 || j >= scheduleLines.length) return;
+        [scheduleLines[idx], scheduleLines[j]] = [scheduleLines[j], scheduleLines[idx]];
+        renderLineManagerList();
+        renderFormLineOptions();
+        saveLines();
+    }
+
+    // 일정 등록 모달의 라인 선택 드롭다운을 scheduleLines 기준으로 렌더
+    function renderFormLineOptions() {
+        const sel = document.getElementById('form-line');
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML = scheduleLines.map(l => `<option value="${l}">${l}</option>`).join('');
+        if (scheduleLines.includes(prev)) sel.value = prev;
     }
 
     function closeModal(modalId) {
