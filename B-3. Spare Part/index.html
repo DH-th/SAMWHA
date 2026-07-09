@@ -3951,7 +3951,7 @@ function renderEqDetail(eq) {
   if (photos.length) {
     galleryWrap.innerHTML = `
       <div class="eq-detail-gallery">
-        <img id="eq-gallery-img" src="${EQ_HTTP}${escapeHtml(photos[eqGalleryIdx])}" alt="">
+        <img id="eq-gallery-img" src="${EQ_HTTP}${escapeHtml(photos[eqGalleryIdx])}" alt="" style="cursor:zoom-in" onclick="event.stopPropagation();openLightbox('${EQ_HTTP}${escapeHtml(photos[eqGalleryIdx])}')">
         ${photos.length>1?`<button class="eq-gallery-nav prev" onclick="moveEqGallery(-1)">‹</button><button class="eq-gallery-nav next" onclick="moveEqGallery(1)">›</button>`:''}
       </div>
       ${photos.length>1?`<div class="eq-gallery-dots">${photos.map((_,i)=>`<div class="eq-gallery-dot${i===eqGalleryIdx?' active':''}" onclick="setEqGallery(${i})"></div>`).join('')}</div>`:''}`;
