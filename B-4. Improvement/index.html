@@ -40,6 +40,21 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .btn:active{transform:scale(.96);}
 .btn-primary{background:linear-gradient(135deg,#7C3AED,#9333EA);color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.35);}
 .btn-ghost{background:var(--s2);border:1px solid var(--border);color:var(--text);}
+.btn-quick{background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.35);}
+.btn-icon{padding:8px 10px;font-size:15px;}
+
+/* ── 부서 전환(Quick / Plan) ── */
+.dept-switch{max-width:1240px;margin:14px auto 0;padding:0 18px;display:flex;gap:10px;position:relative;z-index:1;}
+.dept-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:16px;
+  border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:14px;font-weight:900;
+  cursor:pointer;box-shadow:var(--sh);transition:transform .12s,box-shadow .12s;position:relative;}
+.dept-btn:active{transform:scale(.98);}
+.dept-btn.on{color:#fff;border-color:transparent;}
+.dept-btn.quick.on{background:linear-gradient(135deg,#D97706,#F59E0B);box-shadow:0 6px 18px rgba(217,119,6,.4);}
+.dept-btn.plan.on{background:linear-gradient(135deg,#7C3AED,#9333EA);box-shadow:0 6px 18px rgba(124,58,237,.4);}
+.dept-badge{background:#fff;color:#DC2626;font-size:11px;font-weight:900;padding:1px 8px;border-radius:999px;min-width:18px;text-align:center;}
+.dept-btn:not(.on) .dept-badge{background:#FEE2E2;}
+.dept-sub{font-size:10.5px;font-weight:700;opacity:.8;}
 
 /* ── controls ── */
 .ctrl-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 0;position:relative;z-index:1;}
@@ -70,15 +85,35 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .card:hover{box-shadow:0 14px 38px rgba(76,29,149,.20);transform:translateY(-3px);}
 @keyframes cardIn{to{opacity:1;transform:translateY(0) scale(1);}}
 
-/* 큰 텍스트 타일: 라인 + 분류만 표시 (사진/타이틀 없음) */
-.big-tile{padding:30px 16px 8px;text-align:center;background:linear-gradient(160deg,var(--accent-bg),transparent 60%);}
-.big-line{font-size:38px;font-weight:900;letter-spacing:-.02em;color:var(--accent);line-height:1;margin-bottom:8px;}
-.big-cat{display:inline-block;font-size:12px;font-weight:800;color:var(--text);background:var(--s2);
-  border:1px solid var(--border);padding:4px 13px;border-radius:999px;}
+/* 카드 사진 영역 — 완료면 Before/After 반반 분할, 진행중이면 Before 전체 */
+.card-photo{position:relative;width:100%;aspect-ratio:15/10;background:var(--s3);overflow:hidden;}
+.card-photo.split{display:flex;}
+.card-photo.split .half{flex:1;position:relative;overflow:hidden;}
+.card-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.card-photo .divider{position:absolute;left:50%;top:0;bottom:0;width:3px;background:rgba(255,255,255,.9);transform:translateX(-1.5px);z-index:2;}
+.card-photo .arrow{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;
+  background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--accent);
+  box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:3;}
+.photo-tag{position:absolute;bottom:6px;font-size:9px;font-weight:900;letter-spacing:.04em;color:#fff;
+  background:rgba(0,0,0,.55);padding:2px 8px;border-radius:999px;z-index:2;}
+.photo-tag.before{left:6px;}.photo-tag.after{right:6px;}
+.card-photo .noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--border2);}
+.card-title{font-size:14px;font-weight:800;line-height:1.3;margin-bottom:7px;color:var(--text);
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+.card-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px;}
+.tag-line{font-size:10px;font-weight:900;color:var(--accent);background:var(--accent-bg);padding:2px 9px;border-radius:999px;}
+.tag-cat{font-size:10px;font-weight:700;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:2px 9px;border-radius:999px;}
+.tag-time{font-size:10px;font-weight:700;color:var(--muted);}
 
 .progress-badge{position:absolute;top:9px;left:9px;background:var(--amber);color:#fff;font-size:10px;font-weight:900;
   padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:5px;z-index:5;box-shadow:0 2px 8px rgba(217,119,6,.4);}
 .progress-badge .pdot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.4s infinite;}
+.progress-badge.urg-ok{background:#8B5CF6;}
+.progress-badge.urg-caution{background:#F59E0B;box-shadow:0 2px 8px rgba(245,158,11,.45);}
+.progress-badge.urg-danger{background:#DC2626;box-shadow:0 2px 10px rgba(220,38,38,.5);animation:urgPulse 1.1s infinite;}
+@keyframes urgPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.qcard.urg-caution{box-shadow:0 0 0 2px #F59E0B,var(--shm);}
+.qcard.urg-danger{box-shadow:0 0 0 2px #DC2626,var(--shm);}
 .fav-btn{position:absolute;top:9px;right:9px;width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;
   background:rgba(255,255,255,.85);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;
   font-size:16px;z-index:6;color:#C4C4CE;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:transform .15s,color .15s;}
@@ -147,6 +182,52 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .gal-grid img:hover{transform:scale(1.04);}
 .detail-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;}
 
+/* Before → After 비교 히어로 (완료된 활동 상세 상단) */
+.compare-hero{display:flex;align-items:center;gap:8px;margin:14px 0 4px;}
+.compare-col{flex:1;position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3.2;background:var(--s3);}
+.compare-col img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block;transition:transform .15s;}
+.compare-col img:hover{transform:scale(1.03);}
+.compare-lbl{position:absolute;top:8px;left:8px;font-size:10px;font-weight:900;letter-spacing:.05em;padding:3px 10px;border-radius:999px;z-index:2;color:#fff;}
+.compare-lbl.before{background:rgba(217,119,6,.92);}
+.compare-lbl.after{background:rgba(5,150,105,.92);}
+.compare-arrow{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--accent-bg);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;}
+.cta-complete{width:100%;padding:14px;font-size:14px;background:linear-gradient(135deg,#059669,#10B981);
+  box-shadow:0 4px 14px rgba(5,150,105,.35);}
+
+/* 처리자 명부 관리 */
+.my-person-box{background:var(--accent-bg);border:1.5px solid var(--accent2);border-radius:14px;padding:13px 15px;margin-bottom:18px;}
+.my-person-box label{font-size:11.5px;font-weight:900;color:var(--accent);display:block;margin-bottom:6px;}
+.my-person-box select{width:100%;}
+.my-person-hint{font-size:11px;color:var(--muted);margin-top:7px;font-weight:600;}
+.pplist{list-style:none;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;}
+.ppitem{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--s2);border-bottom:1px solid var(--border);}
+.ppitem:last-child{border-bottom:none;}
+.ppitem input{flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:3px 4px;border-radius:6px;}
+.ppitem input:focus{background:var(--surface);box-shadow:0 0 0 2px var(--accent2);}
+.ppitem input.pp-no{flex:0 0 76px;color:var(--accent);font-weight:800;}
+.pp-del{background:none;border:none;color:#DC2626;cursor:pointer;font-weight:900;font-size:16px;flex-shrink:0;}
+.pp-empty{text-align:center;font-size:12px;color:var(--muted);padding:16px;}
+.pp-add-row{display:flex;gap:8px;}
+.pp-add-row input{flex:1;}
+.pp-add-row input.pp-no{flex:0 0 96px;}
+
+/* 월간 처리 순위(포인트) */
+.pts-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;}
+.pts-nav button{width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-size:14px;}
+.pts-nav .pts-month{font-size:15px;font-weight:900;min-width:96px;text-align:center;}
+.pts-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:7px;background:var(--s2);}
+.pts-row.top1{background:linear-gradient(90deg,#FEF3C7,var(--s2));}
+.pts-row.top2{background:linear-gradient(90deg,#EDE9FE,var(--s2));}
+.pts-row.top3{background:linear-gradient(90deg,#FFE4E6,var(--s2));}
+.pts-rank{width:26px;text-align:center;font-weight:900;font-size:13px;color:var(--muted);flex-shrink:0;}
+.pts-name{flex:1;min-width:0;}
+.pts-name b{font-size:13.5px;font-weight:800;color:var(--text);}
+.pts-name span{display:block;font-size:10.5px;color:var(--muted);font-weight:600;}
+.pts-bar-wrap{flex:1;max-width:110px;height:7px;background:var(--s3);border-radius:99px;overflow:hidden;}
+.pts-bar{height:100%;background:linear-gradient(90deg,var(--accent),#C026D3);border-radius:99px;}
+.pts-count{font-size:14px;font-weight:900;color:var(--accent);min-width:26px;text-align:right;flex-shrink:0;}
+
 /* lightbox */
 #lightbox{position:fixed;inset:0;background:rgba(10,8,20,.92);z-index:400;display:none;align-items:center;justify-content:center;}
 #lightbox.on{display:flex;}
@@ -186,7 +267,9 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   .summary{grid-template-columns:repeat(2,1fr);}
   .card-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
   .card-body{padding:10px 11px 12px;}
-  .big-line{font-size:30px;}
+  .card-title{font-size:12.5px;}
+  .compare-hero{flex-direction:column;}
+  .compare-arrow{transform:rotate(90deg);}
 }
 .lang-sw{display:flex;gap:3px;}
 </style>
@@ -200,9 +283,18 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <span class="h-title" data-i18n="title" data-lang-trigger onclick="cycleLang()">กิจกรรมปรับปรุง</span>
   <div class="hdr-r">
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
-    <button class="btn btn-primary" onclick="openNewModal()" data-i18n="newActivity">+ กิจกรรมใหม่</button>
+    <button class="btn btn-ghost btn-icon" onclick="openPointsModal()" title="이달의 처리 순위">🏆</button>
+    <button class="btn btn-ghost btn-icon" onclick="openPersonnelModal()" title="처리자 명부 관리">👤</button>
+    <button class="btn btn-quick" id="hdr-create-btn" onclick="openQuickModal()">⚡ Quick 등록</button>
   </div>
 </header>
+
+<div class="dept-switch">
+  <button class="dept-btn quick on" id="dept-btn-quick" onclick="switchSection('quick')">
+    ⚡ Quick <span class="dept-sub">현장 즉시개선</span><span class="dept-badge" id="quick-alert-badge" style="display:none">0</span>
+  </button>
+  <button class="dept-btn plan" id="dept-btn-plan" onclick="switchSection('plan')">📅 Plan <span class="dept-sub">정기 개선활동</span></button>
+</div>
 
 <div class="ctrl-wrap">
   <div class="ctrl-bar">
@@ -251,6 +343,73 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   </div>
 </div>
 
+<!-- Quick(현장 즉시개선) 등록 모달 — 스케줄표에는 올라가지 않음 -->
+<div class="mbg" id="quick-mbg" onclick="if(event.target===this)closeQuickModal()">
+  <div class="modal">
+    <div class="m-hd"><span class="m-title">⚡ Quick 등록</span><button class="m-x" onclick="closeQuickModal()">✕</button></div>
+    <div class="m-body">
+      <div class="fld"><label>라인</label>
+        <select id="q-line"></select>
+      </div>
+      <div class="fld"><label>어떤 문제인가요?</label>
+        <textarea id="q-desc" placeholder="예: 3라인 출구 바닥에 기름 흘림"></textarea>
+      </div>
+      <div class="fld">
+        <label>문제 사진 (Before)</label>
+        <div class="dropzone" id="dz-quick" onclick="document.getElementById('inp-quick').click()">
+          <div class="dz-ic">📷</div>
+          <p>탭하여 사진 선택 또는 드래그</p>
+          <div class="dz-count" id="dz-quick-count">0/30</div>
+        </div>
+        <input type="file" id="inp-quick" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files,'quick')">
+        <div class="thumb-grid" id="thumbs-quick"></div>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn btn-ghost" onclick="closeQuickModal()">취소</button>
+      <button class="btn btn-quick" onclick="submitQuickActivity()">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 처리자 명부 관리 모달 -->
+<div class="mbg" id="personnel-mbg" onclick="if(event.target===this)closePersonnelModal()">
+  <div class="modal">
+    <div class="m-hd"><span class="m-title">👤 처리자 명부 관리</span><button class="m-x" onclick="closePersonnelModal()">✕</button></div>
+    <div class="m-body">
+      <div class="my-person-box">
+        <label>📱 이 기기의 사용자 — 나는 누구인가요?</label>
+        <select id="my-person-select" onchange="setMyPerson(this.value)"></select>
+        <div class="my-person-hint" id="my-person-hint"></div>
+      </div>
+      <ul class="pplist" id="pplist"></ul>
+      <div class="pp-add-row">
+        <input type="text" id="pp-new-no" class="pp-no" placeholder="사번">
+        <input type="text" id="pp-new-name" placeholder="이름" onkeydown="if(event.key==='Enter')addPersonnel()">
+        <button class="btn btn-primary" onclick="addPersonnel()">추가</button>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn btn-ghost" style="flex:1" onclick="closePersonnelModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 월간 처리 순위(포인트) 모달 -->
+<div class="mbg" id="points-mbg" onclick="if(event.target===this)closePointsModal()">
+  <div class="modal">
+    <div class="m-hd"><span class="m-title">🏆 이달의 처리 순위</span><button class="m-x" onclick="closePointsModal()">✕</button></div>
+    <div class="m-body">
+      <div class="pts-nav">
+        <button onclick="shiftPointsMonth(-1)">‹</button>
+        <span class="pts-month" id="pts-month-lbl">-</span>
+        <button onclick="shiftPointsMonth(1)">›</button>
+      </div>
+      <div id="pts-list"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 상세 모달 -->
 <div class="mbg" id="detail-mbg" onclick="if(event.target===this)closeDetail()">
   <div class="modal">
@@ -269,6 +428,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="modal">
     <div class="m-hd"><span class="m-title" data-i18n="registerAfter">ลงทะเบียนรูป After</span><button class="m-x" onclick="closeAfterModal()">✕</button></div>
     <div class="m-body">
+      <div id="after-processor-hint" style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:12px"></div>
       <div class="fld">
         <label data-i18n="afterPhotos">รูปหลังปรับปรุง (After)</label>
         <div class="dropzone" id="dz-after" onclick="document.getElementById('inp-after').click()">
@@ -302,10 +462,45 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <script>
 const TUNNEL='server.samhwa.cloud';
 let ws, activities=[], curFilter='all';
-let pendingBefore=[], pendingAfter=[]; // {file, url(local preview), uploadedUrl}
+let pendingBefore=[], pendingAfter=[], pendingQuick=[]; // {file, url(local preview), uploadedUrl}
 let curDetailId=null;
 let lbList=[], lbIdx=0;
 let deepLinkId=new URLSearchParams(location.search).get('open');
+
+// 처리자(사번+이름) 명부 — 서버(improvement_personnel.json)와 동기화
+let improvementPersonnel=[];
+const MY_PERSON_KEY='improvement_my_person_id'; // 이 기기의 사용자(처리자) — 처리자 관리에서 지정
+let pointsMonth=new Date().toISOString().slice(0,7); // YYYY-MM
+
+// Quick/Plan 부서 전환 — 완전히 분리된 화면으로 취급한다
+let curSection='quick'; // 웹 진입 시 Quick을 바로 보여준다
+const QUICK_CAUTION_MIN=90;  // 1시간30분 → 주의(주황)
+const QUICK_DANGER_MIN=180;  // 3시간 → 경고(빨강)
+
+function fmtDT(iso){
+  if(!iso)return '-';
+  const d=new Date(iso);
+  if(isNaN(d))return '-';
+  const p=n=>String(n).padStart(2,'0');
+  return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function elapsedMinutes(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return 0;
+  return (Date.now()-d.getTime())/60000;
+}
+function formatElapsed(mins){
+  const m=Math.max(0,Math.round(mins));
+  const h=Math.floor(m/60), r=m%60;
+  return h>0?`${h}시간 ${r}분 경과`:`${r}분 경과`;
+}
+function quickUrgency(a){
+  if(a.status==='completed')return 'done';
+  const mins=elapsedMinutes(a.createdAt);
+  if(mins>=QUICK_DANGER_MIN)return 'danger';
+  if(mins>=QUICK_CAUTION_MIN)return 'caution';
+  return 'ok';
+}
 
 // B-1 라인 목록 (B-1 Schedule의 라인 선택과 동일하게 L.1~L.10)
 const LINES=['L.1','L.2','L.3','L.4','L.5','L.6','L.7','L.8','L.9','L.10'];
@@ -318,8 +513,8 @@ async function fetchScheduleTypes(){
     scheduleTypesList=j.types||[];
   }catch{}
 }
-function renderLineOptions(){
-  document.getElementById('f-line').innerHTML=LINES.map(l=>`<option value="${l}">${l}</option>`).join('');
+function renderLineOptions(targetId='f-line'){
+  document.getElementById(targetId).innerHTML=LINES.map(l=>`<option value="${l}">${l}</option>`).join('');
 }
 function renderCatOptions(){
   const sel=document.getElementById('f-category');
@@ -332,6 +527,31 @@ function renderCatOptions(){
   cf.innerHTML=`<option value="">${t('allCategories')}</option>`+cats.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
 }
 
+/* ── 부서 전환(Quick / Plan) ── */
+function switchSection(sec){
+  curSection=sec;
+  curFilter='all';
+  document.getElementById('dept-btn-quick').classList.toggle('on',sec==='quick');
+  document.getElementById('dept-btn-plan').classList.toggle('on',sec==='plan');
+  document.getElementById('cat-filter').style.display=sec==='plan'?'':'none';
+  const createBtn=document.getElementById('hdr-create-btn');
+  if(sec==='quick'){
+    createBtn.className='btn btn-quick';
+    createBtn.textContent='⚡ Quick 등록';
+    createBtn.onclick=openQuickModal;
+  }else{
+    createBtn.className='btn btn-primary';
+    createBtn.textContent='📅 Plan 등록';
+    createBtn.onclick=openNewModal;
+  }
+  render();
+}
+function sectionList(){
+  return curSection==='quick'
+    ? activities.filter(a=>a.kind==='quick')
+    : activities.filter(a=>(a.kind||'big')!=='quick');
+}
+
 /* ── 필터 ──
    전체/진행중/완료는 상단 탭 대신 요약 블록 클릭으로 전환한다.
    즐겨찾기만 별도 토글로 남긴다. */
@@ -341,13 +561,14 @@ function setFilter(f){
   render();
 }
 
-/* ── 요약 (블록 클릭 = 필터) ── */
+/* ── 요약 (블록 클릭 = 필터, 현재 부서 기준) ── */
 function renderSummary(){
-  const total=activities.length;
-  const planned=activities.filter(a=>a.status!=='completed').length;
-  const done=activities.filter(a=>a.status==='completed').length;
+  const list=sectionList();
+  const total=list.length;
+  const planned=list.filter(a=>a.status!=='completed').length;
+  const done=list.filter(a=>a.status==='completed').length;
   const nowM=new Date().toISOString().slice(0,7);
-  const thisMonth=activities.filter(a=>(a.activityDate||'').startsWith(nowM)||(a.afterDate||'').startsWith(nowM)).length;
+  const thisMonth=list.filter(a=>(a.activityDate||'').startsWith(nowM)||(a.afterDate||'').startsWith(nowM)).length;
   document.getElementById('summary').innerHTML=`
     <div class="sc${curFilter==='all'?' sel':''}" data-f="all" onclick="setFilter('all')"><div class="sc-l">${t('totalCount')}</div><div class="sc-v">${total}</div></div>
     <div class="sc b${curFilter==='planned'?' sel':''}" data-f="planned" onclick="setFilter('planned')"><div class="sc-l">${t('inProgressCount')}</div><div class="sc-v">${planned}</div></div>
@@ -355,35 +576,91 @@ function renderSummary(){
     <div class="sc a"><div class="sc-l">${t('thisMonthCount')}</div><div class="sc-v">${thisMonth}</div></div>`;
 }
 
+function updateQuickAlertBadge(){
+  const n=activities.filter(a=>a.kind==='quick'&&a.status!=='completed'&&quickUrgency(a)!=='ok').length;
+  const badge=document.getElementById('quick-alert-badge');
+  if(!badge)return;
+  badge.style.display=n>0?'':'none';
+  badge.textContent=n;
+}
+
 /* ── 카드 그리드 ── */
 function render(){
-  renderCatOptions();
+  updateQuickAlertBadge();
+  if(curSection==='plan')renderCatOptions();
   renderSummary();
   const grid=document.getElementById('card-grid');
   const q=(document.getElementById('search-inp').value||'').trim().toLowerCase();
-  const catF=document.getElementById('cat-filter').value;
-  let list=[...activities];
+  const catF=curSection==='plan'?document.getElementById('cat-filter').value:'';
+  let list=sectionList();
   if(curFilter==='planned')list=list.filter(a=>a.status!=='completed');
   if(curFilter==='completed')list=list.filter(a=>a.status==='completed');
   if(curFilter==='favorite')list=list.filter(a=>a.favorite);
   if(catF)list=list.filter(a=>a.category===catF);
   if(q)list=list.filter(a=>(a.title||'').toLowerCase().includes(q));
-  list.sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
+
+  if(curSection==='quick'){
+    const tier={danger:2,caution:1,ok:0};
+    list.sort((a,b)=>{
+      const aDone=a.status==='completed', bDone=b.status==='completed';
+      if(aDone!==bDone)return aDone?1:-1; // 미해결이 항상 위
+      if(!aDone){
+        const t2=tier[quickUrgency(b)]-tier[quickUrgency(a)];
+        if(t2)return t2;
+        return (a.createdAt||'').localeCompare(b.createdAt||''); // 오래된(급한) 것 먼저
+      }
+      return (b.completedAt||b.afterDate||'').localeCompare(a.completedAt||a.afterDate||'');
+    });
+  }else{
+    list.sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
+  }
 
   if(!list.length){
-    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">🛠️</div><p>${t('noActivities')}</p></div>`;
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">${curSection==='quick'?'⚡':'🛠️'}</div><p>${t('noActivities')}</p></div>`;
     return;
   }
   grid.innerHTML=list.map((a,i)=>{
     const isDone=a.status==='completed';
-    return `<div class="card big-tile" style="animation-delay:${Math.min(i*.05,.6)}s" onclick="openDetail('${a.id}')">
+    const isQuick=curSection==='quick';
+    const before=(a.beforePhotos||[])[0], after=(a.afterPhotos||[])[0];
+    let photoHtml;
+    if(isDone && before && after){
+      photoHtml=`<div class="card-photo split">
+        <div class="half"><img src="${imgUrl(before)}" loading="lazy"><span class="photo-tag before">BEFORE</span></div>
+        <div class="half"><img src="${imgUrl(after)}" loading="lazy"><span class="photo-tag after">AFTER</span></div>
+        <div class="divider"></div><div class="arrow">→</div>
+      </div>`;
+    }else if(before){
+      photoHtml=`<div class="card-photo"><img src="${imgUrl(before)}" loading="lazy"><span class="photo-tag before">BEFORE</span></div>`;
+    }else{
+      photoHtml=`<div class="card-photo"><div class="noimg">🧹</div></div>`;
+    }
+    let badgeHtml='', cardCls='card';
+    if(!isDone){
+      if(isQuick){
+        const urg=quickUrgency(a);
+        const label=urg==='danger'?'🔴 경고':urg==='caution'?'🟠 주의':'⏳ 대기중';
+        badgeHtml=`<span class="progress-badge urg-${urg}"><span class="pdot"></span>${label}</span>`;
+        cardCls+=` qcard urg-${urg}`;
+      }else{
+        badgeHtml=`<span class="progress-badge"><span class="pdot"></span>${t('statusPlanned')}</span>`;
+      }
+    }
+    const tagsHtml=isQuick
+      ? `<span class="tag-line">${escapeHtml(a.line||'-')}</span><span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
+      : `<span class="tag-line">${escapeHtml(a.line||'-')}</span><span class="tag-cat">${escapeHtml(a.category||t('catOther'))}</span>`;
+    const metaLeft=isQuick
+      ? (isDone?`완료 ${fmtDT(a.completedAt||a.afterDate)}`:formatElapsed(elapsedMinutes(a.createdAt)))
+      : (isDone?(a.afterDate||''):(a.activityDate||''));
+    return `<div class="${cardCls}" style="animation-delay:${Math.min(i*.05,.6)}s" onclick="openDetail('${a.id}')">
       <button class="fav-btn${a.favorite?' on':''}" onclick="event.stopPropagation();toggleFavorite('${a.id}')" title="${t('toggleFavorite')}">${a.favorite?'★':'☆'}</button>
-      ${!isDone?`<span class="progress-badge"><span class="pdot"></span>${t('statusPlanned')}</span>`:''}
-      <div class="big-line">${escapeHtml(a.line||'-')}</div>
-      <div class="big-cat">${escapeHtml(a.category||t('catOther'))}</div>
+      ${badgeHtml}
+      ${photoHtml}
       <div class="card-body">
+        <div class="card-title">${escapeHtml(a.title||t('catOther'))}</div>
+        <div class="card-tags">${tagsHtml}</div>
         <div class="card-meta">
-          <span>${isDone?(a.afterDate||''):(a.activityDate||'')}</span>
+          <span>${metaLeft}</span>
           <span class="card-status ${isDone?'done':'pending'}">${isDone?t('statusCompleted'):t('statusPlanned')}</span>
         </div>
       </div>
@@ -414,8 +691,9 @@ async function openNewModal(){
 }
 function closeNewModal(){document.getElementById('new-mbg').classList.remove('on');}
 
+function arrFor(phase){ return phase==='before'?pendingBefore:phase==='after'?pendingAfter:pendingQuick; }
 function handleFiles(fileList,phase){
-  const arr=phase==='before'?pendingBefore:pendingAfter;
+  const arr=arrFor(phase);
   const files=[...fileList].slice(0,30-arr.length);
   files.forEach(file=>{
     const url=URL.createObjectURL(file);
@@ -424,23 +702,21 @@ function handleFiles(fileList,phase){
   renderThumbs(phase);
 }
 function renderThumbs(phase){
-  const arr=phase==='before'?pendingBefore:pendingAfter;
+  const arr=arrFor(phase);
   document.getElementById(`dz-${phase}-count`).textContent=`${arr.length}/30`;
   document.getElementById(`thumbs-${phase}`).innerHTML=arr.map((p,i)=>
     `<div class="thumb"><img src="${p.url}"><button class="rm" onclick="event.stopPropagation();removeThumb('${phase}',${i})">✕</button></div>`
   ).join('');
 }
 function removeThumb(phase,i){
-  const arr=phase==='before'?pendingBefore:pendingAfter;
-  arr.splice(i,1);
+  arrFor(phase).splice(i,1);
   renderThumbs(phase);
 }
 // drag & drop
-['dz-before','dz-after'].forEach(id=>{
+[['dz-before','before'],['dz-after','after'],['dz-quick','quick']].forEach(([id,phase])=>{
   document.addEventListener('DOMContentLoaded',()=>{
     const el=document.getElementById(id);
     if(!el)return;
-    const phase=id.includes('before')?'before':'after';
     el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag');});
     el.addEventListener('dragleave',()=>el.classList.remove('drag'));
     el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag');handleFiles(e.dataTransfer.files,phase);});
@@ -466,6 +742,7 @@ async function submitNewActivity(){
   const urls=await uploadPhotos(pendingBefore);
   const activity={
     id:'imp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    kind:'big',
     title, line:document.getElementById('f-line').value, category:document.getElementById('f-category').value,
     description:document.getElementById('f-desc').value.trim(),
     activityDate:date, status:'planned',
@@ -478,34 +755,87 @@ async function submitNewActivity(){
   toast(t('toastSaved'));
 }
 
+/* ── Quick(현장 즉시개선) 등록 — 스케줄표에 올라가지 않음 ── */
+function openQuickModal(){
+  document.getElementById('q-desc').value='';
+  renderLineOptions('q-line');
+  pendingQuick=[];
+  renderThumbs('quick');
+  document.getElementById('quick-mbg').classList.add('on');
+}
+function closeQuickModal(){document.getElementById('quick-mbg').classList.remove('on');}
+async function submitQuickActivity(){
+  const desc=document.getElementById('q-desc').value.trim();
+  if(!desc){toast(t('requireTitle'));return;}
+  if(!pendingQuick.length){toast(t('requirePhotoBefore'));return;}
+  toast(t('toastUploading'));
+  const urls=await uploadPhotos(pendingQuick);
+  const activity={
+    id:'imp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    kind:'quick',
+    title:desc, line:document.getElementById('q-line').value, category:'',
+    description:desc,
+    activityDate:new Date().toISOString().slice(0,10), status:'planned',
+    beforePhotos:urls, afterPhotos:[], afterDate:null
+  };
+  ws.send(JSON.stringify({type:'UPSERT_IMPROVEMENT',activity}));
+  activities.push(activity);
+  closeQuickModal();
+  render();
+  toast(t('toastSaved'));
+}
+
 /* ── 상세 ── */
 function openDetail(id){
   const a=activities.find(x=>x.id===id); if(!a)return;
   curDetailId=id;
   const isDone=a.status==='completed';
+  const isQuick=a.kind==='quick';
   document.getElementById('d-title').textContent=a.title||'';
   const favBtn=document.getElementById('d-fav-btn');
   favBtn.textContent=a.favorite?'★':'☆';
   favBtn.classList.toggle('on',!!a.favorite);
   const beforeGal=(a.beforePhotos||[]).map((p,i)=>`<img src="${imgUrl(p)}" onclick="openLightbox('${id}','before',${i})">`).join('');
   const afterGal=(a.afterPhotos||[]).map((p,i)=>`<img src="${imgUrl(p)}" onclick="openLightbox('${id}','after',${i})">`).join('');
-  document.getElementById('d-body').innerHTML=`
-    <div>
-      <span class="detail-status ${isDone?'done':'pending'}">${isDone?t('statusCompleted'):t('statusPlanned')}</span>
-      <span class="detail-cat">${a.category||t('catOther')}</span>
-    </div>
+  const beforeFirst=(a.beforePhotos||[])[0], afterFirst=(a.afterPhotos||[])[0];
+  const compareHero=(isDone&&beforeFirst&&afterFirst)?`
+    <div class="compare-hero">
+      <div class="compare-col"><span class="compare-lbl before">BEFORE</span><img src="${imgUrl(beforeFirst)}" onclick="openLightbox('${id}','before',0)"></div>
+      <div class="compare-arrow">→</div>
+      <div class="compare-col"><span class="compare-lbl after">AFTER</span><img src="${imgUrl(afterFirst)}" onclick="openLightbox('${id}','after',0)"></div>
+    </div>`:'';
+  let urgLine='';
+  if(isQuick&&!isDone){
+    const urg=quickUrgency(a);
+    const label=urg==='danger'?'🔴 경고 — 즉시 처리 필요':urg==='caution'?'🟠 주의 — 곧 기한 초과':'⏳ 대기중';
+    urgLine=`<div style="font-size:12.5px;font-weight:800;margin-top:8px;color:${urg==='danger'?'#DC2626':urg==='caution'?'#D97706':'var(--muted)'}">${label} (${formatElapsed(elapsedMinutes(a.createdAt))})</div>`;
+  }
+  const datesHtml=isQuick?`
+    <div class="detail-dates">
+      <span>등록: <b>${fmtDT(a.createdAt)}</b></span>
+      ${isDone?`<span>완료: <b>${fmtDT(a.completedAt||a.afterDate)}</b></span>`:''}
+      ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
+    </div>${urgLine}`:`
     <div class="detail-dates">
       <span>${t('plannedDate')}: <b>${a.activityDate||'-'}</b></span>
       ${isDone?`<span>${t('completedDate')}: <b>${a.afterDate||'-'}</b></span>`:''}
+      ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
       <span>${t('createdOn')}: <b>${(a.createdAt||'').slice(0,10)}</b></span>
+    </div>`;
+  document.getElementById('d-body').innerHTML=`
+    <div>
+      <span class="detail-status ${isDone?'done':'pending'}">${isDone?t('statusCompleted'):t('statusPlanned')}</span>
+      ${!isQuick?`<span class="detail-cat">${a.category||t('catOther')}</span>`:''}
     </div>
+    ${datesHtml}
     ${a.description?`<div class="detail-desc">${escapeHtml(a.description)}</div>`:''}
+    ${compareHero}
     <div class="gal-title">${t('beforePhotos')} (${(a.beforePhotos||[]).length})</div>
     <div class="gal-grid">${beforeGal||`<span style="font-size:12px;color:var(--muted)">${t('noPhotos')}</span>`}</div>
     ${isDone?`<div class="gal-title">${t('afterPhotos')} (${(a.afterPhotos||[]).length})</div>
       <div class="gal-grid">${afterGal||`<span style="font-size:12px;color:var(--muted)">${t('noPhotos')}</span>`}</div>`:''}
     <div class="detail-actions">
-      ${!isDone?`<button class="btn btn-primary" onclick="openAfterModal()">${t('registerAfter')}</button>`:''}
+      ${!isDone?`<button class="btn btn-primary cta-complete" onclick="openAfterModal()">✨ ${t('registerAfter')}</button>`:''}
     </div>
   `;
   document.getElementById('detail-mbg').classList.add('on');
@@ -520,20 +850,38 @@ function deleteActivity(){
   closeDetail();render();toast(t('toastDeleted'));
 }
 
-/* ── After 등록 ── */
+/* ── After 등록 — 처리자는 '처리자 관리'에서 이 기기에 미리 지정한 사람을 그대로 사용 ── */
+function myPerson(){
+  const id=localStorage.getItem(MY_PERSON_KEY)||'';
+  return improvementPersonnel.find(p=>p.id===id)||null;
+}
+function renderAfterProcessorHint(){
+  const hint=document.getElementById('after-processor-hint');
+  if(!hint)return;
+  const p=myPerson();
+  hint.innerHTML=p
+    ? `처리자로 <b style="color:var(--accent)">${escapeHtml(p.name)} (${escapeHtml(p.empNo)})</b>님이 기록됩니다.`
+    : `⚠️ 이 기기의 처리자가 지정되지 않았습니다. <a href="#" onclick="closeAfterModal();openPersonnelModal();return false" style="color:#DC2626;font-weight:900">👤 처리자 관리에서 먼저 본인을 지정</a>하세요.`;
+}
 function openAfterModal(){
   pendingAfter=[];renderThumbs('after');
+  renderAfterProcessorHint();
   document.getElementById('after-mbg').classList.add('on');
 }
 function closeAfterModal(){document.getElementById('after-mbg').classList.remove('on');}
 async function submitAfter(){
+  const person=myPerson();
+  if(!person){toast('처리자 관리에서 먼저 본인을 지정하세요');return;}
   if(!pendingAfter.length){toast(t('requirePhotoBefore'));return;}
   const a=activities.find(x=>x.id===curDetailId); if(!a)return;
   toast(t('toastUploading'));
   const urls=await uploadPhotos(pendingAfter);
+  const now=new Date();
   a.afterPhotos=urls;
   a.status='completed';
-  a.afterDate=new Date().toISOString().slice(0,10);
+  a.afterDate=now.toISOString().slice(0,10);
+  a.completedAt=now.toISOString();
+  a.completedBy={id:person.id, empNo:person.empNo, name:person.name};
   ws.send(JSON.stringify({type:'UPSERT_IMPROVEMENT',activity:a}));
   closeAfterModal();closeDetail();render();toast(t('toastSaved'));
 }
@@ -580,6 +928,115 @@ function printReport(){
   setTimeout(()=>window.print(),200);
 }
 
+/* ── 처리자 명부 관리 ── */
+function openPersonnelModal(){
+  renderMyPersonSelect();
+  renderPersonnelManagerList();
+  document.getElementById('pp-new-no').value='';
+  document.getElementById('pp-new-name').value='';
+  document.getElementById('personnel-mbg').classList.add('on');
+}
+function closePersonnelModal(){document.getElementById('personnel-mbg').classList.remove('on');}
+
+// 이 기기의 사용자(처리자) 지정 — 폰마다 개별 저장, After 등록 시 자동으로 이 사람이 기록됨
+function renderMyPersonSelect(){
+  const sel=document.getElementById('my-person-select');
+  if(!sel)return;
+  const my=localStorage.getItem(MY_PERSON_KEY)||'';
+  sel.innerHTML=`<option value="">-- 선택 안 함 --</option>`+
+    improvementPersonnel.map(p=>`<option value="${p.id}"${p.id===my?' selected':''}>${escapeHtml(p.empNo)} · ${escapeHtml(p.name)}</option>`).join('');
+  const hint=document.getElementById('my-person-hint');
+  const person=improvementPersonnel.find(p=>p.id===my);
+  hint.textContent=person
+    ? `✅ 이 기기는 '${person.name}'님으로 지정되어 있습니다. After 등록 시 자동으로 처리자로 기록됩니다.`
+    : '아직 지정되지 않았습니다. Quick/Plan 완료 처리를 하려면 먼저 본인을 선택하세요.';
+}
+function setMyPerson(id){
+  if(id)localStorage.setItem(MY_PERSON_KEY,id);
+  else localStorage.removeItem(MY_PERSON_KEY);
+  renderMyPersonSelect();
+  toast(id?'이 기기의 처리자가 지정되었습니다':'지정이 해제되었습니다');
+}
+function renderPersonnelManagerList(){
+  const ul=document.getElementById('pplist');
+  if(!ul)return;
+  if(!improvementPersonnel.length){
+    ul.innerHTML=`<li class="pp-empty">등록된 처리자가 없습니다</li>`;
+    return;
+  }
+  ul.innerHTML=improvementPersonnel.map((p,i)=>`
+    <li class="ppitem">
+      <input type="text" class="pp-no" value="${escapeHtml(p.empNo)}" onchange="renamePersonnelField(${i},'empNo',this.value)">
+      <input type="text" value="${escapeHtml(p.name)}" onchange="renamePersonnelField(${i},'name',this.value)">
+      <button class="pp-del" onclick="deletePersonnel(${i})">×</button>
+    </li>`).join('');
+}
+function savePersonnelList(){
+  ws.send(JSON.stringify({type:'UPDATE_IMPROVEMENT_PERSONNEL',personnel:improvementPersonnel}));
+}
+function addPersonnel(){
+  const noInp=document.getElementById('pp-new-no'), nameInp=document.getElementById('pp-new-name');
+  const empNo=noInp.value.trim(), name=nameInp.value.trim();
+  if(!empNo||!name){toast('사번과 이름을 입력하세요');return;}
+  improvementPersonnel.push({id:'pp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),empNo,name});
+  noInp.value='';nameInp.value='';
+  renderPersonnelManagerList();
+  savePersonnelList();
+}
+function renamePersonnelField(idx,field,value){
+  const v=(value||'').trim();
+  if(!v){renderPersonnelManagerList();return;}
+  improvementPersonnel[idx][field]=v;
+  savePersonnelList();
+}
+function deletePersonnel(idx){
+  const p=improvementPersonnel[idx];
+  if(!confirm(`'${p.name}' 처리자를 삭제할까요?`))return;
+  improvementPersonnel.splice(idx,1);
+  renderPersonnelManagerList();
+  savePersonnelList();
+}
+
+/* ── 월간 처리 순위(포인트) — completedBy가 있는 완료 건을 월별로 집계 ── */
+function openPointsModal(){
+  pointsMonth=new Date().toISOString().slice(0,7);
+  renderPoints();
+  document.getElementById('points-mbg').classList.add('on');
+}
+function closePointsModal(){document.getElementById('points-mbg').classList.remove('on');}
+function shiftPointsMonth(dir){
+  const [y,m]=pointsMonth.split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  pointsMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  renderPoints();
+}
+function renderPoints(){
+  document.getElementById('pts-month-lbl').textContent=pointsMonth;
+  const counts={}; // id -> {name,empNo,count}
+  activities.forEach(a=>{
+    if(a.status!=='completed'||!a.completedBy||!a.afterDate)return;
+    if(!a.afterDate.startsWith(pointsMonth))return;
+    const key=a.completedBy.id||a.completedBy.name;
+    if(!counts[key])counts[key]={name:a.completedBy.name,empNo:a.completedBy.empNo,count:0};
+    counts[key].count++;
+  });
+  const ranked=Object.values(counts).sort((a,b)=>b.count-a.count);
+  const listEl=document.getElementById('pts-list');
+  if(!ranked.length){
+    listEl.innerHTML=`<div class="pp-empty">이달의 처리 기록이 없습니다</div>`;
+    return;
+  }
+  const max=ranked[0].count;
+  const medal=['🥇','🥈','🥉'];
+  listEl.innerHTML=ranked.map((r,i)=>`
+    <div class="pts-row ${i<3?'top'+(i+1):''}">
+      <div class="pts-rank">${medal[i]||(i+1)}</div>
+      <div class="pts-name"><b>${escapeHtml(r.name)}</b><span>${escapeHtml(r.empNo||'')}</span></div>
+      <div class="pts-bar-wrap"><div class="pts-bar" style="width:${Math.round(r.count/max*100)}%"></div></div>
+      <div class="pts-count">${r.count}</div>
+    </div>`).join('');
+}
+
 /* ── WS ── */
 function connect(){
   ws=new WebSocket(`wss://${TUNNEL}/ws/improvement`);
@@ -596,12 +1053,25 @@ function connect(){
       render();
     }
     else if(m.type==='IMPROVEMENT_DELETED'){activities=activities.filter(a=>a.id!==m.id);render();}
+    else if(m.type==='INIT_IMPROVEMENT_PERSONNEL'||m.type==='IMPROVEMENT_PERSONNEL_UPDATED'){
+      improvementPersonnel=m.data||[];
+      if(document.getElementById('personnel-mbg').classList.contains('on')){
+        renderMyPersonSelect();
+        renderPersonnelManagerList();
+      }
+      if(document.getElementById('after-mbg').classList.contains('on'))renderAfterProcessorHint();
+    }
   };
   ws.onclose=()=>{document.getElementById('cdot').className='dot';document.getElementById('ctxt').textContent=t('disconnected');setTimeout(connect,3000);};
   ws.onerror=()=>ws.close();
 }
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('s');setTimeout(()=>el.classList.remove('s'),2000);}
 window.onLangChange=()=>render();
+
+// Quick 긴급도(경과 시간)는 실시간으로 바뀌므로 1분마다 갱신한다
+setInterval(()=>{ if(curSection==='quick')render(); else updateQuickAlertBadge(); },60000);
+
+document.getElementById('cat-filter').style.display='none'; // 기본 섹션이 Quick이므로 시작 시 숨김
 connect();
 </script>
 </body>
