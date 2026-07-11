@@ -238,9 +238,13 @@ td{
 .proc-auto{
   font-size:10px;font-weight:700;color:var(--muted);
   display:flex;align-items:center;gap:4px;white-space:nowrap;
+  cursor:pointer;padding:3px 6px;border-radius:6px;transition:background .15s,color .15s;
 }
+.proc-auto:hover{background:var(--surface2);}
+.proc-auto.off{color:var(--border2);}
 .proc-auto .bar-bg{width:32px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
 .proc-auto .bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;}
+.proc-auto.off .bar-fill{background:var(--border2)!important;}
 /* ── data cells ── */
 .col-avg{min-width:52px;width:52px;border-left:1px solid var(--border)!important;font-weight:700!important;}
 .sum-row td{
@@ -435,9 +439,9 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <button class="ptab" id="pp1" onclick="setProc('S1')">S1</button>
     <button class="ptab" id="pp2" onclick="setProc('S2')">S2</button>
   </div>
-  <div class="proc-auto" id="proc-auto">
-    <span id="proc-timer-lbl" data-i18n="auto">อัตโนมัติ</span>
-    <div class="bar-bg"><div class="bar-fill" id="proc-bar" style="width:100%"></div></div>
+  <div class="proc-auto off" id="proc-auto" onclick="toggleProcAuto()">
+    <span id="proc-timer-lbl">자동 OFF</span>
+    <div class="bar-bg"><div class="bar-fill" id="proc-bar" style="width:0%"></div></div>
   </div>
   <div class="hdr">
     <div class="cpill"><span class="dot dot-on" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
@@ -718,6 +722,7 @@ function toggleTest(){
 const PROC_INTERVAL=5*60; // seconds
 let procTimer=PROC_INTERVAL;
 let procTimerHandle=null;
+let procAutoOn=false; // 기본값 OFF — '자동 5:00' 텍스트를 누르면 On/Off 전환
 
 function setProc(p,resetTimer=true){
   viewProc=p;
@@ -730,6 +735,14 @@ function renderProc(){
   document.getElementById('pp2').className='ptab'+(viewProc==='S2'?' s2':'');
 }
 function updateProcBar(){
+  const auto=document.getElementById('proc-auto');
+  if(!procAutoOn){
+    auto.classList.add('off');
+    document.getElementById('proc-bar').style.width='0%';
+    document.getElementById('proc-timer-lbl').textContent='자동 OFF';
+    return;
+  }
+  auto.classList.remove('off');
   const pct=Math.round((procTimer/PROC_INTERVAL)*100);
   document.getElementById('proc-bar').style.width=pct+'%';
   const color=viewProc==='S1'?'var(--accent)':'var(--teal)';
@@ -737,9 +750,20 @@ function updateProcBar(){
   const m=Math.floor(procTimer/60),s=procTimer%60;
   document.getElementById('proc-timer-lbl').textContent=`자동 ${m}:${String(s).padStart(2,'0')}`;
 }
+function toggleProcAuto(){
+  procAutoOn=!procAutoOn;
+  if(procAutoOn){
+    procTimer=PROC_INTERVAL;
+    startProcTimer();
+  }else{
+    stopProcTimer();
+  }
+  updateProcBar();
+}
 function startProcTimer(){
   if(procTimerHandle)clearInterval(procTimerHandle);
   procTimerHandle=setInterval(()=>{
+    if(!procAutoOn)return;
     procTimer--;
     if(procTimer<=0){
       procTimer=PROC_INTERVAL;
@@ -747,6 +771,9 @@ function startProcTimer(){
     }
     updateProcBar();
   },1000);
+}
+function stopProcTimer(){
+  if(procTimerHandle){clearInterval(procTimerHandle);procTimerHandle=null;}
 }
 
 /* ── render ── */
@@ -1160,7 +1187,7 @@ function autoShiftCheck(){
 const{date,shift}=calcDS(new Date());
 viewDate=date;viewShift=shift;
 document.getElementById('date-lbl').textContent=viewDate;
-renderTabs();renderProc();connect();startProcTimer();
+renderTabs();renderProc();connect();updateProcBar();
 window.onLangChange=()=>{renderTabs();renderAll();};
 setInterval(renderAll,60000);
 setInterval(autoShiftCheck,60000);
