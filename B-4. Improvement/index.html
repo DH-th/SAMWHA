@@ -43,6 +43,15 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .btn-quick{background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.35);}
 .btn-icon{padding:8px 10px;font-size:15px;}
 
+/* 등록 버튼 — 화면 하단 중앙 고정, 엄지로 누르기 쉬운 위치 */
+.fab-create{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:100;
+  padding:16px 34px;border:none;border-radius:999px;font-size:15px;font-weight:900;color:#fff;cursor:pointer;
+  display:flex;align-items:center;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.28);transition:transform .12s,box-shadow .12s;
+  font-family:inherit;white-space:nowrap;}
+.fab-create:active{transform:translateX(-50%) scale(.95);}
+.fab-create.quick{background:linear-gradient(135deg,#D97706,#F59E0B);}
+.fab-create.plan{background:linear-gradient(135deg,#7C3AED,#9333EA);}
+
 /* ── 부서 전환(Quick / Plan) ── */
 .dept-switch{max-width:1240px;margin:14px auto 0;padding:0 18px;display:flex;gap:10px;position:relative;z-index:1;}
 .dept-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:16px;
@@ -78,7 +87,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .sc.a .sc-v{color:var(--accent);} .sc.b .sc-v{color:var(--amber);} .sc.c .sc-v{color:var(--green);}
 
 /* ── grid ── */
-.grid-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 60px;}
+.grid-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 100px;}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
 .card{position:relative;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shm);
   cursor:pointer;opacity:0;transform:translateY(16px) scale(.98);animation:cardIn .5s cubic-bezier(.2,.8,.3,1) forwards;transition:box-shadow .2s,transform .2s;}
@@ -285,7 +294,6 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
     <button class="btn btn-ghost btn-icon" onclick="openPointsModal()" title="이달의 처리 순위">🏆</button>
     <button class="btn btn-ghost btn-icon" onclick="openPersonnelModal()" title="처리자 명부 관리">👤</button>
-    <button class="btn btn-quick" id="hdr-create-btn" onclick="openQuickModal()">⚡ Quick 등록</button>
   </div>
 </header>
 
@@ -308,6 +316,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <div class="grid-wrap">
   <div class="card-grid" id="card-grid"></div>
 </div>
+
+<button class="fab-create quick" id="fab-create" onclick="openQuickModal()">⚡ Quick 등록</button>
 
 <!-- 새 활동 등록 모달 -->
 <div class="mbg" id="new-mbg" onclick="if(event.target===this)closeNewModal()">
@@ -534,15 +544,15 @@ function switchSection(sec){
   document.getElementById('dept-btn-quick').classList.toggle('on',sec==='quick');
   document.getElementById('dept-btn-plan').classList.toggle('on',sec==='plan');
   document.getElementById('cat-filter').style.display=sec==='plan'?'':'none';
-  const createBtn=document.getElementById('hdr-create-btn');
+  const fab=document.getElementById('fab-create');
   if(sec==='quick'){
-    createBtn.className='btn btn-quick';
-    createBtn.textContent='⚡ Quick 등록';
-    createBtn.onclick=openQuickModal;
+    fab.className='fab-create quick';
+    fab.textContent='⚡ Quick 등록';
+    fab.onclick=openQuickModal;
   }else{
-    createBtn.className='btn btn-primary';
-    createBtn.textContent='📅 Plan 등록';
-    createBtn.onclick=openNewModal;
+    fab.className='fab-create plan';
+    fab.textContent='📅 Plan 등록';
+    fab.onclick=openNewModal;
   }
   render();
 }

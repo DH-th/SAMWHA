@@ -48,6 +48,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
 
 /* ── page ── */
 .page{max-width:760px;margin:0 auto;padding:16px 14px 48px;}
+.page.wide{max-width:1100px;}
 
 /* ── card ── */
 .card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;
@@ -331,13 +332,25 @@ button.add-btn:hover{background:linear-gradient(135deg,#0A7A70,#086B62);}
     <div style="font-size:10px;color:var(--muted);margin-top:4px" data-i18n="recEditHint">แก้ไขจำนวน·วันที่·กะ ของบันทึก แล้วกด 💾 / ลบด้วย 🗑</div>
   </div>
   <div class="card">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="ptoggle" id="rec-shift-btns" style="margin-bottom:0">
+        <button class="pbtn on" data-v="" onclick="setRecShiftFilter('')" data-i18n="recAllShift">ทั้งหมด</button>
+        <button class="pbtn" data-v="day" onclick="setRecShiftFilter('day')">Day</button>
+        <button class="pbtn" data-v="night" onclick="setRecShiftFilter('night')">Night</button>
+      </div>
+      <div class="ptoggle" id="rec-proc-btns" style="margin-bottom:0">
+        <button class="pbtn on" data-v="" onclick="setRecProcFilter('')" data-i18n="recAllProc">ทั้งหมด</button>
+        <button class="pbtn" data-v="S1" onclick="setRecProcFilter('S1')">S1</button>
+        <button class="pbtn" data-v="S2" onclick="setRecProcFilter('S2')">S2</button>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <select class="txt" id="rec-f-line" style="width:auto" onchange="renderProdRecords()"></select>
       <input class="txt" id="rec-f-model" style="flex:1;min-width:130px" oninput="renderProdRecords()" data-i18n="recSearchModel" placeholder="🔍 โมเดล...">
       <span id="rec-count" style="font-size:11px;color:var(--muted);font-weight:700"></span>
     </div>
     <div style="overflow-x:auto">
-      <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:780px"></table>
+      <table id="rec-tbl" style="width:100%;border-collapse:collapse;font-size:12px;min-width:850px;table-layout:fixed"></table>
       <div id="rec-empty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px" data-i18n="recNone">ไม่มีบันทึก</div>
     </div>
   </div>
@@ -553,6 +566,7 @@ function showTab(t){
   const ids=['plant','lines','records','qr'];
   ids.forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'':'none');
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',ids[i]===t));
+  document.querySelector('.page').classList.toggle('wide',t==='records');
   if(t==='qr'){loadLinesCfg();renderLSel();}
   if(t==='lines'){loadLinesCfg();renderLinesCfg();}
   if(t==='records'){initRecDate();loadProdRecords();}
@@ -786,6 +800,18 @@ const REC_DAY_SLOTS=['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15
 const REC_NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 const REC_ALL_SLOTS=[...REC_DAY_SLOTS,...REC_NIGHT_SLOTS];
 let prodRecs=[], recDate='';
+let recFilterShift='', recFilterProc='';
+
+function setRecShiftFilter(v){
+  recFilterShift=v;
+  document.querySelectorAll('#rec-shift-btns .pbtn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  renderProdRecords();
+}
+function setRecProcFilter(v){
+  recFilterProc=v;
+  document.querySelectorAll('#rec-proc-btns .pbtn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  renderProdRecords();
+}
 
 function initRecDate(){
   if(recDate)return;
@@ -816,14 +842,21 @@ function renderProdRecords(){
     fLine.innerHTML=`<option value="">${t('recAllLines')}</option>`+lines.map(l=>`<option value="${l}"${l===lineVal?' selected':''}>${l}</option>`).join('');
   }
   const modelQ=(fModel?fModel.value:'').trim().toLowerCase();
-  let list=prodRecs.filter(r=>(!lineVal||r.line===lineVal)&&(!modelQ||(r.modelName||'').toLowerCase().includes(modelQ)));
+  let list=prodRecs.filter(r=>
+    (!lineVal||r.line===lineVal)&&
+    (!modelQ||(r.modelName||'').toLowerCase().includes(modelQ))&&
+    (!recFilterShift||r.shift===recFilterShift)&&
+    (!recFilterProc||r.process===recFilterProc));
   if(cnt)cnt.textContent=`${list.length} / ${prodRecs.length}`;
   if(!list.length){tbl.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
   const sorted=[...list].sort((a,b)=>(a.slot>b.slot?1:-1)||(a.line>b.line?1:-1));
   const slotRange=x=>{const h=parseInt(x);return`${x} - ${String((h+1)%24).padStart(2,'0')}:00`;};
   const slotOpts=s=>REC_ALL_SLOTS.map(x=>`<option value="${x}"${x===s?' selected':''}>${slotRange(x)}</option>`).join('');
-  tbl.innerHTML=`<thead><tr style="background:var(--s2,#f0f2f5);text-align:left">
+  tbl.innerHTML=`<colgroup>
+    <col style="width:60px"><col style="width:150px"><col style="width:66px"><col style="width:150px">
+    <col style="width:90px"><col style="width:80px"><col style="width:150px"><col style="width:96px">
+  </colgroup><thead><tr style="background:var(--s2,#f0f2f5);text-align:left">
     <th style="padding:6px 8px">${t('recLine')}</th>
     <th style="padding:6px 8px">${t('recModel')}</th>
     <th style="padding:6px 8px">${t('recProc')}</th>
@@ -833,14 +866,16 @@ function renderProdRecords(){
     <th style="padding:6px 8px">${t('recDate')}</th>
     <th style="padding:6px 8px"></th>
   </tr></thead><tbody>`+sorted.map(r=>`<tr data-id="${r.id}" style="border-bottom:1px solid var(--border)">
-    <td style="padding:5px 8px;font-weight:700">${r.line||''}</td>
-    <td style="padding:5px 8px">${r.modelName||''}</td>
-    <td style="padding:5px 8px">${r.process||''}</td>
-    <td style="padding:5px 8px"><select class="txt rc-slot" style="width:130px;padding:4px">${slotOpts(r.slot)}</select></td>
+    <td style="padding:5px 8px;font-weight:700;white-space:nowrap">${r.line||''}</td>
+    <td style="padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0" title="${(r.modelName||'').replace(/"/g,'&quot;')}">${r.modelName||''}</td>
+    <td style="padding:5px 8px"><select class="txt rc-proc" style="width:60px;padding:4px">
+      <option value="S1"${r.process==='S1'?' selected':''}>S1</option>
+      <option value="S2"${r.process==='S2'?' selected':''}>S2</option></select></td>
+    <td style="padding:5px 8px"><select class="txt rc-slot" style="width:140px;padding:4px">${slotOpts(r.slot)}</select></td>
     <td style="padding:5px 8px"><select class="txt rc-shift" style="width:80px;padding:4px">
       <option value="day"${r.shift==='day'?' selected':''}>Day</option>
       <option value="night"${r.shift==='night'?' selected':''}>Night</option></select></td>
-    <td style="padding:5px 8px"><input type="number" class="txt rc-qty" value="${r.qty||0}" min="0" style="width:80px;padding:4px"></td>
+    <td style="padding:5px 8px"><input type="number" class="txt rc-qty" value="${r.qty||0}" min="0" style="width:70px;padding:4px"></td>
     <td style="padding:5px 8px"><input type="date" class="txt rc-pdate" value="${r.prodDate||recDate}" style="width:140px;padding:4px"></td>
     <td style="padding:5px 8px;white-space:nowrap">
       <button class="add-btn" style="padding:5px 9px" onclick="saveRec('${r.id}')">💾</button>
@@ -854,7 +889,8 @@ function saveRec(id){
   const newDate=tr.querySelector('.rc-pdate').value||orig.prodDate;
   const slot=tr.querySelector('.rc-slot').value;
   const shift=tr.querySelector('.rc-shift').value;
-  const upd=Object.assign({},orig,{qty,prodDate:newDate,slot,shift});
+  const process=tr.querySelector('.rc-proc').value;
+  const upd=Object.assign({},orig,{qty,prodDate:newDate,slot,shift,process});
   const oldDate=orig.prodDate||recDate;
   if(newDate!==oldDate){
     ws.send(JSON.stringify({type:'DELETE_PRODUCTION',id,prodDate:oldDate}));
