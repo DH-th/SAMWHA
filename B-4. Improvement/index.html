@@ -237,6 +237,33 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .pts-bar{height:100%;background:linear-gradient(90deg,var(--accent),#C026D3);border-radius:99px;}
 .pts-count{font-size:14px;font-weight:900;color:var(--accent);min-width:26px;text-align:right;flex-shrink:0;}
 
+/* ── 현장 레이아웃 보드 (요약 카드와 리스트 사이) ── */
+.layout-wrap{max-width:1240px;margin:12px auto 0;padding:0 18px;position:relative;z-index:1;}
+.layout-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:10px;box-shadow:var(--sh);}
+.layout-inner{position:relative;width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
+.layout-inner>img{width:100%;display:block;}
+.ly-area{position:absolute;border:1.5px dashed rgba(124,58,237,.45);border-radius:6px;pointer-events:none;}
+.ly-area .ly-name{position:absolute;top:2px;left:4px;font-size:9px;font-weight:800;color:rgba(109,40,217,.85);
+  background:rgba(255,255,255,.72);padding:0 4px;border-radius:4px;white-space:nowrap;}
+.ly-marker{position:absolute;width:42px;height:42px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);
+  cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);border:3px solid var(--accent2);background:var(--s3);
+  display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .15s;}
+.ly-marker:hover{transform:translate(-50%,-50%) scale(1.12);z-index:5;}
+.ly-marker img{width:100%;height:100%;object-fit:cover;}
+.ly-marker.urg-caution{border-color:#F59E0B;}
+.ly-marker.urg-danger{border-color:#DC2626;animation:urgPulse 1.1s infinite;}
+
+/* ── 레이아웃 에디터 (사진 업로드 + 드래그로 에어리어 그리기) ── */
+#ly-canvas-wrap{position:relative;border-radius:12px;overflow:hidden;background:var(--s3);cursor:crosshair;
+  touch-action:none;user-select:none;-webkit-user-select:none;margin-bottom:14px;}
+#ly-canvas-wrap>img{width:100%;display:block;pointer-events:none;}
+.lye-box{position:absolute;border:2px solid var(--accent);background:rgba(124,58,237,.12);border-radius:6px;pointer-events:none;}
+.lye-box .lye-name{position:absolute;top:2px;left:4px;font-size:10px;font-weight:900;color:var(--accent);
+  background:rgba(255,255,255,.85);padding:0 5px;border-radius:4px;white-space:nowrap;}
+.lye-draft{position:absolute;border:2px dashed #F59E0B;background:rgba(245,158,11,.15);border-radius:6px;pointer-events:none;}
+.ly-empty{padding:34px 12px;text-align:center;font-size:12px;color:var(--muted);font-weight:600;}
+.ly-hint{font-size:11px;color:var(--muted);font-weight:600;margin:8px 0 12px;}
+
 /* lightbox */
 #lightbox{position:fixed;inset:0;background:rgba(10,8,20,.92);z-index:400;display:none;align-items:center;justify-content:center;}
 #lightbox.on{display:flex;}
@@ -294,6 +321,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
     <button class="btn btn-ghost btn-icon" onclick="openPointsModal()" title="이달의 처리 순위">🏆</button>
     <button class="btn btn-ghost btn-icon" onclick="openPersonnelModal()" title="처리자 명부 관리">👤</button>
+    <button class="btn btn-ghost btn-icon" onclick="openLayoutModal()" title="현장 레이아웃 관리">🗺</button>
   </div>
 </header>
 
@@ -311,6 +339,13 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
     <input type="search" id="search-inp" data-i18n="searchPlaceholder" placeholder="🔍 ค้นหาชื่อกิจกรรม..." oninput="render()">
   </div>
   <div class="summary" id="summary"></div>
+</div>
+
+<!-- 현장 레이아웃 보드: 진행중 항목을 위치·긴급도 색으로 표시 (완료는 표시 안 함) -->
+<div class="layout-wrap" id="layout-board" style="display:none">
+  <div class="layout-card">
+    <div class="layout-inner" id="layout-inner"></div>
+  </div>
 </div>
 
 <div class="grid-wrap">
@@ -333,6 +368,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
           <select id="f-category"></select>
         </div>
       </div>
+      <div class="fld"><label>에어리어 (레이아웃 위치)</label><select id="f-area"></select></div>
       <div class="fld"><label data-i18n="activityDate">วันที่กิจกรรม</label><input id="f-date" type="date"></div>
       <div class="fld"><label data-i18n="description">รายละเอียด</label><textarea id="f-desc"></textarea></div>
       <div class="fld">
@@ -358,8 +394,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="modal">
     <div class="m-hd"><span class="m-title">⚡ Quick 등록</span><button class="m-x" onclick="closeQuickModal()">✕</button></div>
     <div class="m-body">
-      <div class="fld"><label>라인</label>
-        <select id="q-line"></select>
+      <div class="fld"><label>에어리어 (레이아웃 위치)</label>
+        <select id="q-area"></select>
       </div>
       <div class="fld"><label>어떤 문제인가요?</label>
         <textarea id="q-desc" placeholder="예: 3라인 출구 바닥에 기름 흘림"></textarea>
@@ -401,6 +437,24 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" style="flex:1" onclick="closePersonnelModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 현장 레이아웃 관리 모달 -->
+<div class="mbg" id="layout-mbg" onclick="if(event.target===this)closeLayoutModal()">
+  <div class="modal" style="width:min(780px,96vw)">
+    <div class="m-hd"><span class="m-title">🗺 현장 레이아웃 관리</span><button class="m-x" onclick="closeLayoutModal()">✕</button></div>
+    <div class="m-body">
+      <button class="btn btn-ghost" onclick="document.getElementById('inp-layout').click()">🖼 레이아웃 사진 업로드 / 교체</button>
+      <input type="file" id="inp-layout" accept="image/*" style="display:none" onchange="uploadLayoutImage(this.files)">
+      <div class="ly-hint">사진 위를 드래그하면 네모 박스(에어리어)가 그려집니다. 크기는 드래그로 조정하세요.</div>
+      <div id="ly-canvas-wrap"></div>
+      <div class="gal-title">등록된 에어리어</div>
+      <ul class="pplist" id="ly-area-list"></ul>
+    </div>
+    <div class="m-foot">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeLayoutModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -479,6 +533,24 @@ let deepLinkId=new URLSearchParams(location.search).get('open');
 
 // 처리자(사번+이름) 명부 — 서버(improvement_personnel.json)와 동기화
 let improvementPersonnel=[];
+// 현장 레이아웃(배치도 사진 + 에어리어 박스) — 서버(layout.json)와 동기화
+let improvementLayout={image:'',areas:[]};
+function renderAreaOptions(selId,selectedId){
+  const sel=document.getElementById(selId);
+  if(!sel)return;
+  const areas=improvementLayout.areas||[];
+  if(!areas.length){
+    sel.innerHTML=`<option value="">에어리어 없음 (🗺에서 등록)</option>`;
+    return;
+  }
+  sel.innerHTML=`<option value="">-- 에어리어 선택 --</option>`+
+    areas.map(ar=>`<option value="${ar.id}"${ar.id===selectedId?' selected':''}>${escapeHtml(ar.name)}</option>`).join('');
+}
+function pickedArea(selId){
+  const sel=document.getElementById(selId);
+  if(!sel||!sel.value)return null;
+  return (improvementLayout.areas||[]).find(a=>a.id===sel.value)||null;
+}
 const MY_PERSON_KEY='improvement_my_person_id'; // 이 기기의 사용자(처리자) — 처리자 관리에서 지정
 let pointsMonth=new Date().toISOString().slice(0,7); // YYYY-MM
 
@@ -597,6 +669,7 @@ function updateQuickAlertBadge(){
 /* ── 카드 그리드 ── */
 function render(){
   updateQuickAlertBadge();
+  renderLayoutBoard();
   if(curSection==='plan')renderCatOptions();
   renderSummary();
   const grid=document.getElementById('card-grid');
@@ -657,8 +730,8 @@ function render(){
       }
     }
     const tagsHtml=isQuick
-      ? `<span class="tag-line">${escapeHtml(a.line||'-')}</span><span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
-      : `<span class="tag-line">${escapeHtml(a.line||'-')}</span><span class="tag-cat">${escapeHtml(a.category||t('catOther'))}</span>`;
+      ? `<span class="tag-line">${escapeHtml(a.areaName||a.line||'-')}</span><span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
+      : `<span class="tag-line">${escapeHtml(a.line||'-')}</span>${a.areaName?`<span class="tag-cat">📍 ${escapeHtml(a.areaName)}</span>`:''}<span class="tag-cat">${escapeHtml(a.category||t('catOther'))}</span>`;
     const metaLeft=isQuick
       ? (isDone?`완료 ${fmtDT(a.completedAt||a.afterDate)}`:formatElapsed(elapsedMinutes(a.createdAt)))
       : (isDone?(a.afterDate||''):(a.activityDate||''));
@@ -693,6 +766,7 @@ async function openNewModal(){
   document.getElementById('f-desc').value='';
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   renderLineOptions();
+  renderAreaOptions('f-area');
   await fetchScheduleTypes();
   renderCatOptions();
   pendingBefore=[];
@@ -748,12 +822,15 @@ async function submitNewActivity(){
   if(!title){toast(t('requireTitle'));return;}
   if(!date){toast(t('requireDate'));return;}
   if(!pendingBefore.length){toast(t('requirePhotoBefore'));return;}
+  const areaP=pickedArea('f-area');
+  if((improvementLayout.areas||[]).length&&!areaP){toast('에어리어를 선택하세요');return;}
   toast(t('toastUploading'));
   const urls=await uploadPhotos(pendingBefore);
   const activity={
     id:'imp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     kind:'big',
     title, line:document.getElementById('f-line').value, category:document.getElementById('f-category').value,
+    areaId:areaP?areaP.id:'', areaName:areaP?areaP.name:'',
     description:document.getElementById('f-desc').value.trim(),
     activityDate:date, status:'planned',
     beforePhotos:urls, afterPhotos:[], afterDate:null
@@ -768,7 +845,7 @@ async function submitNewActivity(){
 /* ── Quick(현장 즉시개선) 등록 — 스케줄표에 올라가지 않음 ── */
 function openQuickModal(){
   document.getElementById('q-desc').value='';
-  renderLineOptions('q-line');
+  renderAreaOptions('q-area');
   pendingQuick=[];
   renderThumbs('quick');
   document.getElementById('quick-mbg').classList.add('on');
@@ -777,13 +854,16 @@ function closeQuickModal(){document.getElementById('quick-mbg').classList.remove
 async function submitQuickActivity(){
   const desc=document.getElementById('q-desc').value.trim();
   if(!desc){toast(t('requireTitle'));return;}
+  const areaQ=pickedArea('q-area');
+  if((improvementLayout.areas||[]).length&&!areaQ){toast('에어리어를 선택하세요');return;}
   if(!pendingQuick.length){toast(t('requirePhotoBefore'));return;}
   toast(t('toastUploading'));
   const urls=await uploadPhotos(pendingQuick);
   const activity={
     id:'imp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     kind:'quick',
-    title:desc, line:document.getElementById('q-line').value, category:'',
+    title:desc, line:'', category:'',
+    areaId:areaQ?areaQ.id:'', areaName:areaQ?areaQ.name:'',
     description:desc,
     activityDate:new Date().toISOString().slice(0,10), status:'planned',
     beforePhotos:urls, afterPhotos:[], afterDate:null
@@ -822,11 +902,13 @@ function openDetail(id){
   }
   const datesHtml=isQuick?`
     <div class="detail-dates">
+      ${a.areaName?`<span>에어리어: <b>${escapeHtml(a.areaName)}</b></span>`:''}
       <span>등록: <b>${fmtDT(a.createdAt)}</b></span>
       ${isDone?`<span>완료: <b>${fmtDT(a.completedAt||a.afterDate)}</b></span>`:''}
       ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
     </div>${urgLine}`:`
     <div class="detail-dates">
+      ${a.areaName?`<span>에어리어: <b>${escapeHtml(a.areaName)}</b></span>`:''}
       <span>${t('plannedDate')}: <b>${a.activityDate||'-'}</b></span>
       ${isDone?`<span>${t('completedDate')}: <b>${a.afterDate||'-'}</b></span>`:''}
       ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
@@ -1047,6 +1129,143 @@ function renderPoints(){
     </div>`).join('');
 }
 
+/* ── 현장 레이아웃 보드 — 진행중 항목을 위치·긴급도 색으로 표시 ── */
+function renderLayoutBoard(){
+  const board=document.getElementById('layout-board');
+  if(!board)return;
+  const L=improvementLayout;
+  if(!L.image){board.style.display='none';return;}
+  board.style.display='';
+  // 완료는 표시하지 않음 — 현재 부서의 미완료 + 에어리어 지정 건만
+  const items=sectionList().filter(a=>a.status!=='completed'&&a.areaId);
+  const byArea={};
+  items.forEach(a=>{(byArea[a.areaId]=byArea[a.areaId]||[]).push(a);});
+  let h=`<img src="${imgUrl(L.image)}">`;
+  (L.areas||[]).forEach(ar=>{
+    h+=`<div class="ly-area" style="left:${ar.x*100}%;top:${ar.y*100}%;width:${ar.w*100}%;height:${ar.h*100}%">
+      <span class="ly-name">${escapeHtml(ar.name)}</span></div>`;
+  });
+  (L.areas||[]).forEach(ar=>{
+    const list=byArea[ar.id]||[];
+    list.forEach((a,i)=>{
+      const cx=(ar.x+ar.w/2)*100, cy=(ar.y+ar.h/2)*100;
+      const dx=(i-(list.length-1)/2)*46;   // 같은 에어리어 여러 건 → 옆으로 나란히
+      const urg=a.kind==='quick'?quickUrgency(a):'ok';
+      const before=(a.beforePhotos||[])[0];
+      h+=`<div class="ly-marker urg-${urg}" style="left:calc(${cx}% + ${dx}px);top:${cy}%"
+        onclick="openDetail('${a.id}')" title="${escapeHtml(a.title||'')}">${before?`<img src="${imgUrl(before)}" loading="lazy">`:'🛠'}</div>`;
+    });
+  });
+  document.getElementById('layout-inner').innerHTML=h;
+}
+
+/* ── 레이아웃 에디터: 사진 업로드 + 드래그로 에어리어(박스) 그리기 ── */
+let lyDrag=null;
+function openLayoutModal(){
+  renderLayoutEditor();
+  document.getElementById('layout-mbg').classList.add('on');
+}
+function closeLayoutModal(){document.getElementById('layout-mbg').classList.remove('on');}
+function saveLayout(){
+  ws.send(JSON.stringify({type:'UPDATE_IMPROVEMENT_LAYOUT',layout:improvementLayout}));
+}
+async function uploadLayoutImage(files){
+  if(!files||!files.length)return;
+  toast(t('toastUploading'));
+  const urls=await uploadPhotos([{file:files[0]}]);
+  if(!urls.length){toast('업로드 실패');return;}
+  improvementLayout.image=urls[0];
+  saveLayout();
+  renderLayoutEditor();
+  document.getElementById('inp-layout').value='';
+  toast('레이아웃 사진이 등록되었습니다');
+}
+function renderLayoutEditor(){
+  const wrap=document.getElementById('ly-canvas-wrap');
+  if(!wrap)return;
+  if(!improvementLayout.image){
+    wrap.innerHTML=`<div class="ly-empty">아직 레이아웃 사진이 없습니다.<br>위 버튼으로 현장 배치도 사진을 올려주세요.</div>`;
+  }else{
+    let h=`<img src="${imgUrl(improvementLayout.image)}" draggable="false">`;
+    (improvementLayout.areas||[]).forEach(ar=>{
+      h+=`<div class="lye-box" style="left:${ar.x*100}%;top:${ar.y*100}%;width:${ar.w*100}%;height:${ar.h*100}%">
+        <span class="lye-name">${escapeHtml(ar.name)}</span></div>`;
+    });
+    if(lyDrag){
+      const x=Math.min(lyDrag.x1,lyDrag.x2),y=Math.min(lyDrag.y1,lyDrag.y2);
+      const w=Math.abs(lyDrag.x2-lyDrag.x1),ht=Math.abs(lyDrag.y2-lyDrag.y1);
+      h+=`<div class="lye-draft" style="left:${x*100}%;top:${y*100}%;width:${w*100}%;height:${ht*100}%"></div>`;
+    }
+    wrap.innerHTML=h;
+  }
+  renderLayoutAreaList();
+}
+function renderLayoutAreaList(){
+  const ul=document.getElementById('ly-area-list');
+  if(!ul)return;
+  const areas=improvementLayout.areas||[];
+  if(!areas.length){ul.innerHTML=`<li class="pp-empty">등록된 에어리어가 없습니다</li>`;return;}
+  ul.innerHTML=areas.map((ar,i)=>`
+    <li class="ppitem">
+      <input type="text" value="${escapeHtml(ar.name)}" onchange="renameArea(${i},this.value)">
+      <button class="pp-del" onclick="deleteArea(${i})">×</button>
+    </li>`).join('');
+}
+function renameArea(i,v){
+  const name=(v||'').trim();
+  if(!name){renderLayoutAreaList();return;}
+  improvementLayout.areas[i].name=name;
+  saveLayout();renderLayoutEditor();
+}
+function deleteArea(i){
+  const ar=improvementLayout.areas[i];
+  if(!confirm(`'${ar.name}' 에어리어를 삭제할까요?`))return;
+  improvementLayout.areas.splice(i,1);
+  saveLayout();renderLayoutEditor();
+}
+function lyPos(ev){
+  const wrap=document.getElementById('ly-canvas-wrap');
+  const r=wrap.getBoundingClientRect();
+  return{
+    x:Math.min(Math.max((ev.clientX-r.left)/r.width,0),1),
+    y:Math.min(Math.max((ev.clientY-r.top)/r.height,0),1)
+  };
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const wrap=document.getElementById('ly-canvas-wrap');
+  if(!wrap)return;
+  wrap.addEventListener('pointerdown',ev=>{
+    if(!improvementLayout.image)return;
+    ev.preventDefault();
+    const p=lyPos(ev);
+    lyDrag={x1:p.x,y1:p.y,x2:p.x,y2:p.y};
+    wrap.setPointerCapture(ev.pointerId);
+  });
+  wrap.addEventListener('pointermove',ev=>{
+    if(!lyDrag)return;
+    const p=lyPos(ev);
+    lyDrag.x2=p.x;lyDrag.y2=p.y;
+    renderLayoutEditor();
+  });
+  wrap.addEventListener('pointerup',ev=>{
+    if(!lyDrag)return;
+    const p=lyPos(ev);
+    lyDrag.x2=p.x;lyDrag.y2=p.y;
+    const x=Math.min(lyDrag.x1,lyDrag.x2),y=Math.min(lyDrag.y1,lyDrag.y2);
+    const w=Math.abs(lyDrag.x2-lyDrag.x1),h=Math.abs(lyDrag.y2-lyDrag.y1);
+    lyDrag=null;
+    if(w>0.02&&h>0.02){
+      const name=prompt('에어리어 이름을 입력하세요 (예: 1라인 입구)');
+      if(name&&name.trim()){
+        improvementLayout.areas=improvementLayout.areas||[];
+        improvementLayout.areas.push({id:'ar_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:name.trim(),x,y,w,h});
+        saveLayout();
+      }
+    }
+    renderLayoutEditor();
+  });
+});
+
 /* ── WS ── */
 function connect(){
   ws=new WebSocket(`wss://${TUNNEL}/ws/improvement`);
@@ -1070,6 +1289,13 @@ function connect(){
         renderPersonnelManagerList();
       }
       if(document.getElementById('after-mbg').classList.contains('on'))renderAfterProcessorHint();
+    }
+    else if(m.type==='INIT_IMPROVEMENT_LAYOUT'||m.type==='IMPROVEMENT_LAYOUT_UPDATED'){
+      improvementLayout=m.data||{image:'',areas:[]};
+      renderLayoutBoard();
+      if(document.getElementById('layout-mbg').classList.contains('on'))renderLayoutEditor();
+      if(document.getElementById('quick-mbg').classList.contains('on'))renderAreaOptions('q-area');
+      if(document.getElementById('new-mbg').classList.contains('on'))renderAreaOptions('f-area');
     }
   };
   ws.onclose=()=>{document.getElementById('cdot').className='dot';document.getElementById('ctxt').textContent=t('disconnected');setTimeout(connect,3000);};
