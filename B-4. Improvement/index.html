@@ -239,9 +239,9 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 /* ── 현장 레이아웃 보드 (요약 카드와 리스트 사이) ── */
 .layout-wrap{max-width:1240px;margin:12px auto 0;padding:0 18px;position:relative;z-index:1;}
-.layout-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:10px;box-shadow:var(--sh);}
-.layout-inner{position:relative;width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
-.layout-inner>img{width:100%;display:block;}
+.layout-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:10px;box-shadow:var(--sh);text-align:center;}
+.layout-inner{position:relative;display:inline-block;max-width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
+.layout-inner>img{display:block;max-width:100%;max-height:340px;width:auto;height:auto;}
 .ly-area{position:absolute;border:1.5px dashed rgba(124,58,237,.45);border-radius:6px;pointer-events:none;}
 .ly-area .ly-name{position:absolute;top:2px;left:4px;font-size:9px;font-weight:800;color:rgba(109,40,217,.85);
   background:rgba(255,255,255,.72);padding:0 4px;border-radius:4px;white-space:nowrap;}
@@ -256,7 +256,9 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 /* ── 레이아웃 에디터 (사진 업로드 + 드래그로 에어리어 그리기) ── */
 #ly-canvas-wrap{position:relative;border-radius:12px;overflow:hidden;background:var(--s3);cursor:crosshair;
   touch-action:none;user-select:none;-webkit-user-select:none;margin-bottom:14px;}
-#ly-canvas-wrap>img{width:100%;display:block;pointer-events:none;}
+#ly-canvas-wrap.has-img{display:inline-block;max-width:100%;}
+#ly-canvas-wrap>img{display:block;max-width:100%;max-height:55vh;width:auto;height:auto;pointer-events:none;}
+.lye-center{text-align:center;}
 .lye-box{position:absolute;border:2px solid var(--accent);background:rgba(124,58,237,.12);border-radius:6px;pointer-events:none;}
 .lye-box .lye-name{position:absolute;top:2px;left:4px;font-size:10px;font-weight:900;color:var(--accent);
   background:rgba(255,255,255,.85);padding:0 5px;border-radius:4px;white-space:nowrap;}
@@ -306,6 +308,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   .card-title{font-size:12.5px;}
   .compare-hero{flex-direction:column;}
   .compare-arrow{transform:rotate(90deg);}
+  .layout-inner>img{max-height:240px;}
+  .ly-marker{width:34px;height:34px;}
 }
 .lang-sw{display:flex;gap:3px;}
 </style>
@@ -1183,6 +1187,7 @@ async function uploadLayoutImage(files){
 function renderLayoutEditor(){
   const wrap=document.getElementById('ly-canvas-wrap');
   if(!wrap)return;
+  wrap.classList.toggle('has-img',!!improvementLayout.image);
   if(!improvementLayout.image){
     wrap.innerHTML=`<div class="ly-empty">아직 레이아웃 사진이 없습니다.<br>위 버튼으로 현장 배치도 사진을 올려주세요.</div>`;
   }else{
