@@ -85,9 +85,28 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .sc-l{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px;}
 .sc-v{font-size:24px;font-weight:900;letter-spacing:-.02em;color:var(--text);}
 .sc.a .sc-v{color:var(--accent);} .sc.b .sc-v{color:var(--amber);} .sc.c .sc-v{color:var(--green);}
+/* 5S/MT 반반 분할 카드 (Quick 전용 '이번달' 자리) */
+.sc-split{display:flex;padding:0;overflow:hidden;}
+.sc-split-half{flex:1;padding:13px 10px;text-align:center;}
+.sc-split-half:first-child{border-right:1px solid var(--border);}
+.sc-split-half .sc-l{margin-bottom:4px;}
+.sc-split-half .sc-v{font-size:20px;}
+.sc-split-half.st-5s .sc-v{color:#0D9488;}
+.sc-split-half.st-mt .sc-v{color:#1F2937;}
+
+/* Quick 등록: 5S / MT 선택 */
+.subtype-toggle{display:flex;gap:8px;}
+.subtype-btn{flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:var(--s2);
+  color:var(--muted);font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;transition:all .12s;}
+.subtype-btn.on.st-5s{background:#CCFBF1;border-color:#0D9488;color:#0D9488;}
+.subtype-btn.on.st-mt{background:#1F2937;border-color:#1F2937;color:#fff;}
+.tag-subtype{font-size:10px;font-weight:900;padding:2px 9px;border-radius:999px;}
+.tag-subtype.st-5s{background:#CCFBF1;color:#0D9488;}
+.tag-subtype.st-mt{background:#1F2937;color:#fff;}
 
 /* ── grid ── */
 .grid-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 100px;}
+.grid-wrap.has-layout-below{padding-bottom:16px;}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
 .card{position:relative;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shm);
   cursor:pointer;opacity:0;transform:translateY(16px) scale(.98);animation:cardIn .5s cubic-bezier(.2,.8,.3,1) forwards;transition:box-shadow .2s,transform .2s;}
@@ -238,7 +257,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .pts-count{font-size:14px;font-weight:900;color:var(--accent);min-width:26px;text-align:right;flex-shrink:0;}
 
 /* ── 현장 레이아웃 보드 (요약 카드와 리스트 사이) ── */
-.layout-wrap{max-width:1240px;margin:12px auto 0;padding:0 18px;position:relative;z-index:1;}
+.layout-wrap{max-width:1240px;margin:0 auto;padding:0 18px 100px;position:relative;z-index:1;}
 .layout-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:10px;box-shadow:var(--sh);text-align:center;}
 .layout-inner{position:relative;display:inline-block;max-width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
 .layout-inner>img{display:block;max-width:100%;max-height:340px;width:auto;height:auto;}
@@ -249,6 +268,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .ly-marker img{width:100%;height:100%;object-fit:cover;}
 .ly-marker.urg-caution{border-color:#F59E0B;}
 .ly-marker.urg-danger{border-color:#DC2626;animation:urgPulse 1.1s infinite;}
+.ly-marker.st-mt{border-color:#1F2937!important;}
 
 /* ── 레이아웃 관리(사진 업로드 미리보기) ── */
 #ly-canvas-wrap{position:relative;border-radius:12px;overflow:hidden;background:var(--s3);margin-bottom:14px;}
@@ -338,10 +358,16 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <div class="ctrl-wrap">
   <div class="ctrl-bar">
     <div class="ftab" data-f="favorite" onclick="setFilter('favorite')" data-i18n="filterFavorites">⭐ รายการโปรด</div>
+    <div class="ftab" data-f="5S" id="ftab-5s" onclick="setFilter('5S')" style="display:none">🧹 5S</div>
+    <div class="ftab" data-f="MT" id="ftab-mt" onclick="setFilter('MT')" style="display:none">🔧 MT</div>
     <select id="cat-filter" onchange="render()"><option value="" data-i18n-opt="allCategories">ทุกหมวดหมู่</option></select>
     <input type="search" id="search-inp" data-i18n="searchPlaceholder" placeholder="🔍 ค้นหาชื่อกิจกรรม..." oninput="render()">
   </div>
   <div class="summary" id="summary"></div>
+</div>
+
+<div class="grid-wrap">
+  <div class="card-grid" id="card-grid"></div>
 </div>
 
 <!-- 현장 레이아웃 보드: 진행중 항목을 위치·긴급도 색으로 표시 (완료는 표시 안 함) -->
@@ -349,10 +375,6 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="layout-card">
     <div class="layout-inner" id="layout-inner"></div>
   </div>
-</div>
-
-<div class="grid-wrap">
-  <div class="card-grid" id="card-grid"></div>
 </div>
 
 <button class="fab-create quick" id="fab-create" onclick="openQuickModal()">⚡ Quick 등록</button>
@@ -396,6 +418,12 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="modal">
     <div class="m-hd"><span class="m-title">⚡ Quick 등록</span><button class="m-x" onclick="closeQuickModal()">✕</button></div>
     <div class="m-body">
+      <div class="fld"><label>분류</label>
+        <div class="subtype-toggle">
+          <button type="button" class="subtype-btn st-5s" id="q-sub-5s" onclick="setQuickSubType('5S')">🧹 5S</button>
+          <button type="button" class="subtype-btn st-mt" id="q-sub-mt" onclick="setQuickSubType('MT')">🔧 MT</button>
+        </div>
+      </div>
       <div class="fld"><label>위치 지정 — 레이아웃 사진 위를 눌러 포인트를 찍으세요</label>
         <div style="text-align:center"><div id="q-map-wrap"></div></div>
       </div>
@@ -538,6 +566,13 @@ let improvementPersonnel=[];
 let improvementLayout={image:'',areas:[]};
 // Quick 등록에서 찍은 포인트 (이미지 대비 0~1 비율, 정해진 위치 없이 자유 클릭)
 let quickPos=null;
+// Quick 분류: 5S / MT
+let quickSubType='5S';
+function setQuickSubType(v){
+  quickSubType=v;
+  document.getElementById('q-sub-5s').classList.toggle('on',v==='5S');
+  document.getElementById('q-sub-mt').classList.toggle('on',v==='MT');
+}
 function renderQuickMap(){
   const wrap=document.getElementById('q-map-wrap');
   if(!wrap)return;
@@ -629,6 +664,8 @@ function switchSection(sec){
   document.getElementById('dept-btn-quick').classList.toggle('on',sec==='quick');
   document.getElementById('dept-btn-plan').classList.toggle('on',sec==='plan');
   document.getElementById('cat-filter').style.display=sec==='plan'?'':'none';
+  document.getElementById('ftab-5s').style.display=sec==='quick'?'':'none';
+  document.getElementById('ftab-mt').style.display=sec==='quick'?'':'none';
   const fab=document.getElementById('fab-create');
   if(sec==='quick'){
     fab.className='fab-create quick';
@@ -662,13 +699,24 @@ function renderSummary(){
   const total=list.length;
   const planned=list.filter(a=>a.status!=='completed').length;
   const done=list.filter(a=>a.status==='completed').length;
-  const nowM=new Date().toISOString().slice(0,7);
-  const thisMonth=list.filter(a=>(a.activityDate||'').startsWith(nowM)||(a.afterDate||'').startsWith(nowM)).length;
+  let lastCardHtml;
+  if(curSection==='quick'){
+    const p5s=list.filter(a=>a.status!=='completed'&&(a.subType||'5S')==='5S').length;
+    const pmt=list.filter(a=>a.status!=='completed'&&a.subType==='MT').length;
+    lastCardHtml=`<div class="sc sc-split">
+      <div class="sc-split-half st-5s"><div class="sc-l">🧹 5S 진행중</div><div class="sc-v">${p5s}</div></div>
+      <div class="sc-split-half st-mt"><div class="sc-l">🔧 MT 진행중</div><div class="sc-v">${pmt}</div></div>
+    </div>`;
+  }else{
+    const nowM=new Date().toISOString().slice(0,7);
+    const thisMonth=list.filter(a=>(a.activityDate||'').startsWith(nowM)||(a.afterDate||'').startsWith(nowM)).length;
+    lastCardHtml=`<div class="sc a"><div class="sc-l">${t('thisMonthCount')}</div><div class="sc-v">${thisMonth}</div></div>`;
+  }
   document.getElementById('summary').innerHTML=`
     <div class="sc${curFilter==='all'?' sel':''}" data-f="all" onclick="setFilter('all')"><div class="sc-l">${t('totalCount')}</div><div class="sc-v">${total}</div></div>
     <div class="sc b${curFilter==='planned'?' sel':''}" data-f="planned" onclick="setFilter('planned')"><div class="sc-l">${t('inProgressCount')}</div><div class="sc-v">${planned}</div></div>
     <div class="sc c${curFilter==='completed'?' sel':''}" data-f="completed" onclick="setFilter('completed')"><div class="sc-l">${t('completedCount')}</div><div class="sc-v">${done}</div></div>
-    <div class="sc a"><div class="sc-l">${t('thisMonthCount')}</div><div class="sc-v">${thisMonth}</div></div>`;
+    ${lastCardHtml}`;
 }
 
 function updateQuickAlertBadge(){
@@ -692,6 +740,8 @@ function render(){
   if(curFilter==='planned')list=list.filter(a=>a.status!=='completed');
   if(curFilter==='completed')list=list.filter(a=>a.status==='completed');
   if(curFilter==='favorite')list=list.filter(a=>a.favorite);
+  if(curFilter==='5S')list=list.filter(a=>(a.subType||'5S')==='5S');
+  if(curFilter==='MT')list=list.filter(a=>a.subType==='MT');
   if(catF)list=list.filter(a=>a.category===catF);
   if(q)list=list.filter(a=>(a.title||'').toLowerCase().includes(q));
 
@@ -742,8 +792,9 @@ function render(){
         badgeHtml=`<span class="progress-badge"><span class="pdot"></span>${t('statusPlanned')}</span>`;
       }
     }
+    const subType=a.subType||'5S';
     const tagsHtml=isQuick
-      ? `${a.pos?`<span class="tag-line">📍 위치지정</span>`:''}<span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
+      ? `<span class="tag-subtype st-${subType==='MT'?'mt':'5s'}">${subType==='MT'?'🔧 MT':'🧹 5S'}</span>${a.pos?`<span class="tag-line">📍 위치지정</span>`:''}<span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
       : `<span class="tag-line">${escapeHtml(a.line||'-')}</span><span class="tag-cat">${escapeHtml(a.category||t('catOther'))}</span>`;
     const metaLeft=isQuick
       ? (isDone?`완료 ${fmtDT(a.completedAt||a.afterDate)}`:formatElapsed(elapsedMinutes(a.createdAt)))
@@ -855,6 +906,7 @@ async function submitNewActivity(){
 function openQuickModal(){
   document.getElementById('q-desc').value='';
   quickPos=null;
+  setQuickSubType('5S');
   renderQuickMap();
   pendingQuick=[];
   renderThumbs('quick');
@@ -871,6 +923,7 @@ async function submitQuickActivity(){
   const activity={
     id:'imp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     kind:'quick',
+    subType:quickSubType,
     title:desc, line:'', category:'',
     pos:quickPos?{x:quickPos.x,y:quickPos.y}:null,
     description:desc,
@@ -921,10 +974,11 @@ function openDetail(id){
       ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
       <span>${t('createdOn')}: <b>${(a.createdAt||'').slice(0,10)}</b></span>
     </div>`;
+  const subType=a.subType||'5S';
   document.getElementById('d-body').innerHTML=`
     <div>
       <span class="detail-status ${isDone?'done':'pending'}">${isDone?t('statusCompleted'):t('statusPlanned')}</span>
-      ${!isQuick?`<span class="detail-cat">${a.category||t('catOther')}</span>`:''}
+      ${isQuick?`<span class="tag-subtype st-${subType==='MT'?'mt':'5s'}" style="margin-left:6px">${subType==='MT'?'🔧 MT':'🧹 5S'}</span>`:`<span class="detail-cat">${a.category||t('catOther')}</span>`}
     </div>
     ${datesHtml}
     ${a.description?`<div class="detail-desc">${escapeHtml(a.description)}</div>`:''}
@@ -1139,17 +1193,24 @@ function renderPoints(){
 /* ── 현장 레이아웃 보드 — 진행중 항목을 포인트 위치·긴급도 색으로 표시 (Quick 화면 전용) ── */
 function renderLayoutBoard(){
   const board=document.getElementById('layout-board');
+  const gridWrap=document.querySelector('.grid-wrap');
   if(!board)return;
   const L=improvementLayout;
-  if(!L.image||curSection!=='quick'){board.style.display='none';return;}
+  if(!L.image||curSection!=='quick'){
+    board.style.display='none';
+    if(gridWrap)gridWrap.classList.remove('has-layout-below');
+    return;
+  }
   board.style.display='';
+  if(gridWrap)gridWrap.classList.add('has-layout-below');
   // 완료는 표시하지 않음 — 미완료 + 포인트 지정 건만
   const items=sectionList().filter(a=>a.status!=='completed'&&a.pos);
   let h=`<img src="${imgUrl(L.image)}">`;
   items.forEach(a=>{
+    const isMt=a.subType==='MT';
     const urg=quickUrgency(a);
     const before=(a.beforePhotos||[])[0];
-    h+=`<div class="ly-marker urg-${urg}" style="left:${a.pos.x*100}%;top:${a.pos.y*100}%"
+    h+=`<div class="ly-marker urg-${urg}${isMt?' st-mt':''}" style="left:${a.pos.x*100}%;top:${a.pos.y*100}%"
       onclick="openDetail('${a.id}')" title="${escapeHtml(a.title||'')}">${before?`<img src="${imgUrl(before)}" loading="lazy">`:'🛠'}</div>`;
   });
   document.getElementById('layout-inner').innerHTML=h;
@@ -1226,7 +1287,11 @@ window.onLangChange=()=>render();
 // Quick 긴급도(경과 시간)는 실시간으로 바뀌므로 1분마다 갱신한다
 setInterval(()=>{ if(curSection==='quick')render(); else updateQuickAlertBadge(); },60000);
 
-document.getElementById('cat-filter').style.display='none'; // 기본 섹션이 Quick이므로 시작 시 숨김
+// 기본 섹션(Quick)에 맞춰 필터바·요약카드·등록버튼 초기 상태를 일괄 정리
+document.getElementById('dept-btn-quick').classList.add('on');
+document.getElementById('cat-filter').style.display='none';
+document.getElementById('ftab-5s').style.display='';
+document.getElementById('ftab-mt').style.display='';
 connect();
 </script>
 </body>
