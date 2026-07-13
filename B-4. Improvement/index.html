@@ -281,7 +281,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .layout-inner>img{display:block;width:100%;height:auto;}
 .ly-marker{position:absolute;width:63px;height:63px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);
   cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);border:3px solid var(--accent2);background:var(--s3);
-  display:flex;align-items:center;justify-content:center;font-size:22px;transition:transform .15s;}
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;line-height:1;text-align:center;font-style:normal;transition:transform .15s;}
 .ly-marker:hover{transform:translate(-50%,-50%) scale(1.12);z-index:5;}
 .ly-marker img{width:100%;height:100%;object-fit:cover;}
 .ly-marker.urg-caution{border-color:#F59E0B;animation:lyUrgCaution 2.2s ease-in-out infinite;}
@@ -354,24 +355,24 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <span class="h-title" data-i18n="title" data-lang-trigger onclick="cycleLang()">กิจกรรมปรับปรุง</span>
   <div class="hdr-r">
     <div class="cpill"><span class="dot" id="cdot"></span><span id="ctxt" data-i18n="connecting">กำลังเชื่อมต่อ</span></div>
-    <button class="btn btn-ghost btn-icon" onclick="openPointsModal()" title="이달의 처리 순위">🏆</button>
-    <button class="btn btn-ghost btn-icon" onclick="openPersonnelModal()" title="처리자 명부 관리">👤</button>
-    <button class="btn btn-ghost btn-icon" onclick="openLayoutModal()" title="현장 레이아웃 관리">🗺</button>
+    <button class="btn btn-ghost btn-icon" onclick="openPointsModal()" data-i18n-title="ttRanking" title="อันดับการดำเนินการ">🏆</button>
+    <button class="btn btn-ghost btn-icon" onclick="openPersonnelModal()" data-i18n-title="ttPersonnel" title="จัดการรายชื่อผู้รับผิดชอบ">👤</button>
+    <button class="btn btn-ghost btn-icon" onclick="openLayoutModal()" data-i18n-title="ttLayout" title="จัดการแผนผังพื้นที่">🗺</button>
   </div>
 </header>
 
 <div class="dept-switch">
   <button class="dept-btn quick on" id="dept-btn-quick" onclick="switchSection('quick')">
-    ⚡ Quick <span class="dept-sub">현장 즉시개선</span><span class="dept-badge" id="quick-alert-badge" style="display:none">0</span>
+    ⚡ Quick <span class="dept-sub" data-i18n="quickSub">แก้ไขทันทีในพื้นที่</span><span class="dept-badge" id="quick-alert-badge" style="display:none">0</span>
   </button>
-  <button class="dept-btn plan" id="dept-btn-plan" onclick="switchSection('plan')">📅 Plan <span class="dept-sub">정기 개선활동</span></button>
+  <button class="dept-btn plan" id="dept-btn-plan" onclick="switchSection('plan')">📅 Plan <span class="dept-sub" data-i18n="planSub">กิจกรรมปรับปรุงประจำ</span></button>
 </div>
 
 <!-- 현장 레이아웃 보드: 진행중 항목을 위치·긴급도 색으로 표시 (완료는 표시 안 함) — 최상단 배치 -->
 <div class="layout-wrap" id="layout-board" style="display:none">
   <div class="layout-card">
     <div class="layout-hd">
-      <button class="layout-fs-btn" onclick="openLayoutFs()">⛶ 전체화면</button>
+      <button class="layout-fs-btn" onclick="openLayoutFs()" data-i18n="fsBtn">⛶ เต็มหน้าจอ</button>
     </div>
     <div class="layout-inner" id="layout-inner"></div>
   </div>
@@ -436,25 +437,25 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- Quick(현장 즉시개선) 등록 모달 — 스케줄표에는 올라가지 않음 -->
 <div class="mbg" id="quick-mbg" onclick="if(event.target===this)closeQuickModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title">⚡ Quick 등록</span><button class="m-x" onclick="closeQuickModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title">⚡ Quick</span><button class="m-x" onclick="closeQuickModal()">✕</button></div>
     <div class="m-body">
-      <div class="fld"><label>분류</label>
+      <div class="fld"><label data-i18n="qSubType">ประเภท</label>
         <div class="subtype-toggle">
           <button type="button" class="subtype-btn st-5s" id="q-sub-5s" onclick="setQuickSubType('5S')">🧹 5S</button>
           <button type="button" class="subtype-btn st-mt" id="q-sub-mt" onclick="setQuickSubType('MT')">🔧 MT</button>
         </div>
       </div>
-      <div class="fld"><label>위치 지정 — 레이아웃 사진 위를 눌러 포인트를 찍으세요</label>
+      <div class="fld"><label data-i18n="qPosition">กำหนดตำแหน่ง</label>
         <div style="text-align:center"><div id="q-map-wrap"></div></div>
       </div>
-      <div class="fld"><label>어떤 문제인가요?</label>
-        <textarea id="q-desc" placeholder="예: 3라인 출구 바닥에 기름 흘림"></textarea>
+      <div class="fld"><label data-i18n="qProblem">มีปัญหาอะไร?</label>
+        <textarea id="q-desc" data-i18n="qPlaceholder" placeholder="เช่น: น้ำมันรั่วบนพื้น Line 3 ทางออก"></textarea>
       </div>
       <div class="fld">
-        <label>문제 사진 (Before)</label>
+        <label data-i18n="qBeforePhoto">รูปปัญหา (Before)</label>
         <div class="dropzone" id="dz-quick" onclick="document.getElementById('inp-quick').click()">
           <div class="dz-ic">📷</div>
-          <p>탭하여 사진 선택 또는 드래그</p>
+          <p data-i18n="dragDropHint">แตะเพื่อเลือกรูป หรือ ลากมาวาง (สูงสุด 30 รูป)</p>
           <div class="dz-count" id="dz-quick-count">0/30</div>
         </div>
         <input type="file" id="inp-quick" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files,'quick')">
@@ -462,8 +463,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
       </div>
     </div>
     <div class="m-foot">
-      <button class="btn btn-ghost" onclick="closeQuickModal()">취소</button>
-      <button class="btn btn-quick" onclick="submitQuickActivity()">등록</button>
+      <button class="btn btn-ghost" onclick="closeQuickModal()" data-i18n="qCancel">ยกเลิก</button>
+      <button class="btn btn-quick" onclick="submitQuickActivity()" data-i18n="qSubmit">ลงทะเบียน</button>
     </div>
   </div>
 </div>
@@ -471,22 +472,22 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 처리자 명부 관리 모달 -->
 <div class="mbg" id="personnel-mbg" onclick="if(event.target===this)closePersonnelModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title">👤 처리자 명부 관리</span><button class="m-x" onclick="closePersonnelModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title" data-i18n="personnelTitle">👤 จัดการรายชื่อผู้รับผิดชอบ</span><button class="m-x" onclick="closePersonnelModal()">✕</button></div>
     <div class="m-body">
       <div class="my-person-box">
-        <label>📱 이 기기의 사용자 — 나는 누구인가요?</label>
+        <label data-i18n="myDeviceUser">📱 ผู้ใช้อุปกรณ์นี้ — ฉันคือใคร?</label>
         <select id="my-person-select" onchange="setMyPerson(this.value)"></select>
         <div class="my-person-hint" id="my-person-hint"></div>
       </div>
       <ul class="pplist" id="pplist"></ul>
       <div class="pp-add-row">
-        <input type="text" id="pp-new-no" class="pp-no" placeholder="사번">
-        <input type="text" id="pp-new-name" placeholder="이름" onkeydown="if(event.key==='Enter')addPersonnel()">
-        <button class="btn btn-primary" onclick="addPersonnel()">추가</button>
+        <input type="text" id="pp-new-no" class="pp-no" data-i18n="empNo" placeholder="รหัสพนักงาน">
+        <input type="text" id="pp-new-name" data-i18n="empName" placeholder="ชื่อ" onkeydown="if(event.key==='Enter')addPersonnel()">
+        <button class="btn btn-primary" onclick="addPersonnel()" data-i18n="addPerson">เพิ่ม</button>
       </div>
     </div>
     <div class="m-foot">
-      <button class="btn btn-ghost" style="flex:1" onclick="closePersonnelModal()">닫기</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closePersonnelModal()" data-i18n="close">ปิด</button>
     </div>
   </div>
 </div>
@@ -494,16 +495,15 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 현장 레이아웃 관리 모달 -->
 <div class="mbg" id="layout-mbg" onclick="if(event.target===this)closeLayoutModal()">
   <div class="modal" style="width:min(780px,96vw)">
-    <div class="m-hd"><span class="m-title">🗺 현장 레이아웃 관리</span><button class="m-x" onclick="closeLayoutModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title" data-i18n="layoutTitle">🗺 จัดการแผนผังพื้นที่</span><button class="m-x" onclick="closeLayoutModal()">✕</button></div>
     <div class="m-body">
-      <button class="btn btn-ghost" onclick="document.getElementById('inp-layout').click()">🖼 레이아웃 사진 업로드 / 교체</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('inp-layout').click()" data-i18n="layoutUpload">🖼 อัปโหลด / เปลี่ยนรูปแผนผัง</button>
       <input type="file" id="inp-layout" accept="image/*" style="display:none" onchange="uploadLayoutImage(this.files)">
-      <div class="ly-hint">📐 권장 사이즈: <b>가로형 1600 × 900 px (16:9)</b> — 최소 1200 × 675 이상, JPG 기준 1MB 이하.<br>
-      1600px보다 크게 올려도 서버가 자동으로 1600px에 맞춰 줄여서 저장합니다.</div>
+      <div class="ly-hint" id="ly-hint-txt"></div>
       <div style="text-align:center"><div id="ly-canvas-wrap"></div></div>
     </div>
     <div class="m-foot">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeLayoutModal()">닫기</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeLayoutModal()" data-i18n="close">ปิด</button>
     </div>
   </div>
 </div>
@@ -511,7 +511,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 <!-- 월간 처리 순위(포인트) 모달 -->
 <div class="mbg" id="points-mbg" onclick="if(event.target===this)closePointsModal()">
   <div class="modal">
-    <div class="m-hd"><span class="m-title">🏆 이달의 처리 순위</span><button class="m-x" onclick="closePointsModal()">✕</button></div>
+    <div class="m-hd"><span class="m-title" data-i18n="pointsTitle">🏆 อันดับการดำเนินการเดือนนี้</span><button class="m-x" onclick="closePointsModal()">✕</button></div>
     <div class="m-body">
       <div class="pts-nav">
         <button onclick="shiftPointsMonth(-1)">‹</button>
@@ -595,7 +595,7 @@ function renderQuickMap(){
   const wrap=document.getElementById('q-map-wrap');
   if(!wrap)return;
   if(!improvementLayout.image){
-    wrap.innerHTML=`<div class="q-map-empty">레이아웃 사진이 없습니다 — 상단 🗺에서 먼저 등록하세요</div>`;
+    wrap.innerHTML=`<div class="q-map-empty">${t('noLayoutImg')}</div>`;
     wrap.style.cursor='default';
     return;
   }
@@ -640,7 +640,9 @@ function elapsedMinutes(iso){
 function formatElapsed(mins){
   const m=Math.max(0,Math.round(mins));
   const h=Math.floor(m/60), r=m%60;
-  return h>0?`${h}시간 ${r}분 경과`:`${r}분 경과`;
+  return h>0
+    ? t('hoursElapsed').replace('{h}',h).replace('{m}',r)
+    : t('minsElapsed').replace('{m}',m);
 }
 function quickUrgency(a){
   if(a.status==='completed')return 'done';
@@ -790,7 +792,7 @@ function render(){
   list=list.slice(0,shownCount);
   if(lmw){
     const rem=totalFiltered-shownCount;
-    lmw.innerHTML=rem>0?`<button class="load-more-btn" onclick="loadMore()">더 보기 (${rem}개 남음)</button>`:'';
+    lmw.innerHTML=rem>0?`<button class="load-more-btn" onclick="loadMore()">${t('loadMore')} (${rem}${t('remaining')})</button>`:'';
   }
   grid.innerHTML=list.map((a,i)=>{
     const isDone=a.status==='completed';
@@ -812,7 +814,7 @@ function render(){
     if(!isDone){
       if(isQuick){
         const urg=quickUrgency(a);
-        const label=urg==='danger'?'🔴 경고':urg==='caution'?'🟠 주의':'⏳ 대기중';
+        const label=urg==='danger'?t('urgDanger'):urg==='caution'?t('urgCaution'):t('urgOk');
         badgeHtml=`<span class="progress-badge urg-${urg}"><span class="pdot"></span>${label}</span>`;
         cardCls+=` qcard urg-${urg}`;
       }else{
@@ -821,10 +823,10 @@ function render(){
     }
     const subType=a.subType||'5S';
     const tagsHtml=isQuick
-      ? `<span class="tag-subtype st-${subType==='MT'?'mt':'5s'}">${subType==='MT'?'🔧 MT':'🧹 5S'}</span>${a.pos?`<span class="tag-line">📍 위치지정</span>`:''}<span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
+      ? `<span class="tag-subtype st-${subType==='MT'?'mt':'5s'}">${subType==='MT'?'🔧 MT':'🧹 5S'}</span>${a.pos?`<span class="tag-line">${t('posTag')}</span>`:''}<span class="tag-time">🕒 ${fmtDT(a.createdAt)}</span>`
       : `<span class="tag-line">${escapeHtml(a.line||'-')}</span><span class="tag-cat">${escapeHtml(a.category||t('catOther'))}</span>`;
     const metaLeft=isQuick
-      ? (isDone?`완료 ${fmtDT(a.completedAt||a.afterDate)}`:formatElapsed(elapsedMinutes(a.createdAt)))
+      ? (isDone?`${t('completedPrefix')} ${fmtDT(a.completedAt||a.afterDate)}`:formatElapsed(elapsedMinutes(a.createdAt)))
       : (isDone?(a.afterDate||''):(a.activityDate||''));
     return `<div class="${cardCls}" style="animation-delay:${Math.min(i*.05,.6)}s" onclick="openDetail('${a.id}')">
       <button class="fav-btn${a.favorite?' on':''}" onclick="event.stopPropagation();toggleFavorite('${a.id}')" title="${t('toggleFavorite')}">${a.favorite?'★':'☆'}</button>
@@ -943,7 +945,7 @@ function closeQuickModal(){document.getElementById('quick-mbg').classList.remove
 async function submitQuickActivity(){
   const desc=document.getElementById('q-desc').value.trim();
   if(!desc){toast(t('requireTitle'));return;}
-  if(improvementLayout.image&&!quickPos){toast('레이아웃 사진을 눌러 위치를 지정하세요');return;}
+  if(improvementLayout.image&&!quickPos){toast(t('positionRequired'));return;}
   if(!pendingQuick.length){toast(t('requirePhotoBefore'));return;}
   toast(t('toastUploading'));
   const urls=await uploadPhotos(pendingQuick);
@@ -986,19 +988,19 @@ function openDetail(id){
   let urgLine='';
   if(isQuick&&!isDone){
     const urg=quickUrgency(a);
-    const label=urg==='danger'?'🔴 경고 — 즉시 처리 필요':urg==='caution'?'🟠 주의 — 곧 기한 초과':'⏳ 대기중';
+    const label=urg==='danger'?t('urgDangerDetail'):urg==='caution'?t('urgCautionDetail'):t('urgOk');
     urgLine=`<div style="font-size:12.5px;font-weight:800;margin-top:8px;color:${urg==='danger'?'#DC2626':urg==='caution'?'#D97706':'var(--muted)'}">${label} (${formatElapsed(elapsedMinutes(a.createdAt))})</div>`;
   }
   const datesHtml=isQuick?`
     <div class="detail-dates">
-      <span>등록: <b>${fmtDT(a.createdAt)}</b></span>
-      ${isDone?`<span>완료: <b>${fmtDT(a.completedAt||a.afterDate)}</b></span>`:''}
-      ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
+      <span>${t('createdLabel')} <b>${fmtDT(a.createdAt)}</b></span>
+      ${isDone?`<span>${t('completedLabel')} <b>${fmtDT(a.completedAt||a.afterDate)}</b></span>`:''}
+      ${isDone&&a.completedBy?`<span>${t('processorLabel')} <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
     </div>${urgLine}`:`
     <div class="detail-dates">
       <span>${t('plannedDate')}: <b>${a.activityDate||'-'}</b></span>
       ${isDone?`<span>${t('completedDate')}: <b>${a.afterDate||'-'}</b></span>`:''}
-      ${isDone&&a.completedBy?`<span>처리자: <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
+      ${isDone&&a.completedBy?`<span>${t('processorLabel')} <b>${escapeHtml(a.completedBy.name||'')} (${escapeHtml(a.completedBy.empNo||'')})</b></span>`:''}
       <span>${t('createdOn')}: <b>${(a.createdAt||'').slice(0,10)}</b></span>
     </div>`;
   const subType=a.subType||'5S';
@@ -1024,7 +1026,9 @@ function closeDetail(){document.getElementById('detail-mbg').classList.remove('o
 
 function deleteActivity(){
   if(!curDetailId)return;
-  if(!confirm(t('confirmDelete')))return;
+  const a=activities.find(x=>x.id===curDetailId);
+  const msg=a&&a.kind==='quick'?t('confirmDeleteQuick'):t('confirmDelete');
+  if(!confirm(msg))return;
   ws.send(JSON.stringify({type:'DELETE_IMPROVEMENT',id:curDetailId}));
   activities=activities.filter(a=>a.id!==curDetailId);
   closeDetail();render();toast(t('toastDeleted'));
@@ -1040,8 +1044,8 @@ function renderAfterProcessorHint(){
   if(!hint)return;
   const p=myPerson();
   hint.innerHTML=p
-    ? `처리자로 <b style="color:var(--accent)">${escapeHtml(p.name)} (${escapeHtml(p.empNo)})</b>님이 기록됩니다.`
-    : `⚠️ 이 기기의 처리자가 지정되지 않았습니다. <a href="#" onclick="closeAfterModal();openPersonnelModal();return false" style="color:#DC2626;font-weight:900">👤 처리자 관리에서 먼저 본인을 지정</a>하세요.`;
+    ? t('processorRecorded').replace('{name}',escapeHtml(p.name)).replace('{empNo}',escapeHtml(p.empNo))
+    : t('processorNotSet');
 }
 function openAfterModal(){
   pendingAfter=[];renderThumbs('after');
@@ -1051,7 +1055,7 @@ function openAfterModal(){
 function closeAfterModal(){document.getElementById('after-mbg').classList.remove('on');}
 async function submitAfter(){
   const person=myPerson();
-  if(!person){toast('처리자 관리에서 먼저 본인을 지정하세요');return;}
+  if(!person){toast(t('processorRequired'));return;}
   if(!pendingAfter.length){toast(t('requirePhotoBefore'));return;}
   const a=activities.find(x=>x.id===curDetailId); if(!a)return;
   toast(t('toastUploading'));
@@ -1102,25 +1106,25 @@ function renderMyPersonSelect(){
   const sel=document.getElementById('my-person-select');
   if(!sel)return;
   const my=localStorage.getItem(MY_PERSON_KEY)||'';
-  sel.innerHTML=`<option value="">-- 선택 안 함 --</option>`+
+  sel.innerHTML=`<option value="">${t('ppNoSelect')}</option>`+
     improvementPersonnel.map(p=>`<option value="${p.id}"${p.id===my?' selected':''}>${escapeHtml(p.empNo)} · ${escapeHtml(p.name)}</option>`).join('');
   const hint=document.getElementById('my-person-hint');
   const person=improvementPersonnel.find(p=>p.id===my);
   hint.textContent=person
-    ? `✅ 이 기기는 '${person.name}'님으로 지정되어 있습니다. After 등록 시 자동으로 처리자로 기록됩니다.`
-    : '아직 지정되지 않았습니다. Quick/Plan 완료 처리를 하려면 먼저 본인을 선택하세요.';
+    ? t('ppHintSet').replace('{name}',person.name)
+    : t('ppHintUnset');
 }
 function setMyPerson(id){
   if(id)localStorage.setItem(MY_PERSON_KEY,id);
   else localStorage.removeItem(MY_PERSON_KEY);
   renderMyPersonSelect();
-  toast(id?'이 기기의 처리자가 지정되었습니다':'지정이 해제되었습니다');
+  toast(id?t('ppDeviceSet'):t('ppDeviceUnset'));
 }
 function renderPersonnelManagerList(){
   const ul=document.getElementById('pplist');
   if(!ul)return;
   if(!improvementPersonnel.length){
-    ul.innerHTML=`<li class="pp-empty">등록된 처리자가 없습니다</li>`;
+    ul.innerHTML=`<li class="pp-empty">${t('ppEmpty')}</li>`;
     return;
   }
   ul.innerHTML=improvementPersonnel.map((p,i)=>`
@@ -1136,7 +1140,7 @@ function savePersonnelList(){
 function addPersonnel(){
   const noInp=document.getElementById('pp-new-no'), nameInp=document.getElementById('pp-new-name');
   const empNo=noInp.value.trim(), name=nameInp.value.trim();
-  if(!empNo||!name){toast('사번과 이름을 입력하세요');return;}
+  if(!empNo||!name){toast(t('ppInputRequired'));return;}
   improvementPersonnel.push({id:'pp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),empNo,name});
   noInp.value='';nameInp.value='';
   renderPersonnelManagerList();
@@ -1150,7 +1154,7 @@ function renamePersonnelField(idx,field,value){
 }
 function deletePersonnel(idx){
   const p=improvementPersonnel[idx];
-  if(!confirm(`'${p.name}' 처리자를 삭제할까요?`))return;
+  if(!confirm(t('ppDeleteConfirm').replace('{name}',p.name)))return;
   improvementPersonnel.splice(idx,1);
   renderPersonnelManagerList();
   savePersonnelList();
@@ -1182,7 +1186,7 @@ function renderPoints(){
   const ranked=Object.values(counts).sort((a,b)=>b.count-a.count);
   const listEl=document.getElementById('pts-list');
   if(!ranked.length){
-    listEl.innerHTML=`<div class="pp-empty">이달의 처리 기록이 없습니다</div>`;
+    listEl.innerHTML=`<div class="pp-empty">${t('ppNoThisMonth')}</div>`;
     return;
   }
   const max=ranked[0].count;
@@ -1253,6 +1257,8 @@ document.addEventListener('webkitfullscreenchange',()=>{
 });
 
 function openLayoutModal(){
+  const hint=document.getElementById('ly-hint-txt');
+  if(hint)hint.innerHTML=t('layoutHint');
   renderLayoutEditor();
   document.getElementById('layout-mbg').classList.add('on');
 }
@@ -1264,19 +1270,19 @@ async function uploadLayoutImage(files){
   if(!files||!files.length)return;
   toast(t('toastUploading'));
   const urls=await uploadPhotos([{file:files[0]}]);
-  if(!urls.length){toast('업로드 실패');return;}
+  if(!urls.length){toast(t('uploadFailed'));return;}
   improvementLayout.image=urls[0];
   saveLayout();
   renderLayoutEditor();
   document.getElementById('inp-layout').value='';
-  toast('레이아웃 사진이 등록되었습니다');
+  toast(t('layoutUploaded'));
 }
 function renderLayoutEditor(){
   const wrap=document.getElementById('ly-canvas-wrap');
   if(!wrap)return;
   wrap.classList.toggle('has-img',!!improvementLayout.image);
   if(!improvementLayout.image){
-    wrap.innerHTML=`<div class="ly-empty">아직 레이아웃 사진이 없습니다.<br>위 버튼으로 현장 배치도 사진을 올려주세요.</div>`;
+    wrap.innerHTML=`<div class="ly-empty">${t('layoutEmpty')}</div>`;
   }else{
     wrap.innerHTML=`<img src="${imgUrl(improvementLayout.image)}" draggable="false">`;
   }
