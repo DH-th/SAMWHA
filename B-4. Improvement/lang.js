@@ -63,7 +63,7 @@
       noPhotos:'등록된 사진이 없습니다', allCategories:'전체 분류',
     }
   };
-  window.LANG = window.LANG || localStorage.getItem(KEY) || 'KO';
+  window.LANG = window.LANG || localStorage.getItem(KEY) || 'TH';
   window.t = function(k){ return (TR[window.LANG]||TR.KO)[k] || (TR.KO[k]||k); };
   window.setLang = function(l){
     window.LANG=l; localStorage.setItem(KEY,l);
@@ -81,8 +81,7 @@
     if(badge) badge.textContent=window.LANG;
   };
   window.cycleLang = function(){
-    const order=['TH','EN','KO'];
-    setLang(order[(order.indexOf(window.LANG)+1)%order.length]);
+    setLang(window.LANG==='TH'?'KO':'TH');
   };
   document.addEventListener('DOMContentLoaded',()=>{
     const trig=document.querySelector('[data-lang-trigger]');

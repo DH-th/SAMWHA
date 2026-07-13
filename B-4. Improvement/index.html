@@ -110,7 +110,11 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 /* ── grid ── */
 .grid-wrap{max-width:1240px;margin:0 auto;padding:16px 18px 100px;}
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.load-more-btn{display:block;margin:20px auto 0;padding:13px 40px;border:1.5px solid var(--border2);border-radius:999px;
+  background:var(--surface);color:var(--accent);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;
+  transition:background .12s,transform .12s;}
+.load-more-btn:hover{background:var(--accent-bg);transform:translateY(-1px);}
 .card{position:relative;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shm);
   cursor:pointer;opacity:0;transform:translateY(16px) scale(.98);animation:cardIn .5s cubic-bezier(.2,.8,.3,1) forwards;transition:box-shadow .2s,transform .2s;}
 .card:hover{box-shadow:0 14px 38px rgba(76,29,149,.20);transform:translateY(-3px);}
@@ -275,9 +279,9 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 .layout-fs-btn:hover{background:var(--s3);}
 .layout-inner{position:relative;display:block;width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
 .layout-inner>img{display:block;width:100%;height:auto;}
-.ly-marker{position:absolute;width:42px;height:42px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);
+.ly-marker{position:absolute;width:63px;height:63px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);
   cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);border:3px solid var(--accent2);background:var(--s3);
-  display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .15s;}
+  display:flex;align-items:center;justify-content:center;font-size:22px;transition:transform .15s;}
 .ly-marker:hover{transform:translate(-50%,-50%) scale(1.12);z-index:5;}
 .ly-marker img{width:100%;height:100%;object-fit:cover;}
 .ly-marker.urg-caution{border-color:#F59E0B;animation:lyUrgCaution 2.2s ease-in-out infinite;}
@@ -331,12 +335,12 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   .sc-v{font-size:17px;}
   .sc-split-half{padding:8px 4px;}
   .sc-split-half .sc-v{font-size:16px;}
-  .card-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .card-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
   .card-body{padding:10px 11px 12px;}
   .card-title{font-size:12.5px;}
   .compare-hero{flex-direction:column;}
   .compare-arrow{transform:rotate(90deg);}
-.ly-marker{width:34px;height:34px;}
+.ly-marker{width:51px;height:51px;}
 }
 .lang-sw{display:flex;gap:3px;}
 </style>
@@ -390,6 +394,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 <div class="grid-wrap">
   <div class="card-grid" id="card-grid"></div>
+  <div id="load-more-wrap"></div>
 </div>
 
 <button class="fab-create quick" id="fab-create" onclick="openQuickModal()">⚡ Quick 등록</button>
@@ -567,7 +572,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 
 <script>
 const TUNNEL='server.samhwa.cloud';
-let ws, activities=[], curFilter='all';
+let ws, activities=[], curFilter='all', shownCount=30, _lastRenderKey='';
 let pendingBefore=[], pendingAfter=[], pendingQuick=[]; // {file, url(local preview), uploadedUrl}
 let curDetailId=null;
 let lbList=[], lbIdx=0;
@@ -715,8 +720,8 @@ function renderSummary(){
     const p5s=list.filter(a=>a.status!=='completed'&&(a.subType||'5S')==='5S').length;
     const pmt=list.filter(a=>a.status!=='completed'&&a.subType==='MT').length;
     lastCardHtml=`<div class="sc sc-split">
-      <div class="sc-split-half st-5s${curFilter==='5S'?' sel':''}" onclick="setFilter('5S')"><div class="sc-l">🧹 5S 진행중</div><div class="sc-v">${p5s}</div></div>
-      <div class="sc-split-half st-mt${curFilter==='MT'?' sel':''}" onclick="setFilter('MT')"><div class="sc-l">🔧 MT 진행중</div><div class="sc-v">${pmt}</div></div>
+      <div class="sc-split-half st-5s${curFilter==='5S'?' sel':''}" onclick="setFilter('5S')"><div class="sc-l">🧹 5S</div><div class="sc-v">${p5s}</div></div>
+      <div class="sc-split-half st-mt${curFilter==='MT'?' sel':''}" onclick="setFilter('MT')"><div class="sc-l">🔧 MT</div><div class="sc-v">${pmt}</div></div>
     </div>`;
   }else{
     const nowM=new Date().toISOString().slice(0,7);
@@ -739,6 +744,7 @@ function updateQuickAlertBadge(){
 }
 
 /* ── 카드 그리드 ── */
+function loadMore(){ shownCount+=30; render(); }
 function render(){
   updateQuickAlertBadge();
   renderLayoutBoard();
@@ -747,6 +753,8 @@ function render(){
   const grid=document.getElementById('card-grid');
   const q=(document.getElementById('search-inp').value||'').trim().toLowerCase();
   const catF=curSection==='plan'?document.getElementById('cat-filter').value:'';
+  const _rk=`${curSection}|${curFilter}|${q}|${catF}`;
+  if(_rk!==_lastRenderKey){shownCount=30;_lastRenderKey=_rk;}
   let list=sectionList();
   if(curFilter==='planned')list=list.filter(a=>a.status!=='completed');
   if(curFilter==='completed')list=list.filter(a=>a.status==='completed');
@@ -772,9 +780,17 @@ function render(){
     list.sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
   }
 
+  const lmw=document.getElementById('load-more-wrap');
   if(!list.length){
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ic">${curSection==='quick'?'⚡':'🛠️'}</div><p>${t('noActivities')}</p></div>`;
+    if(lmw)lmw.innerHTML='';
     return;
+  }
+  const totalFiltered=list.length;
+  list=list.slice(0,shownCount);
+  if(lmw){
+    const rem=totalFiltered-shownCount;
+    lmw.innerHTML=rem>0?`<button class="load-more-btn" onclick="loadMore()">더 보기 (${rem}개 남음)</button>`:'';
   }
   grid.innerHTML=list.map((a,i)=>{
     const isDone=a.status==='completed';
