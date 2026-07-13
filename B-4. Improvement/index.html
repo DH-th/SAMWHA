@@ -304,25 +304,6 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   padding:10px 20px;font-size:13px;font-weight:700;z-index:500;opacity:0;transition:opacity .25s;pointer-events:none;}
 #toast.s{opacity:1;}
 
-/* print report */
-#report-print{display:none;}
-@media print{
-  body>*:not(#report-print){display:none!important;}
-  #report-print{display:block!important;padding:16px;}
-  .rp-hd{text-align:center;margin-bottom:18px;border-bottom:3px solid #7C3AED;padding-bottom:12px;}
-  .rp-hd h1{font-size:20px;font-weight:900;color:#241B3A;}
-  .rp-hd .rp-sub{font-size:12px;color:#666;margin-top:4px;}
-  .rp-info{display:flex;gap:20px;justify-content:center;font-size:12px;margin-bottom:16px;color:#333;}
-  .rp-ba{display:flex;gap:14px;margin-bottom:16px;}
-  .rp-ba-col{flex:1;text-align:center;}
-  .rp-ba-col h3{font-size:13px;font-weight:900;margin-bottom:8px;padding:5px;border-radius:6px;}
-  .rp-ba-col.before h3{background:#FEF3C7;color:#92400E;}
-  .rp-ba-col.after h3{background:#D1FAE5;color:#065F46;}
-  .rp-ba-col img{width:100%;max-height:220px;object-fit:cover;border-radius:8px;border:1px solid #ddd;margin-bottom:4px;}
-  .rp-desc{font-size:12px;line-height:1.7;background:#F8F7FC;border-radius:8px;padding:12px 14px;white-space:pre-wrap;}
-  @page{size:A4;margin:14mm;}
-}
-
 @media(max-width:640px){
   .summary{grid-template-columns:repeat(2,1fr);}
   .card-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
@@ -509,7 +490,6 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="modal">
     <div class="m-hd"><span class="m-title" id="d-title">-</span>
       <button class="fav-btn detail" id="d-fav-btn" onclick="toggleFavorite(curDetailId)">☆</button>
-      <button class="m-x" onclick="printReport()" title="print" style="margin-right:2px">🖨️</button>
       <button class="m-x" onclick="deleteActivity()" title="delete" style="color:#DC2626">🗑</button>
       <button class="m-x" onclick="closeDetail()">✕</button>
     </div>
@@ -550,7 +530,6 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   <div class="lb-count" id="lb-count"></div>
 </div>
 
-<div id="report-print"></div>
 <div id="toast"></div>
 
 <script>
@@ -1058,27 +1037,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft')lbMove(-1);
   if(e.key==='ArrowRight')lbMove(1);
 });
-
-/* ── 보고서 인쇄 ── */
-function printReport(){
-  const a=activities.find(x=>x.id===curDetailId); if(!a)return;
-  const before=(a.beforePhotos||[])[0], after=(a.afterPhotos||[])[0];
-  const isDone=a.status==='completed';
-  document.getElementById('report-print').innerHTML=`
-    <div class="rp-hd"><h1>${escapeHtml(a.title||'')}</h1><div class="rp-sub">Improvement Activity Report — SAMHWA</div></div>
-    <div class="rp-info">
-      <span>${t('category')}: <b>${a.category||'-'}</b></span>
-      <span>${t('plannedDate')}: <b>${a.activityDate||'-'}</b></span>
-      ${isDone?`<span>${t('completedDate')}: <b>${a.afterDate||'-'}</b></span>`:''}
-    </div>
-    <div class="rp-ba">
-      <div class="rp-ba-col before"><h3>BEFORE</h3>${before?`<img src="${imgUrl(before)}">`:''}</div>
-      ${isDone?`<div class="rp-ba-col after"><h3>AFTER</h3>${after?`<img src="${imgUrl(after)}">`:''}</div>`:''}
-    </div>
-    ${a.description?`<div class="rp-desc">${escapeHtml(a.description)}</div>`:''}
-  `;
-  setTimeout(()=>window.print(),200);
-}
 
 /* ── 처리자 명부 관리 ── */
 function openPersonnelModal(){
