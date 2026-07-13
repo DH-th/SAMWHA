@@ -262,8 +262,8 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
 /* ── 현장 레이아웃 보드 (요약 카드와 리스트 사이) ── */
 .layout-wrap{max-width:1240px;margin:14px auto 0;padding:0 18px;position:relative;z-index:1;}
 .layout-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:10px;box-shadow:var(--sh);text-align:center;}
-.layout-inner{position:relative;display:inline-block;max-width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
-.layout-inner>img{display:block;max-width:100%;max-height:340px;width:auto;height:auto;}
+.layout-inner{position:relative;display:block;width:100%;border-radius:10px;overflow:hidden;background:var(--s3);}
+.layout-inner>img{display:block;width:100%;height:auto;}
 .ly-marker{position:absolute;width:42px;height:42px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);
   cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);border:3px solid var(--accent2);background:var(--s3);
   display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .15s;}
@@ -311,8 +311,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.85);backdro
   .card-title{font-size:12.5px;}
   .compare-hero{flex-direction:column;}
   .compare-arrow{transform:rotate(90deg);}
-  .layout-inner>img{max-height:240px;}
-  .ly-marker{width:34px;height:34px;}
+.ly-marker{width:34px;height:34px;}
 }
 .lang-sw{display:flex;gap:3px;}
 </style>
