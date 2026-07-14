@@ -1221,6 +1221,8 @@ function renderLayoutBoard(){
       onclick="openDetail('${a.id}')" title="${escapeHtml(a.title||'')}">${before?`<img src="${imgUrl(before)}" loading="lazy">`:'🛠'}</div>`;
   });
   document.getElementById('layout-inner').innerHTML=h;
+  const fsInner=document.querySelector('#lfs-wrap .layout-inner');
+  if(fsInner) fsInner.innerHTML=h;
 }
 
 /* ── 레이아웃 관리: 배치도 사진 업로드/교체 ── */
