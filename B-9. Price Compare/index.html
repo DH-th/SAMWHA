@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMHWA - เปรียบเทียบราคาสั่งซื้อ (발주 금액 비교)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<style>
+:root{
+  --bg:#F0F4FF;--surface:#FFFFFF;--s2:#F5F8FF;--s3:#EDF1FB;
+  --border:rgba(80,110,220,.14);--accent:#2563EB;--accent2:#1D4ED8;
+  --accent-bg:rgba(37,99,235,.08);--text:#16213E;--muted:#68739B;
+  --ok:#059669;--warn:#D97706;--danger:#DC2626;
+  --gold:#F59E0B;--silver:#94A3B8;--bronze:#B45309;
+  --sh:0 2px 10px rgba(60,90,200,.08);--sh-md:0 6px 24px rgba(60,90,200,.13);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Pretendard','Noto Sans Thai',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+button,input,select{font-family:inherit;color:var(--text);}
+
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;box-shadow:var(--sh);}
+.h-icon{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;box-shadow:0 3px 10px rgba(37,99,235,.35);}
+.h-title{font-size:16px;font-weight:800;}
+.h-sub{font-size:11px;color:var(--muted);}
+
+.wrap{max-width:1240px;margin:0 auto;padding:18px;}
+
+/* ── 검색 ── */
+.search-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--sh);}
+.search-row{display:flex;gap:10px;}
+.search-row input{flex:1;border:1.5px solid var(--border);border-radius:11px;padding:12px 15px;font-size:15px;background:var(--s2);outline:none;transition:border .12s;}
+.search-row input:focus{border-color:var(--accent);}
+.btn{border:none;border-radius:11px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;transition:transform .1s,opacity .12s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;box-shadow:0 3px 12px rgba(37,99,235,.3);}
+.btn-ghost{background:var(--s2);border:1.5px solid var(--border);color:var(--muted);}
+.eng-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+.eng-chip{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:99px;border:1.5px solid var(--border);background:var(--s2);font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);user-select:none;transition:all .12s;}
+.eng-chip.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+.eng-chip .st{width:8px;height:8px;border-radius:50%;background:#CBD5E1;}
+.eng-chip .st.ok{background:var(--ok);}
+.eng-chip .st.fail{background:var(--danger);}
+.eng-chip .st.loading{background:var(--warn);animation:pulse 1s infinite;}
+@keyframes pulse{50%{opacity:.35;}}
+.eng-note{font-size:11px;color:var(--muted);margin-left:auto;}
+
+/* ── TOP 3 ── */
+.top3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px;}
+.t3-card{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--sh-md);position:relative;display:flex;flex-direction:column;gap:8px;}
+.t3-card.rank1{border-color:var(--gold);}
+.t3-card.rank2{border-color:var(--silver);}
+.t3-card.rank3{border-color:var(--bronze);}
+.t3-medal{position:absolute;top:-14px;left:14px;font-size:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2));}
+.t3-img{width:100%;height:130px;border-radius:11px;background:var(--s3);object-fit:contain;}
+.t3-title{font-size:13px;font-weight:700;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;}
+.t3-price{font-size:22px;font-weight:900;color:var(--accent2);}
+.t3-price small{font-size:12px;font-weight:700;color:var(--muted);}
+.t3-meta{display:flex;gap:6px;flex-wrap:wrap;}
+.badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;}
+.badge.lazada{background:rgba(240,87,20,.1);color:#F05714;}
+.badge.shopee{background:rgba(238,77,45,.1);color:#EE4D2D;}
+.badge.priceza{background:rgba(13,148,136,.1);color:#0D9488;}
+.badge.web{background:rgba(100,116,139,.12);color:#475569;}
+.badge.vendor{background:rgba(124,58,237,.1);color:#7C3AED;}
+.badge.gray{background:var(--s3);color:var(--muted);font-weight:600;}
+.t3-spec{font-size:11.5px;color:var(--muted);line-height:1.5;}
+.t3-remark{background:var(--s2);border:1px dashed var(--border);border-radius:10px;padding:8px 10px;font-size:11.5px;color:var(--text);line-height:1.55;margin-top:auto;}
+.t3-remark b{color:var(--accent2);}
+.t3-link{display:block;text-align:center;background:var(--accent-bg);color:var(--accent);border-radius:9px;padding:8px;font-size:12.5px;font-weight:800;text-decoration:none;}
+
+/* ── 결과 목록 ── */
+.sec-title{font-size:14px;font-weight:800;margin:22px 0 10px;display:flex;align-items:center;gap:8px;}
+.sec-title .cnt{font-size:11px;color:var(--muted);font-weight:600;}
+.res-table{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--sh);}
+.res-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;text-decoration:none;color:inherit;}
+.res-row:hover{background:var(--s2);}
+.res-row:last-child{border-bottom:none;}
+.res-img{width:44px;height:44px;border-radius:9px;background:var(--s3);object-fit:contain;flex-shrink:0;}
+.res-body{flex:1;min-width:0;}
+.res-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.res-sub{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:8px;align-items:center;}
+.res-price{font-size:15px;font-weight:900;color:var(--accent2);flex-shrink:0;}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+
+/* ── 벤더 직접 추가 ── */
+.vendor-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--sh);margin-top:22px;}
+.vendor-grid{display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:8px;margin-top:10px;}
+.vendor-grid input{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;background:var(--s2);outline:none;}
+.vendor-grid input:focus{border-color:var(--accent);}
+.url-row{display:flex;gap:8px;margin-top:10px;}
+.url-row input{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;background:var(--s2);outline:none;}
+.hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;}
+
+.spin{display:inline-block;width:14px;height:14px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px;}
+@keyframes rot{to{transform:rotate(360deg);}}
+
+@media(max-width:820px){
+  .top3{grid-template-columns:1fr;}
+  .vendor-grid{grid-template-columns:1fr 1fr;}
+  .search-row{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h-icon">🛒</div>
+  <div>
+    <div class="h-title">เปรียบเทียบราคาสั่งซื้อ <span style="font-weight:500;color:var(--muted)">발주 금액 비교</span></div>
+    <div class="h-sub">B-9 · ค้นหาราคาต่ำสุดจากทุกช่องทางในไทย (태국 전체 채널 최저가 검색)</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 검색 -->
+  <div class="search-card">
+    <div class="search-row">
+      <input id="q" placeholder="ชื่อสินค้า / รุ่น / สเปค …  (품명·모델·스펙 입력)" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="btn btn-primary" id="search-btn" onclick="doSearch()">🔍 ค้นหา (검색)</button>
+    </div>
+    <div class="eng-row" id="eng-row">
+      <div class="eng-chip on" data-eng="lazada" onclick="toggleEng(this)"><span class="st"></span>Lazada</div>
+      <div class="eng-chip on" data-eng="shopee" onclick="toggleEng(this)"><span class="st"></span>Shopee</div>
+      <div class="eng-chip on" data-eng="priceza" onclick="toggleEng(this)"><span class="st"></span>Priceza</div>
+      <div class="eng-chip on" data-eng="web" onclick="toggleEng(this)"><span class="st"></span>Web ค้นหา</div>
+      <div class="eng-note" id="eng-note"></div>
+    </div>
+  </div>
+
+  <!-- TOP 3 -->
+  <div id="top3-sec" style="display:none">
+    <div class="sec-title">🏆 TOP 3 ราคาต่ำสุด (최저가)</div>
+    <div class="top3" id="top3"></div>
+  </div>
+
+  <!-- 전체 결과 -->
+  <div id="res-sec" style="display:none">
+    <div class="sec-title">📋 ผลทั้งหมด (전체 결과) <span class="cnt" id="res-cnt"></span></div>
+    <div class="res-table" id="res-table"></div>
+  </div>
+
+  <!-- 벤더 직접 추가 -->
+  <div class="vendor-card">
+    <div class="sec-title" style="margin:0 0 4px">✍️ เพิ่มราคาผู้ขาย (벤더 견적 직접 추가)</div>
+    <div class="hint">วาง URL หน้าสินค้า → ดึงราคาอัตโนมัติ หรือกรอกเอง (상품 페이지 URL을 붙여넣으면 가격 자동 추출, 또는 수동 입력)</div>
+    <div class="url-row">
+      <input id="v-url" placeholder="https://…  (URL ผู้ขาย / 벤더 상품 URL)">
+      <button class="btn btn-ghost" id="fetch-btn" onclick="fetchVendorUrl()">⚡ ดึงราคา</button>
+    </div>
+    <div class="vendor-grid">
+      <input id="v-name" placeholder="ชื่อสินค้า/ผู้ขาย (품명/벤더명)">
+      <input id="v-price" placeholder="ราคา ฿ (가격)" inputmode="decimal">
+      <input id="v-note" placeholder="หมายเหตุ (비고: 배송비·납기 등)">
+      <button class="btn btn-primary" onclick="addVendor()">＋ เพิ่ม</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SERVER="https://server.samhwa.cloud";
+let results=[], vendors=[], lastQuery="";
+
+function toggleEng(el){ el.classList.toggle('on'); }
+function activeEngines(){
+  return [...document.querySelectorAll('.eng-chip.on')].map(e=>e.dataset.eng);
+}
+function fmtTHB(v){ return "฿"+Number(v).toLocaleString('en-US',{maximumFractionDigits:2}); }
+function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ── 검색 ── */
+async function doSearch(){
+  const q=document.getElementById('q').value.trim();
+  if(!q)return;
+  lastQuery=q;
+  const engines=activeEngines();
+  if(!engines.length){alert('เลือกอย่างน้อย 1 เครื่องมือค้นหา (엔진을 1개 이상 선택)');return;}
+  const btn=document.getElementById('search-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> กำลังค้นหา…';
+  document.querySelectorAll('.eng-chip.on .st').forEach(s=>s.className='st loading');
+  document.getElementById('eng-note').textContent='';
+  try{
+    const r=await fetch(`${SERVER}/api/procure/search?q=${encodeURIComponent(q)}&engines=${engines.join(',')}`);
+    const data=await r.json();
+    results=data.results||[];
+    // 엔진 상태 표시
+    document.querySelectorAll('.eng-chip').forEach(chip=>{
+      const st=chip.querySelector('.st'), eng=chip.dataset.eng, info=(data.engines||{})[eng];
+      if(!info){st.className='st';return;}
+      st.className='st '+(info.ok&&info.count>0?'ok':'fail');
+      chip.title=info.ok?`${info.count} รายการ`:`ล้มเหลว: ${info.error||''} (봇 차단 가능)`;
+    });
+    const okCnt=Object.values(data.engines||{}).filter(e=>e.ok).length;
+    document.getElementById('eng-note').textContent=`เครื่องมือสำเร็จ ${okCnt}/${engines.length}`;
+  }catch(e){
+    alert('ค้นหาล้มเหลว (검색 실패): '+e.message);
+  }
+  btn.disabled=false; btn.innerHTML='🔍 ค้นหา (검색)';
+  render();
+}
+
+/* ── 스펙 토큰 추출: 숫자+단위, 모델코드 ── */
+function specTokens(title){
+  const t=String(title||'');
+  const toks=new Set();
+  (t.match(/\d+(?:\.\d+)?\s?(?:mm|cm|m|km|kg|g|ml|l|L|V|W|kW|A|Ah|mAh|Hz|GB|TB|MB|inch|"|นิ้ว|м|ชิ้น|pcs|pack|แพ็ค)/gi)||[]).forEach(x=>toks.add(x.replace(/\s+/g,'').toUpperCase()));
+  (t.match(/\b[A-Z]{2,}[-_]?\d{2,}[A-Z0-9-]*\b/g)||[]).forEach(x=>toks.add(x.toUpperCase()));
+  return [...toks].slice(0,6);
+}
+
+/* ── Remark 자동 생성: 1위 대비 차이 요약 ── */
+function makeRemark(item,best,rank){
+  if(rank===0) return '<b>ราคาต่ำสุด ✓</b> (최저가 기준)';
+  const parts=[];
+  const diff=item.price-best.price;
+  const pct=best.price>0?(diff/best.price*100):0;
+  parts.push(`แพงกว่าอันดับ1 <b>+${fmtTHB(diff)}</b> (+${pct.toFixed(1)}%)`);
+  if(item.engine!==best.engine) parts.push(`แหล่ง: ${engName(item.engine)} ≠ ${engName(best.engine)}`);
+  if(item.seller&&best.seller&&item.seller!==best.seller) parts.push(`ผู้ขายต่างกัน`);
+  const a=new Set(specTokens(item.title)), b=new Set(specTokens(best.title));
+  const onlyMine=[...a].filter(x=>!b.has(x)).slice(0,3);
+  if(onlyMine.length) parts.push(`สเปคต่าง: ${onlyMine.join(', ')}`);
+  if(item.note) parts.push(esc(item.note));
+  return parts.join(' · ');
+}
+function engName(e){ return {lazada:'Lazada',shopee:'Shopee',priceza:'Priceza',web:'Web',vendor:'Vendor'}[e]||e; }
+
+/* ── 렌더 ── */
+function render(){
+  const all=[...results,...vendors].sort((x,y)=>x.price-y.price);
+  const top3sec=document.getElementById('top3-sec');
+  const ressec=document.getElementById('res-sec');
+  if(!all.length){
+    top3sec.style.display='none';
+    ressec.style.display='';
+    document.getElementById('res-table').innerHTML='<div class="empty">ไม่พบผลลัพธ์ (결과 없음) — ลองเปลี่ยนคำค้น หรือเพิ่มราคาผู้ขายด้านล่าง</div>';
+    document.getElementById('res-cnt').textContent='';
+    return;
+  }
+  // TOP 3
+  const top=all.slice(0,3), best=top[0];
+  const medals=['🥇','🥈','🥉'], ranks=['rank1','rank2','rank3'];
+  document.getElementById('top3').innerHTML=top.map((it,i)=>`
+    <div class="t3-card ${ranks[i]}">
+      <div class="t3-medal">${medals[i]}</div>
+      ${it.image?`<img class="t3-img" src="${esc(it.image)}" loading="lazy" onerror="this.style.display='none'">`:''}
+      <div class="t3-title" title="${esc(it.title)}">${esc(it.title)}</div>
+      <div class="t3-price">${fmtTHB(it.price)} <small>THB</small></div>
+      <div class="t3-meta">
+        <span class="badge ${it.engine}">${engName(it.engine)}</span>
+        ${it.seller?`<span class="badge gray">${esc(it.seller)}</span>`:''}
+        ${it.rating?`<span class="badge gray">⭐ ${Number(it.rating).toFixed(1)}</span>`:''}
+      </div>
+      ${specTokens(it.title).length?`<div class="t3-spec">📌 ${specTokens(it.title).join(' · ')}</div>`:''}
+      <div class="t3-remark">💬 ${makeRemark(it,best,i)}</div>
+      ${it.url?`<a class="t3-link" href="${esc(it.url)}" target="_blank" rel="noopener">เปิดหน้าสินค้า ↗</a>`:''}
+    </div>`).join('');
+  top3sec.style.display='';
+  // 전체 목록
+  document.getElementById('res-cnt').textContent=`${all.length} รายการ`;
+  document.getElementById('res-table').innerHTML=all.map(it=>`
+    <a class="res-row" ${it.url?`href="${esc(it.url)}" target="_blank" rel="noopener"`:''}>
+      ${it.image?`<img class="res-img" src="${esc(it.image)}" loading="lazy" onerror="this.style.visibility='hidden'">`:'<div class="res-img"></div>'}
+      <div class="res-body">
+        <div class="res-title">${esc(it.title)}</div>
+        <div class="res-sub"><span class="badge ${it.engine}">${engName(it.engine)}</span>${it.seller?esc(it.seller):''}${it.note?' · '+esc(it.note):''}</div>
+      </div>
+      <div class="res-price">${fmtTHB(it.price)}</div>
+    </a>`).join('');
+  ressec.style.display='';
+}
+
+/* ── 벤더 URL 자동 추출 ── */
+async function fetchVendorUrl(){
+  const url=document.getElementById('v-url').value.trim();
+  if(!url.startsWith('http')){alert('URL ไม่ถูกต้อง (URL 형식 오류)');return;}
+  const btn=document.getElementById('fetch-btn');
+  btn.disabled=true;btn.textContent='⏳ …';
+  try{
+    const r=await fetch(`${SERVER}/api/procure/fetch-url`,{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const d=await r.json();
+    if(d.ok){
+      document.getElementById('v-name').value=d.title||'';
+      document.getElementById('v-price').value=d.price||'';
+      document.getElementById('v-note').value=d.seller||'';
+    }else{
+      alert('ไม่พบราคาในหน้านี้ — กรอกเองด้านล่าง (가격 자동 추출 실패, 수동 입력하세요)');
+      if(d.title)document.getElementById('v-name').value=d.title;
+    }
+  }catch(e){alert('ดึงข้อมูลล้มเหลว: '+e.message);}
+  btn.disabled=false;btn.textContent='⚡ ดึงราคา';
+}
+
+function addVendor(){
+  const name=document.getElementById('v-name').value.trim();
+  const price=parseFloat(String(document.getElementById('v-price').value).replace(/,/g,''));
+  if(!name||!(price>0)){alert('กรอกชื่อและราคา (품명·가격 입력 필요)');return;}
+  vendors.push({engine:'vendor',title:name,price,url:document.getElementById('v-url').value.trim(),
+    image:'',seller:'',rating:'',note:document.getElementById('v-note').value.trim()});
+  saveQuotes();
+  ['v-url','v-name','v-price','v-note'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+/* ── 벤더 견적 서버 저장/복원 ── */
+async function saveQuotes(){
+  try{await fetch(`${SERVER}/api/procure/quotes`,{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({quotes:vendors})});}catch(e){}
+}
+async function loadQuotes(){
+  try{
+    const r=await fetch(`${SERVER}/api/procure/quotes`);
+    const d=await r.json();
+    vendors=(d.quotes||[]).filter(v=>v&&v.price>0);
+  }catch(e){}
+}
+loadQuotes();
+</script>
+</body>
+</html>
