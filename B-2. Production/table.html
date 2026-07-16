@@ -450,10 +450,10 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
     <a href="stats.html" class="adm" data-i18n="statsBtn">📊 สถิติ</a>
     <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
-    <button id="test-btn" class="adm" onclick="toggleTest()" title="바코드 스캔 테스트 데이터 보기">🧪 TEST</button>
+    <button id="test-btn" class="adm" onclick="toggleTest()" title="모바일/QR 입력 S2 실적 보기">🧪 TEST</button>
   </div>
 </header>
-<div id="test-banner">🧪 TEST 모드 — 바코드 스캔 데이터 (실제 현황표 아님) · 30초마다 자동 갱신</div>
+<div id="test-banner">🧪 TEST 모드 — 모바일/QR 입력 S2 실적 (정식 현황판 S2는 스캔 데이터)</div>
 
 <div class="sumbar">
   <div class="sc sc-tot"><div class="sc-l" data-i18n="totalProd">ยอดผลิตรวม</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
@@ -590,6 +590,7 @@ const DAY_SLOTS  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:0
 const NIGHT_SLOTS=['20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00'];
 
 let ws,records=[],plants=[];
+let scanRecords=[];   // 스캔 업로더(S2) 데이터 — 정식 현황판의 S2로 표시
 let viewDate='',viewShift='day',viewProc='S1',curSlideIdx=0;
 
 const p2=n=>String(n).padStart(2,'0');
@@ -659,9 +660,16 @@ vp.addEventListener('touchend',e=>{
   else if(dx>0&&curSlideIdx===1)goSlide(0);
 },{passive:true});
 
-/* ── data ── */
-function sr(){return records.filter(r=>r.prodDate===viewDate&&r.shift===viewShift);}
-function adr(){return records.filter(r=>r.prodDate===viewDate);}  // all-day records (both shifts)
+/* ── data ──
+   정식 현황판: S1 = 모바일/QR 입력, S2 = 스캔 업로더 데이터
+   TEST 모드:  S2 = 모바일/QR 입력분 (기존 S2와 서로 교체됨) */
+function viewRecs(){
+  return testMode
+    ? records.filter(r=>r.process==='S2')
+    : records.filter(r=>r.process!=='S2').concat(scanRecords);
+}
+function sr(){return viewRecs().filter(r=>r.prodDate===viewDate&&r.shift===viewShift);}
+function adr(){return viewRecs().filter(r=>r.prodDate===viewDate);}  // all-day records (both shifts)
 function slotQty(line,proc,slot){return sr().filter(r=>r.line===line&&r.process===proc&&r.slot===slot).reduce((s,r)=>s+(r.qty||0),0);}
 function lineSlotQty(line,slot){return['S1','S2'].reduce((s,p)=>s+slotQty(line,p,slot),0);}
 function lineSlotBreakdown(line,slot){return['S1','S2'].map(p=>({p,q:slotQty(line,p,slot)})).filter(x=>x.q>0);}
@@ -695,27 +703,25 @@ function renderTabs(){
   document.getElementById('tn').className='stab'+(viewShift==='night'?' n':'');
 }
 function fetchLog(){
-  const url=testMode
-    ? `https://${TUNNEL}/api/production/scan-test?date=${viewDate}`
-    : `https://${TUNNEL}/api/production/log?date=${viewDate}`;
-  fetch(url)
-    .then(r=>r.json()).then(j=>{records=j.records||[];renderAll();});
+  fetch(`https://${TUNNEL}/api/production/log?date=${viewDate}`)
+    .then(r=>r.json()).then(j=>{records=j.records||[];renderAll();}).catch(()=>{});
+  fetchScan();
 }
+function fetchScan(){
+  if(!viewDate)return;
+  fetch(`https://${TUNNEL}/api/production/scan-test?date=${viewDate}`)
+    .then(r=>r.json()).then(j=>{scanRecords=j.records||[];renderAll();}).catch(()=>{});
+}
+setInterval(fetchScan,30000);   // 스캔 업로드(매시 :19/:39/:59) 반영
 
-/* ── 🧪 TEST 모드: 바코드 스캔 데이터(분리 저장)를 현황표로 미리보기 ── */
-let testMode=false, testPollHandle=null;
+/* ── 🧪 TEST 모드: 모바일/QR로 입력된 S2 실적을 미리보기 (스캔 S2와 교체) ── */
+let testMode=false;
 function toggleTest(){
   testMode=!testMode;
   document.getElementById('test-btn').classList.toggle('on',testMode);
   document.getElementById('test-banner').style.display=testMode?'flex':'none';
-  if(testMode){
-    if(testPollHandle)clearInterval(testPollHandle);
-    testPollHandle=setInterval(fetchLog,30000);   // 스캔 업로드 반영
-    if(viewProc!=='S2')setProc('S2',false);        // 스캔은 S2 공정
-  }else{
-    if(testPollHandle){clearInterval(testPollHandle);testPollHandle=null;}
-  }
-  fetchLog();
+  if(testMode&&viewProc!=='S2')setProc('S2',false);   // QR 입력분은 S2 공정만 표시
+  renderAll();
 }
 
 /* ── 공정 전환 ── */
@@ -921,10 +927,9 @@ function connect(){
     if(msg.type==='INIT_PLANTS'){plants=msg.data;}
     else if(msg.type==='INIT_PRODUCTION'){
       if(!viewDate){viewDate=msg.prodDate;viewShift=msg.shift;document.getElementById('date-lbl').textContent=viewDate;}
-      if(testMode){renderTabs();return;}   // 테스트 모드 중엔 실데이터로 덮어쓰지 않음
       records=msg.data;viewDate=msg.prodDate;viewShift=msg.shift;
       document.getElementById('date-lbl').textContent=viewDate;
-      renderTabs();renderAll();
+      renderTabs();renderAll();fetchScan();
       const cur=curSlot();
       if(cur){
         const all=viewShift==='day'?DAY_SLOTS:NIGHT_SLOTS;
@@ -932,13 +937,11 @@ function connect(){
       }
     }
     else if(msg.type==='PRODUCTION_ADDED'){
-      if(testMode)return;
       const i=records.findIndex(r=>r.id===msg.record.id);
       if(i>-1)records[i]=msg.record;else records.push(msg.record);
       renderAll();toast(t('toastAdded'));
     }
     else if(msg.type==='PRODUCTION_DELETED'){
-      if(testMode)return;
       records=records.filter(r=>r.id!==msg.id);renderAll();
     }
     else if(msg.type==='PLANTS_UPDATED'){plants=msg.data;}
