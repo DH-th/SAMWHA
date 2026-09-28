@@ -7,7 +7,7 @@
   const dateText = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const timeText = value => value ? String(value).replace('T', ' ').replace(/\.\d+/, '') : '수집시각 없음';
   const shiftName = shift => shift === 'day' ? '주간' : '야간';
-  let snapshot = null, available = false, loading = false, active = null, requestId = 0;
+  let snapshot = null, available = false, loading = false, requestId = 0;
   let controller = null;
   const now = new Date();
   if (now.getHours() < 8 || (now.getHours() === 8 && now.getMinutes() < 20)) now.setDate(now.getDate()-1);
@@ -71,7 +71,7 @@
       if (id !== requestId) return;
       available = false;
       $('connection').textContent = '조회 실패 · 통신/서버 상태 확인';
-      $('error').textContent = `${err.name === 'AbortError' ? '조회 시간이 초과되었습니다.' : err.message}${snapshot ? ' 마지막 성공 자료를 표시합니다. 시간 저장은 새로 조회한 뒤 가능합니다.' : ' 생산수량을 0으로 처리하지 않습니다.'}`;
+      $('error').textContent = `${err.name === 'AbortError' ? '조회 시간이 초과되었습니다.' : err.message}${snapshot ? ' 마지막 성공 자료를 표시합니다. 최신 계산 결과는 다시 조회해 주세요.' : ' 생산수량을 0으로 처리하지 않습니다.'}`;
       $('error').hidden = false;
       render();
     } finally {
@@ -81,7 +81,6 @@
   }
 
   function render() {
-    $('zero').disabled = !available;
     $('export').disabled = !snapshot || !available;
     if (!snapshot) return;
     const groups = selected();
@@ -91,7 +90,7 @@
     const hours = valid.reduce((n,g)=>n+g.comparison.hours,0);
     $('total').textContent = groups.length || (snapshot.sources.every(s=>s.state==='ok') && snapshot.issues.every(i=>i.informational)) ? fmt(sum('qty'),0) : '—';
     $('uph').textContent = complete ? `${fmt(sum('qty')/hours)} /H` : '계산 대기';
-    $('hours').textContent = `${fmt(hours,2)} H · 자동 추정 ${valid.filter(g=>g.comparison.mode==='auto').length} / 수동 ${valid.filter(g=>g.comparison.mode!=='auto').length}행`;
+    $('hours').textContent = `${fmt(hours,2)} H · 자동 추정 ${valid.length} / ${groups.length}행`;
     $('target').textContent = complete ? fmt(sum('target')) : '—';
     $('rate').textContent = complete ? `${fmt(sum('qty')/sum('target')*100)}%` : '—';
     $('coverage').textContent = complete ? '수량 합계 기준 · 퍼센트 단순 평균 제외' : '모든 행의 시간·CAPA·수집 상태 확인 필요';
@@ -104,10 +103,10 @@
       <td class="num">${fmt(g.qty,0)}</td><td class="num">${fmt(g.capa)}${changed?`<small>저장 기준 ${fmt(saved.capa)}</small>`:''}</td>
       <td>${estimate.start?escape(estimate.start.slice(11)):'—'}<small>${estimate.start?escape(estimate.start.slice(0,10)):''}</small></td>
       <td>${estimate.end?escape(estimate.end.slice(11)):'—'}<small>${estimate.end?escape(estimate.end.slice(0,10)):''}</small></td>
-      <td class="num">${saved?fmt(saved.hours,2):'—'}<small>${saved?(saved.mode==='auto'?'20분 기준 추정':'수동 보정'):'시간 확인 필요'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
+      <td class="num">${saved?fmt(saved.hours,2):'—'}<small>${saved?'20분 기준 추정':'자동 추정 불가'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
       <td class="num ${g.rate!=null?'good':''}">${g.rate==null?'—':`${fmt(g.rate)}%`}</td>
       <td><span class="pill ${g.status==='계산 가능'?'good':''}">${escape(g.status)}</span>${g.issues.length?`<small class="warning">${escape(g.issues.join(' · '))}</small>`:''}${g.warnings?.length?`<small class="warning">${escape(g.warnings.join(' · '))}</small>`:''}<small>${escape(timeText(g.lastCollectedAt))}</small></td>
-      <td><div class="row-actions"><button data-edit="${g.key}" ${!available || g.issues.length?'disabled':''}>${saved?'수동 보정':'시간 입력'}</button><button data-history="${g.key}">이력</button></div></td></tr>`;
+      <td><div class="row-actions"><button data-history="${g.key}">이력</button></div></td></tr>`;
     }).join('') : '<tr><td colspan="13" class="empty">선택 조건에 표시할 S2 실적이 없습니다. 아래 수집 상태를 확인하세요.</td></tr>';
     const slots = {};
     groups.forEach(g=>Object.entries(g.slots).forEach(([s,q])=>slots[s]=(slots[s]||0)+q));
@@ -126,58 +125,12 @@
     if (snapshot.master.issues.length) $('master-meta').textContent += ' · '+snapshot.master.issues.join(' · ');
   }
 
-  function openEditor(key = null) {
-    if (!available) return;
-    active = key ? snapshot.groups.find(g=>g.key === key) : null;
-    $('hours-form').reset();
-    $('save-error').hidden = true;
-    $('zero-fields').hidden = !!active;
-    $('save').disabled = false;
-    $('editor-title').textContent = active ? '순배정시간 입력' : '무실적 배정시간 등록';
-    if (active) {
-      $('editor-context').textContent = `${active.prodDate} ${shiftName(active.shift)} · ${active.line} · ${active.plantName} / ${active.modelName} · S2 ${fmt(active.qty,0)}개 · 적용 CAPA ${fmt(active.capa)}/H`;
-      $('input-hours').value = active.comparison ? Number(active.comparison.hours.toFixed(2)) : '';
-      $('operator').value = active.comparison?.mode==='auto' ? '' : (active.comparison?.operator ?? '');
-      $('note').value = active.comparison?.mode==='auto' ? '' : (active.comparison?.note ?? '');
-    } else {
-      $('editor-context').textContent = '실적이 0인 모델에도 실제 배정시간을 등록할 수 있습니다. 해당 날짜의 수집 파일이 정상인지, 실제 완료수량이 0인지 확인하세요.';
-      $('zero-date').value = snapshot.start;
-      $('zero-line').value = $('line').value;
-      $('line-options').innerHTML = [...new Set(snapshot.groups.map(g=>g.line))].map(l=>`<option value="${escape(l)}">`).join('');
-      $('zero-model').innerHTML = snapshot.master.rows.filter(m=>!m.issues.length).map(m=>`<option value="${escape(JSON.stringify([m.plantId,m.modelId]))}">${escape(m.plantName)} / ${escape(m.modelName)} · ${fmt(m.capa)}/H</option>`).join('');
-    }
-    $('editor').showModal();
-  }
-
-  $('hours-form').addEventListener('submit', async e=>{
-    e.preventDefault();
-    if (!available) return;
-    const body = {date:active?.prodDate || $('zero-date').value, key:active?.key || '',
-      signature:active?.signature || snapshot.emptySignature, capaVersion:snapshot.master.version,
-      revision:snapshot.revision, hours:Number($('input-hours').value), confirmed:$('confirmed').checked,
-      operator:$('operator').value, note:$('note').value};
-    if (!active) {
-      if (!$('zero-model').value) { $('save-error').textContent='유효한 CAPA 모델이 없습니다.'; $('save-error').hidden=false; return; }
-      const [plantId,modelId] = JSON.parse($('zero-model').value);
-      body.zeroDimensions = {prodDate:body.date, shift:$('zero-shift').value, line:$('zero-line').value, plantId, modelId};
-    }
-    $('save').disabled = true;
-    try {
-      await json(`${API}/hours`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal:AbortSignal.timeout(20000)});
-      $('editor').close();
-      await load();
-    } catch(err) {
-      $('save-error').textContent = err.message+' 저장 결과가 불확실하면 다시 조회하여 이력을 확인하세요.';
-      $('save-error').hidden = false;
-    } finally { $('save').disabled = false; }
-  });
-
   async function history(key) {
     $('history-body').textContent = '이력을 조회합니다…';
     $('history').showModal();
     try {
       const data = await json(`${API}/history?key=${encodeURIComponent(key)}`, {signal:AbortSignal.timeout(20000)});
-      $('history-body').innerHTML = data.entries.slice().reverse().map((h,i)=>`<article><strong>${data.entries.length-i}차 · ${h.mode==='auto'?'20분 기준 자동 추정':'수동 입력'} · ${escape(timeText(h.savedAt))}</strong><br>${escape(h.operator)} · ${fmt(h.hours,2)} H · S2 ${fmt(h.qty,0)}개 · CAPA ${fmt(h.capa)}/H${h.start?`<br>${escape(timeText(h.start))} ~ ${escape(timeText(h.end))}`:''}<br>기준 버전 ${escape(h.capaVersion.slice(0,12))}<p class="history-note">${escape(h.note)}</p></article>`).join('') || '저장 이력이 없습니다.';
+      $('history-body').innerHTML = data.entries.slice().reverse().map((h,i)=>`<article><strong>${data.entries.length-i}차 · ${h.mode==='auto'?'20분 기준 자동 추정':'과거 수동 이력 · 계산 미적용'} · ${escape(timeText(h.savedAt))}</strong><br>${escape(h.operator)} · ${fmt(h.hours,2)} H · S2 ${fmt(h.qty,0)}개 · CAPA ${fmt(h.capa)}/H${h.start?`<br>${escape(timeText(h.start))} ~ ${escape(timeText(h.end))}`:''}<br>기준 버전 ${escape(h.capaVersion.slice(0,12))}<p class="history-note">${escape(h.note)}</p></article>`).join('') || '저장 이력이 없습니다.';
     } catch(err) { $('history-body').textContent = err.message; }
   }
 
@@ -186,7 +139,7 @@
   $('export').addEventListener('click', ()=>{
     if (!snapshot || !available) return;
     const rows = [['생산일','교대','라인','Plant','모델','S2 수량','현재 CAPA/H','적용 CAPA/H','생산 H','추정 시작','추정 종료','20분 구간 수','시간 기준','UPH','기준수량','잠정 CAPA 달성률(%)','상태','CAPA 버전','조회시각']];
-    selected().forEach(g=>rows.push([g.prodDate,shiftName(g.shift),g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.comparison?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?(g.comparison.mode==='auto'?'20분 기준 자동 추정':'수동 입력'):'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
+    selected().forEach(g=>rows.push([g.prodDate,shiftName(g.shift),g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.comparison?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
     const cell = value => {let s=String(value??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const blob = new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=`productivity_${snapshot.start}_${snapshot.end}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -194,13 +147,11 @@
   document.addEventListener('click',e=>{
     const button=e.target.closest('button');if(!button)return;
     if(button.dataset.close)$(button.dataset.close).close();
-    if(button.dataset.edit)openEditor(button.dataset.edit);
     if(button.dataset.history)history(button.dataset.history);
   });
   ['shift','line','plant','model'].forEach(id=>$(id).addEventListener('change',render));
   ['start','end'].forEach(id=>$(id).addEventListener('change',()=>{++requestId;controller?.abort();loading=false;$('refresh').disabled=false;available=false;render();$('connection').textContent='조회 기간이 변경되었습니다. 조회 버튼을 누르세요.';}));
   $('refresh').addEventListener('click',load);
-  $('zero').addEventListener('click',()=>openEditor());
-  setInterval(()=>{if(!loading && !$('editor').open && !$('history').open && !document.hidden && (!snapshot || ($('start').value===snapshot.start && $('end').value===snapshot.end)))load();},30000);
+  setInterval(()=>{if(!loading && !$('history').open && !document.hidden && (!snapshot || ($('start').value===snapshot.start && $('end').value===snapshot.end)))load();},30000);
   load();
 })();
