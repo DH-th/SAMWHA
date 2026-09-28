@@ -115,11 +115,7 @@ header{
   padding:5px 10px;border:1px solid var(--border);border-radius:6px;
   background:var(--surface2);font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;
 }
-#test-btn{cursor:pointer;font-family:inherit;}
-#test-btn.on{background:#F59E0B;border-color:#F59E0B;color:#fff;}
-#test-banner{display:none;align-items:center;justify-content:center;gap:8px;
-  background:#FEF3C7;color:#92400E;border-bottom:1px solid #F59E0B;
-  font-size:12px;font-weight:800;padding:7px 12px;}
+#productivity-link{color:var(--accent);font-weight:800;}
 
 /* ── summary ── */
 .sumbar{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap;}
@@ -450,10 +446,9 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <button onclick="exportExcel()" class="adm" style="border:1px solid var(--border);background:var(--surface2);cursor:pointer" data-i18n="excelBtn">📥 Excel</button>
     <a href="stats.html" class="adm" data-i18n="statsBtn">📊 สถิติ</a>
     <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
-    <button id="test-btn" class="adm" onclick="toggleTest()" title="모바일/QR 입력 S2 실적 보기">🧪 TEST</button>
+    <a id="productivity-link" class="adm" href="productivity.html" data-i18n="productivityBtn">생산성</a>
   </div>
 </header>
-<div id="test-banner">🧪 TEST 모드 — 모바일/QR 입력 S2 실적 (정식 현황판 S2는 스캔 데이터)</div>
 
 <div class="sumbar">
   <div class="sc sc-tot"><div class="sc-l" data-i18n="totalProd">ยอดผลิตรวม</div><div class="sc-v" id="s-tot">0</div><div class="sc-s">PCS</div></div>
@@ -660,13 +655,9 @@ vp.addEventListener('touchend',e=>{
   else if(dx>0&&curSlideIdx===1)goSlide(0);
 },{passive:true});
 
-/* ── data ──
-   정식 현황판: S1 = 모바일/QR 입력, S2 = 스캔 업로더 데이터
-   TEST 모드:  S2 = 모바일/QR 입력분 (기존 S2와 서로 교체됨) */
+/* 정식 현황판: S1 = 모바일/QR 입력, S2 = 스캔 업로더 데이터 */
 function viewRecs(){
-  return testMode
-    ? records.filter(r=>r.process==='S2')
-    : records.filter(r=>r.process!=='S2').concat(scanRecords);
+  return records.filter(r=>r.process!=='S2').concat(scanRecords);
 }
 function sr(){return viewRecs().filter(r=>r.prodDate===viewDate&&r.shift===viewShift);}
 function adr(){return viewRecs().filter(r=>r.prodDate===viewDate);}  // all-day records (both shifts)
@@ -713,16 +704,6 @@ function fetchScan(){
     .then(r=>r.json()).then(j=>{scanRecords=j.records||[];renderAll();}).catch(()=>{});
 }
 setInterval(fetchScan,30000);   // 스캔 업로드(매시 :19/:39/:59) 반영
-
-/* ── 🧪 TEST 모드: 모바일/QR로 입력된 S2 실적을 미리보기 (스캔 S2와 교체) ── */
-let testMode=false;
-function toggleTest(){
-  testMode=!testMode;
-  document.getElementById('test-btn').classList.toggle('on',testMode);
-  document.getElementById('test-banner').style.display=testMode?'flex':'none';
-  if(testMode&&viewProc!=='S2')setProc('S2',false);   // QR 입력분은 S2 공정만 표시
-  renderAll();
-}
 
 /* ── 공정 전환 ── */
 const PROC_INTERVAL=5*60; // seconds

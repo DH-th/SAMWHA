@@ -2,6 +2,7 @@
 (function(){
 const TR = {
 TH:{
+  productivityBtn:'ประสิทธิภาพการผลิต',
   home:'← หน้าหลัก', today:'วันนี้',
   connecting:'กำลังเชื่อมต่อ', connected:'เชื่อมต่อแล้ว', disconnected:'ขาดการเชื่อมต่อ',
   cancel:'ยกเลิก', save:'บันทึก', add:'เพิ่ม', delete:'ลบ', edit:'แก้ไข',
@@ -91,6 +92,7 @@ TH:{
   alertLineName:'กรุณาใส่ชื่อไลน์', alertLineProcess:'กรุณาเลือก S1 หรือ S2 อย่างน้อยหนึ่งอย่าง',
 },
 EN:{
+  productivityBtn:'Productivity',
   home:'← Home', today:'Today',
   connecting:'Connecting', connected:'Connected', disconnected:'Disconnected',
   cancel:'Cancel', save:'Save', add:'Add', delete:'Delete', edit:'Edit',
@@ -176,6 +178,7 @@ EN:{
   alertLineProcess:'Please select at least S1 or S2.',
 },
 KO:{
+  productivityBtn:'생산성',
   home:'← 홈', today:'오늘',
   connecting:'연결중', connected:'연결됨', disconnected:'연결 끊김',
   cancel:'취소', save:'저장', add:'추가', delete:'삭제', edit:'수정',
