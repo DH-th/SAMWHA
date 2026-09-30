@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>생산성 — Production</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="stylesheet" href="productivity.css?v=20260930-shared-4">
-<script src="productivity.js?v=20260930-shared-4" defer></script>
+<link rel="stylesheet" href="productivity.css?v=20260930-master-search-5">
+<script src="productivity.js?v=20260930-master-search-5" defer></script>
 </head>
 <body>
 <header>
@@ -47,7 +47,12 @@
   </div>
   <section class="panel">
     <div class="section-head"><div><h2>서버 Excel · 모델 및 CAPA</h2><p id="master-meta">D:/SERVER-Storage/production/plants.xlsx</p></div><button id="master-refresh">서버 Excel 다시 확인</button></div>
-    <p class="footnote">기존 서버의 <b>D:/SERVER-Storage/production/plants.xlsx</b>에서 모델명과 CAPA를 읽습니다. 별도 등록·업로드 없이 조회할 때 최신 파일을 확인합니다. 중복·누락은 Excel 행 번호와 함께 표시하며, 원본 수정은 기존 ‘Plant · CAPA 관리’ 또는 서버 Excel에서 진행하세요.</p>
+    <p class="footnote">기존 서버의 <b>D:/SERVER-Storage/production/plants.xlsx</b>에서 모델명과 CAPA를 읽습니다. 별도 등록·업로드 없이 조회할 때 최신 파일을 확인합니다. 정상 항목을 먼저 표시하고 CAPA 미등록·0 이하 항목은 아래에 표시합니다. 중복·누락은 Excel 행 번호와 함께 표시하며, 원본 수정은 기존 ‘Plant · CAPA 관리’ 또는 서버 Excel에서 진행하세요.</p>
+    <div class="filters" role="search" aria-label="모델 CAPA 검색">
+      <label>모델 검색<input type="search" id="master-search" placeholder="모델명 일부 입력" autocomplete="off"></label>
+      <button id="master-clear" type="button">검색 초기화</button>
+      <span id="master-count" role="status" aria-live="polite"></span>
+    </div>
     <div class="table-wrap master-table"><table><thead><tr><th>Excel 행</th><th>Plant</th><th>모델</th><th>CAPA/H</th><th>검증 결과</th></tr></thead><tbody id="master-rows"></tbody></table></div>
   </section>
   <details class="panel help"><summary>계산 방식과 집계 기준</summary>

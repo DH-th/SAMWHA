@@ -131,9 +131,19 @@
       ${unresolved.length?`<h3>CAPA·모델·원천 확인: ${unresolved.length}개 행</h3>`:''}
       ${snapshot.issues.length?`<h3>원천 기록 검증</h3><p>문제 기록을 제외한 수량을 표시합니다. 원천 자료 확인 전 전체 실적으로 확정하지 마세요.</p><ul>${snapshot.issues.map(i=>`<li>${escape(i.date)} · ${escape(i.message)}${i.id?` (${escape(i.id)})`:''}</li>`).join('')}</ul>`:''}`;
     $('master-meta').textContent = `${snapshot.master.source} · 기준 버전 ${snapshot.master.version.slice(0,12)} · ${snapshot.master.rows.length}개 모델${snapshot.master.modifiedAt?' · '+timeText(snapshot.master.modifiedAt):''}`;
-    const masterRows = snapshot.master.rows.slice().sort((a,b)=>Number(!!b.issues.length)-Number(!!a.issues.length) || a.row-b.row);
-    $('master-rows').innerHTML = masterRows.length ? masterRows.map(m=>`<tr><td>${m.row}</td><td>${escape(m.plantName)}</td><td>${escape(m.modelName)}</td><td class="num">${fmt(m.capa)}</td><td class="${m.issues.length?'warning':'good'}">${escape(m.issues.join(' · ') || '확인')}</td></tr>`).join('') : '<tr><td colspan="5" class="empty">서버 Excel 기준정보를 확인할 수 없습니다.</td></tr>';
+    renderMaster();
     if (snapshot.master.issues.length) $('master-meta').textContent += ' · '+snapshot.master.issues.join(' · ');
+  }
+
+  function renderMaster() {
+    if (!snapshot) return;
+    const query = $('master-search').value.trim().toLocaleLowerCase();
+    const rank = m => !Number.isFinite(m.capa) || m.capa <= 0 ? 2 : m.issues.length ? 1 : 0;
+    const rows = snapshot.master.rows.filter(m=>String(m.modelName ?? '').toLocaleLowerCase().includes(query))
+      .sort((a,b)=>rank(a)-rank(b) || a.row-b.row);
+    $('master-count').textContent = `${fmt(rows.length,0)} / ${fmt(snapshot.master.rows.length,0)}개 모델`;
+    $('master-rows').innerHTML = rows.length ? rows.map(m=>`<tr><td>${m.row}</td><td>${escape(m.plantName)}</td><td>${escape(m.modelName)}</td><td class="num">${fmt(m.capa)}</td><td class="${m.issues.length?'warning':'good'}">${escape(m.issues.join(' · ') || '확인')}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">${snapshot.master.rows.length?'검색한 모델이 없습니다.':'서버 Excel 기준정보를 확인할 수 없습니다.'}</td></tr>`;
   }
 
   async function history(key) {
@@ -145,6 +155,8 @@
     } catch(err) { $('history-body').textContent = err.message; }
   }
 
+  $('master-search').addEventListener('input', ()=>{renderMaster();document.querySelector('.master-table').scrollTop=0;});
+  $('master-clear').addEventListener('click', ()=>{$('master-search').value='';renderMaster();document.querySelector('.master-table').scrollTop=0;$('master-search').focus();});
   $('master-refresh').addEventListener('click', load);
 
   $('export').addEventListener('click', ()=>{
