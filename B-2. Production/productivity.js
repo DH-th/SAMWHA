@@ -56,9 +56,18 @@
       const data = await json(`${API}?start=${start}&end=${end}`, {signal:controller.signal});
       if (id !== requestId) return;
       if (!Array.isArray(data.groups) || !Array.isArray(data.sources) || !data.master) throw new Error('서버 자료 형식을 확인하세요.');
+      const legacyGroups = data.groups.filter(g=>(g.estimate?.intervals||[]).some(i=>i.qty>=10 && i.minutes===0));
+      legacyGroups.forEach(g=>{
+        g.comparison=null;g.uph=g.target=g.rate=null;
+        g.status='서버 계산 업데이트 필요';
+        g.warnings=['이전 서버가 CAPA 누락 구간을 0분으로 응답했습니다.'];
+        g.estimate.hours=null;
+        g.estimate.intervals.forEach(i=>{if(i.qty>=10 && i.minutes===0)i.minutes=null;});
+      });
       snapshot = data;
       available = true;
-      $('error').hidden = true;
+      $('error').hidden = legacyGroups.length===0;
+      if(legacyGroups.length) $('error').textContent='이전 서버 계산이 실행 중입니다. 서버 PC에서 실행 중인 server.py와 같은 폴더의 productivity.py를 최신 파일로 교체한 뒤 서버 프로그램을 완전히 종료하고 다시 실행하세요. 웹 새로고침만으로는 서버 계산이 바뀌지 않습니다. 라인 구간은 20분이며 모델 배분은 서버 업데이트 후 확인할 수 있습니다.';
       $('connection').textContent = `조회 완료 ${timeText(data.generatedAt)} · ${data.start} ~ ${data.end}`;
       options('line', data.groups.map(g=>g.line), '전체 라인');
       options('plant', data.groups.map(g=>g.plantName), '전체 Plant');
@@ -114,7 +123,7 @@
       <td class="num">${fmt(g.qty,0)}</td><td class="num">${fmt(g.capa)}${changed?`<small>저장 기준 ${fmt(saved.capa)}</small>`:''}</td>
       <td>${estimate.start?escape(estimate.start.slice(11)):'—'}<small>${estimate.start?escape(estimate.start.slice(0,10)):''}</small></td>
       <td>${estimate.end?escape(estimate.end.slice(11)):'—'}<small>${estimate.end?escape(estimate.end.slice(0,10)):''}</small></td>
-      <td class="num">${estimate.intervals.length?fmt(estimate.hours,2):'—'}<small>${estimate.intervals.length?'라인 20분 내 배분':'시각 확인 필요'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개 · 라인 20분 / 모델 ${fmt(i.minutes,2)}분${i.allocationBasis==='quantity'?' (수량 비율)':''}</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
+      <td class="num">${estimate.intervals.length?fmt(estimate.hours,2):'—'}<small>${estimate.hours==null?'서버 계산 확인 필요':estimate.intervals.length?'라인 20분 내 배분':'시각 확인 필요'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개 · 라인 20분 / 모델 ${i.minutes==null?'배분 확인 필요':fmt(i.minutes,2)+'분'}${i.allocationBasis==='quantity'?' (수량 비율)':''}</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
       <td class="num ${g.rate!=null?'good':''}">${g.rate==null?'—':`${fmt(g.rate)}%`}</td>
       <td><span class="pill ${g.status==='계산 가능'?'good':''}">${escape(g.status)}</span>${g.issues.length?`<small class="warning">${escape(g.issues.join(' · '))}</small>`:''}${g.warnings?.length?`<small class="warning">${escape(g.warnings.join(' · '))}</small>`:''}<small>${escape(timeText(g.lastCollectedAt))}</small></td>
       <td><div class="row-actions"><button data-history="${g.key}">이력</button></div></td></tr>`;
