@@ -6,11 +6,9 @@
   const fmt = (value, decimals = 1) => value == null || !Number.isFinite(value) ? '—' : value.toLocaleString('ko-KR', {maximumFractionDigits:decimals});
   const dateText = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const timeText = value => value ? String(value).replace('T', ' ').replace(/\.\d+/, '') : '수집시각 없음';
-  const shiftName = shift => shift === 'day' ? '주간' : '야간';
   let snapshot = null, available = false, loading = false, requestId = 0;
   let controller = null;
   const now = new Date();
-  if (now.getHours() < 8 || (now.getHours() === 8 && now.getMinutes() < 20)) now.setDate(now.getDate()-1);
   $('start').value = $('end').value = dateText(now);
 
   async function json(url, options = {}) {
@@ -29,8 +27,7 @@
   }
 
   function selected() {
-    return (snapshot?.groups || []).filter(g => (!$('shift').value || g.shift === $('shift').value)
-      && (!$('line').value || g.line === $('line').value)
+    return (snapshot?.groups || []).filter(g => (!$('line').value || g.line === $('line').value)
       && (!$('plant').value || g.plantName === $('plant').value)
       && (!$('model').value || g.modelName === $('model').value));
   }
@@ -94,11 +91,19 @@
     $('target').textContent = complete ? fmt(sum('target')) : '—';
     $('rate').textContent = complete ? `${fmt(sum('qty')/sum('target')*100)}%` : '—';
     $('coverage').textContent = complete ? '수량 합계 기준 · 퍼센트 단순 평균 제외' : '모든 행의 시간·CAPA·수집 상태 확인 필요';
+    const lines = new Map();
+    groups.forEach(g=>{if(!lines.has(g.line))lines.set(g.line,[]);lines.get(g.line).push(g);});
+    $('line-summary').innerHTML = [...lines].sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true})).map(([line,items])=>{
+      const ready = items.every(g=>g.status==='계산 가능') && snapshot.sources.every(s=>s.state==='ok') && snapshot.issues.every(i=>i.informational);
+      const qty=items.reduce((n,g)=>n+g.qty,0), hours=items.reduce((n,g)=>n+(g.comparison?.hours||0),0), target=items.reduce((n,g)=>n+(g.target||0),0);
+      return `<tr><td><button data-line="${escape(line)}">${escape(line)}</button></td><td class="num">${fmt(qty,0)}</td><td class="num">${ready?fmt(hours,2):'—'}</td><td class="num">${ready?fmt(qty/hours):'—'}</td><td class="num">${ready?fmt(target):'—'}</td><td class="num good">${ready?fmt(qty/target*100)+'%':'—'}</td><td>${ready?'계산 가능':'자료 확인 필요'} · ${items.length}개 행</td></tr>`;
+    }).join('') || '<tr><td colspan="7" class="empty">반영할 라인 실적이 없습니다.</td></tr>';
+    $('excluded-summary').textContent = `조회 기간 전체에서 10개 미만 업로드 ${fmt(snapshot.excluded?.count||0,0)}건 · ${fmt(snapshot.excluded?.qty||0,0)}개 제외 (수량·시간 모두 미반영)`;
     $('rows').innerHTML = groups.length ? groups.map(g=>{
       const saved = g.comparison;
       const estimate = g.estimate || {intervals:[],issues:[]};
       const changed = saved && saved.capa !== g.capa;
-      return `<tr><td>${escape(g.prodDate)}<small>${shiftName(g.shift)}</small></td><td>${escape(g.line)}</td>
+      return `<tr><td>${escape(g.prodDate)}</td><td>${escape(g.line)}</td>
       <td>${escape(g.modelName || '모델 미확인')}<small>${escape(g.plantName || 'Plant 미매칭')}</small></td>
       <td class="num">${fmt(g.qty,0)}</td><td class="num">${fmt(g.capa)}${changed?`<small>저장 기준 ${fmt(saved.capa)}</small>`:''}</td>
       <td>${estimate.start?escape(estimate.start.slice(11)):'—'}<small>${estimate.start?escape(estimate.start.slice(0,10)):''}</small></td>
@@ -138,8 +143,8 @@
 
   $('export').addEventListener('click', ()=>{
     if (!snapshot || !available) return;
-    const rows = [['생산일','교대','라인','Plant','모델','S2 수량','현재 CAPA/H','적용 CAPA/H','생산 H','추정 시작','추정 종료','20분 구간 수','시간 기준','UPH','기준수량','잠정 CAPA 달성률(%)','상태','CAPA 버전','조회시각']];
-    selected().forEach(g=>rows.push([g.prodDate,shiftName(g.shift),g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.comparison?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
+    const rows = [['생산일','라인','Plant','모델','S2 수량','현재 CAPA/H','적용 CAPA/H','생산 H','추정 시작','추정 종료','20분 구간 수','시간 기준','UPH','기준수량','잠정 CAPA 달성률(%)','상태','CAPA 버전','조회시각']];
+    selected().forEach(g=>rows.push([g.prodDate,g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.comparison?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
     const cell = value => {let s=String(value??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const blob = new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=`productivity_${snapshot.start}_${snapshot.end}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -148,9 +153,11 @@
     const button=e.target.closest('button');if(!button)return;
     if(button.dataset.close)$(button.dataset.close).close();
     if(button.dataset.history)history(button.dataset.history);
+    if(button.dataset.line){$('line').value=button.dataset.line;render();}
   });
-  ['shift','line','plant','model'].forEach(id=>$(id).addEventListener('change',render));
+  ['line','plant','model'].forEach(id=>$(id).addEventListener('change',render));
   ['start','end'].forEach(id=>$(id).addEventListener('change',()=>{++requestId;controller?.abort();loading=false;$('refresh').disabled=false;available=false;render();$('connection').textContent='조회 기간이 변경되었습니다. 조회 버튼을 누르세요.';}));
+  $('all-lines').addEventListener('click',()=>{$('line').value='';render();});
   $('refresh').addEventListener('click',load);
   setInterval(()=>{if(!loading && !$('history').open && !document.hidden && (!snapshot || ($('start').value===snapshot.start && $('end').value===snapshot.end)))load();},30000);
   load();
