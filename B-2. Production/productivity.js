@@ -114,7 +114,7 @@
       <td class="num">${fmt(g.qty,0)}</td><td class="num">${fmt(g.capa)}${changed?`<small>저장 기준 ${fmt(saved.capa)}</small>`:''}</td>
       <td>${estimate.start?escape(estimate.start.slice(11)):'—'}<small>${estimate.start?escape(estimate.start.slice(0,10)):''}</small></td>
       <td>${estimate.end?escape(estimate.end.slice(11)):'—'}<small>${estimate.end?escape(estimate.end.slice(0,10)):''}</small></td>
-      <td class="num">${saved?fmt(saved.hours,2):'—'}<small>${saved?'라인 20분 내 배분':'자동 배분 불가'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개 · 배분 ${fmt(i.minutes,2)}분</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
+      <td class="num">${estimate.intervals.length?fmt(estimate.hours,2):'—'}<small>${estimate.intervals.length?'라인 20분 내 배분':'시각 확인 필요'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개 · 라인 20분 / 모델 ${fmt(i.minutes,2)}분${i.allocationBasis==='quantity'?' (수량 비율)':''}</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
       <td class="num ${g.rate!=null?'good':''}">${g.rate==null?'—':`${fmt(g.rate)}%`}</td>
       <td><span class="pill ${g.status==='계산 가능'?'good':''}">${escape(g.status)}</span>${g.issues.length?`<small class="warning">${escape(g.issues.join(' · '))}</small>`:''}${g.warnings?.length?`<small class="warning">${escape(g.warnings.join(' · '))}</small>`:''}<small>${escape(timeText(g.lastCollectedAt))}</small></td>
       <td><div class="row-actions"><button data-history="${g.key}">이력</button></div></td></tr>`;
@@ -151,7 +151,7 @@
     $('history').showModal();
     try {
       const data = await json(`${API}/history?key=${encodeURIComponent(key)}`, {signal:AbortSignal.timeout(20000)});
-      $('history-body').innerHTML = data.entries.slice().reverse().map((h,i)=>`<article><strong>${data.entries.length-i}차 · ${h.mode==='auto'?'라인 20분 기준 자동 추정':'과거 수동 이력 · 계산 미적용'} · ${escape(timeText(h.savedAt))}</strong><br>${escape(h.operator)} · ${fmt(h.hours,2)} H · S2 ${fmt(h.qty,0)}개 · CAPA ${fmt(h.capa)}/H${h.start?`<br>${escape(timeText(h.start))} ~ ${escape(timeText(h.end))}`:''}<br>기준 버전 ${escape(h.capaVersion.slice(0,12))}<p class="history-note">${escape(h.note)}</p></article>`).join('') || '저장 이력이 없습니다.';
+      $('history-body').innerHTML = data.entries.slice().reverse().map((h,i)=>`<article><strong>${data.entries.length-i}차 · ${h.mode==='auto'?'라인 20분 기준 자동 추정':'과거 수동 이력 · 계산 미적용'} · ${escape(timeText(h.savedAt))}</strong><br>${escape(h.operator)} · ${fmt(h.hours,2)} H · S2 ${fmt(h.qty,0)}개 · CAPA ${fmt(h.capa)}/H${h.start?`<br>${escape(timeText(h.start))} ~ ${escape(timeText(h.end))}`:''}${h.note && h.note!=='실제 가동시간이 아닌 추정치'?`<p class="history-note">${escape(h.note)}</p>`:''}</article>`).join('') || '저장 이력이 없습니다.';
     } catch(err) { $('history-body').textContent = err.message; }
   }
 
@@ -162,7 +162,7 @@
   $('export').addEventListener('click', ()=>{
     if (!snapshot || !available) return;
     const rows = [['생산일','라인','Plant','모델','S2 수량','현재 CAPA/H','적용 CAPA/H','생산 H','추정 시작','추정 종료','20분 구간 수','시간 기준','UPH','기준수량','잠정 CAPA 달성률(%)','상태','CAPA 버전','조회시각']];
-    selected().forEach(g=>rows.push([g.prodDate,g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.comparison?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'라인 20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
+    selected().forEach(g=>rows.push([g.prodDate,g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.estimate?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'라인 20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
     const cell = value => {let s=String(value??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const blob = new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=`productivity_${snapshot.start}_${snapshot.end}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
