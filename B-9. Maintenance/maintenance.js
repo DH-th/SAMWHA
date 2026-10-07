@@ -15,7 +15,9 @@
   const period=(shift,slot)=>{const h=(shift==='day'?8:20)+slot*2;return `${time(h)}–${time(h+2)}${h>=24?' (다음 날)':''}`;};
   const photoUrl=name=>`${API}/photos/${encodeURIComponent(name)}`;
   let current=null,online=false,generation=0,config=null,editContext=null,editing=null,requestId=null,previewUrls=[];
-  $('date').value=workToday();$('stats-end').value=workToday();$('stats-start').value=workToday().slice(0,8)+'01';
+  $('date').value=workToday();$('stats-month').value=workToday().slice(0,7);
+  const bangkokHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',hourCycle:'h23'}).format(new Date()));
+  let mobileShift=bangkokHour>=20||bangkokHour<8?'night':'day';
   async function api(path,options={}){
     const res=await fetch(API+path,{...options,cache:'no-store',signal:options.signal||AbortSignal.timeout(30000)});
     let data;try{data=await res.json();}catch{throw new Error(`서버 응답 오류 (${res.status}). 서버 파일 반영과 실행 상태를 확인하세요.`);}
@@ -40,7 +42,7 @@
     finally{if(gen===generation)$('refresh').disabled=false;}
   }
   function render(){
-    if(!current){$('rosters').innerHTML='';$('board').innerHTML='';return;}
+    if(!current){$('rosters').innerHTML='';$('board').innerHTML='';$('mobile-board').innerHTML='';return;}
     const roster=current.roster;
     $('setup-notice').hidden=!!roster;
     $('rosters').innerHTML=['day','night'].map(shift=>{
@@ -50,10 +52,16 @@
         return `<div class="member"><div><strong>${esc(m.name)}</strong><small>${a.checkIn?'출근 '+esc(a.checkIn):'출근 시각 미입력'} · ${a.checkOut?'퇴근 '+esc(a.checkOut):'퇴근 시각 미입력'}</small></div><div><span class="status ${a.status||''}">${statusNames[a.status||'unknown']}</span><span class="status ${a.ot==='yes'?'ot':''}">${otNames[a.ot||'unknown']}</span>${a.note?`<small>${esc(a.note)}</small>`:''}</div></div>`;
       }).join(''):'<p>조 편성과 교대 기준일을 설정하세요.</p>'}</article>`;
     }).join('');
-    $('board').innerHTML=['day','night'].map(shift=>`<tr><th>${shiftName(shift)}<br>${roster?roster[shift].team+'조':''}<p>${roster?roster[shift].members.map(m=>esc(m.name)).join('<br>'):''}</p></th>${Array.from({length:6},(_,slot)=>{
-      const entries=current.activities.filter(a=>a.shift===shift&&a.slot===slot),photos=entries.reduce((n,a)=>n+a.photos.length,0);
-      return `<td><button class="slot ${entries.length?'filled':''} ${slot>=4?'ot-slot':''}" data-slot="${slot}" data-shift="${shift}" ${!online||!roster?'disabled':''}><span class="period">${period(shift,slot)}</span>${slot>=4?`<span class="ot-label">${slot===4?'후반 1시간 OT':'OT 구간'}</span>`:''}<span class="slot-text">${entries.length?esc(entries.map(a=>a.description).join(' / ')):'＋ 활동 기록 추가'}</span><span class="slot-meta">${entries.length?`${entries.length}건 · 사진 ${photos}장`:'미등록'}</span></button></td>`;
-    }).join('')}</tr>`).join('');
+    $('board').innerHTML=['day','night'].map(shift=>`<tr><th>${shiftName(shift)}<br>${roster?roster[shift].team+'조':''}<p>${roster?roster[shift].members.map(m=>esc(m.name)).join('<br>'):''}</p></th>${Array.from({length:6},(_,slot)=>`<td>${slotButton(shift,slot)}</td>`).join('')}</tr>`).join('');
+    renderMobile();
+  }
+  function slotButton(shift,slot){
+    const entries=current.activities.filter(a=>a.shift===shift&&a.slot===slot),photos=entries.reduce((n,a)=>n+a.photos.length,0);
+    return `<button class="slot ${entries.length?'filled':''} ${slot>=4?'ot-slot':''}" data-slot="${slot}" data-shift="${shift}" ${!online||!current.roster?'disabled':''}><span class="period">${period(shift,slot)}</span>${slot>=4?`<span class="ot-label">${slot===4?'후반 1시간 OT':'OT 구간'}</span>`:''}<span class="slot-text">${entries.length?esc(entries.map(a=>a.description).join(' / ')):'＋ 활동 기록 추가'}</span><span class="slot-meta">${entries.length?`${entries.length}건 · 사진 ${photos}장`:'미등록'}</span></button>`;
+  }
+  function renderMobile(){
+    ['day','night'].forEach(s=>{$('pick-'+s).setAttribute('aria-pressed',String(s===mobileShift));document.querySelector('.roster.'+s)?.classList.toggle('mobile-selected',s===mobileShift);});
+    $('mobile-board').innerHTML=current?Array.from({length:6},(_,i)=>slotButton(mobileShift,i)).join(''):'';
   }
   async function settingsOpen(){
     showError('settings-error','');$('settings-save').disabled=true;$('settings').showModal();
@@ -136,14 +144,23 @@
   async function loadStats(){
     const gen=++statsGeneration;$('stats-load').disabled=true;showError('stats-error','');
     try{
-      const data=await api(`/stats?start=${$('stats-start').value}&end=${$('stats-end').value}`);if(gen!==statsGeneration)return;
-      $('stats').innerHTML=`<div class="metrics"><div class="metric"><span>기록 있는 날짜 / 조회일</span><strong>${data.totals.savedDays} / ${data.days}</strong></div><div class="metric"><span>활동 기록</span><strong>${fmt(data.totals.activities)}건</strong></div><div class="metric"><span>활동이 등록된 2시간 구간</span><strong>${fmt(data.totals.filledSlots)}칸</strong></div><div class="metric"><span>등록 사진</span><strong>${fmt(data.totals.photos)}장</strong></div></div><div class="stats-grid"><div><h3>직원별 근태 · 활동</h3><div class="scroll"><table><thead><tr><th>담당자</th><th>출근</th><th>결근</th><th>휴가</th><th>미확인</th><th>OT 참여</th><th>확인 OT(H)</th><th>활동 참여</th></tr></thead><tbody>${data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.present}</td><td>${p.absent}</td><td>${p.leave}</td><td>${p.unknown}</td><td>${p.otYes}</td><td>${p.otTimed?fmt(p.otMinutes/60):'—'}<small> (${p.otTimed}/${p.otYes}건 시각 입력)</small></td><td>${p.activities}</td></tr>`).join('')||'<tr><td colspan="8">저장된 근태·활동 없음</td></tr>'}</tbody></table></div></div><div><h3>소모품 사용 합계</h3><div class="scroll"><table class="consumption"><thead><tr><th>소모품</th><th>수량</th><th>단위</th></tr></thead><tbody>${data.consumables.map(c=>`<tr><td>${esc(c.name)}</td><td>${fmt(c.qty)}</td><td>${esc(c.unit)}</td></tr>`).join('')||'<tr><td colspan="3">소모품 기록 없음</td></tr>'}</tbody></table></div></div></div><p class="footnote">근태는 저장된 날짜의 담당자별 교대 수입니다. 미저장 날짜를 결근으로 간주하지 않습니다. 확인 OT는 OT 참여로 표시하고 출퇴근 시각을 모두 입력한 건만 합산합니다(휴식 차감 없음). 공동 활동은 담당자별 참여 건수에 각각 반영하며 전체 활동 건수는 중복 없이 셉니다.</p><h3 class="section-head">날짜별 활동 · 날짜를 눌러 과거 기록 조회</h3><div class="daily">${data.daily.map(d=>`<button class="day-link ${d.saved?'':'no-data'}" data-day="${d.date}"><span>${d.date.slice(5)}</span><strong>${d.saved?d.activities+'건':'미등록'}</strong></button>`).join('')}</div>`;
+      const month=$('stats-month').value;
+      if(!/^\d{4}-\d{2}$/.test(month))throw new Error('조회 월을 선택하세요.');
+      const [year,m]=month.split('-').map(Number);
+      const last=new Date(Date.UTC(year,m,0)).getUTCDate();
+      const data=await api(`/stats?start=${month}-01&end=${month}-${String(last).padStart(2,'0')}`);if(gen!==statsGeneration)return;
+      $('stats').innerHTML=`<p class="month-caption">${esc(data.start)} ~ ${esc(data.end)} · 근무 시작일 기준 (말일 야간은 다음 달 08:00까지)</p><div class="metrics"><div class="metric"><span>기록 있는 날짜 / 조회일</span><strong>${data.totals.savedDays} / ${data.days}</strong></div><div class="metric"><span>활동 기록</span><strong>${fmt(data.totals.activities)}건</strong></div><div class="metric"><span>활동이 등록된 2시간 구간</span><strong>${fmt(data.totals.filledSlots)}칸</strong></div><div class="metric"><span>등록 사진</span><strong>${fmt(data.totals.photos)}장</strong></div></div><div class="stats-grid"><div><h3>직원별 근태 · 활동</h3><div class="scroll"><table><thead><tr><th>담당자</th><th>출근</th><th>결근</th><th>휴가</th><th>미확인</th><th>OT 참여</th><th>확인 OT(H)</th><th>활동 참여</th></tr></thead><tbody>${data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.present}</td><td>${p.absent}</td><td>${p.leave}</td><td>${p.unknown}</td><td>${p.otYes}</td><td>${p.otTimed?fmt(p.otMinutes/60):'—'}<small> (${p.otTimed}/${p.otYes}건 시각 입력)</small></td><td>${p.activities}</td></tr>`).join('')||'<tr><td colspan="8">저장된 근태·활동 없음</td></tr>'}</tbody></table></div></div><div><h3>소모품 사용 합계</h3><div class="scroll"><table class="consumption"><thead><tr><th>소모품</th><th>수량</th><th>단위</th></tr></thead><tbody>${data.consumables.map(c=>`<tr><td>${esc(c.name)}</td><td>${fmt(c.qty)}</td><td>${esc(c.unit)}</td></tr>`).join('')||'<tr><td colspan="3">소모품 기록 없음</td></tr>'}</tbody></table></div></div></div><p class="footnote">근태는 저장된 날짜의 담당자별 교대 수입니다. 미저장 날짜를 결근으로 간주하지 않습니다. 확인 OT는 OT 참여로 표시하고 출퇴근 시각을 모두 입력한 건만 합산합니다(휴식 차감 없음). 공동 활동은 담당자별 참여 건수에 각각 반영하며 전체 활동 건수는 중복 없이 셉니다.</p><h3 class="section-head">날짜별 활동 · 날짜를 눌러 과거 기록 조회</h3><div class="daily">${data.daily.map(d=>`<button class="day-link ${d.saved?'':'no-data'}" data-day="${d.date}"><span>${d.date.slice(5)}</span><strong>${d.saved?d.activities+'건':'미등록'}</strong></button>`).join('')}</div>`;
+      $('stats').querySelectorAll('table').forEach(table=>{
+        const labels=[...table.querySelectorAll('thead th')].map(th=>th.textContent);
+        table.querySelectorAll('tbody tr').forEach(row=>[...row.children].forEach((cell,i)=>{cell.dataset.label=cell.colSpan>1?'':labels[i]||'';}));
+      });
     }catch(e){if(gen===statsGeneration){showError('stats-error',e.message);$('stats').innerHTML='<p class="empty">통계를 조회하지 못했습니다.</p>';}}
     finally{if(gen===statsGeneration)$('stats-load').disabled=false;}
   }
   document.addEventListener('click',e=>{
     const button=e.target.closest('button');if(!button)return;
     if(button.dataset.close)$(button.dataset.close).close();
+    if(button.dataset.pickShift){mobileShift=button.dataset.pickShift;renderMobile();}
     if(button.dataset.attendance)attendanceOpen(button.dataset.attendance);
     if(button.dataset.slot!==undefined)activityOpen(button.dataset.shift,Number(button.dataset.slot));
     if(button.dataset.edit){resetActivity(current.activities.find(a=>a.id===button.dataset.edit));$('activity-mode').scrollIntoView({block:'start',behavior:'smooth'});}
@@ -157,6 +174,9 @@
   $('previous').addEventListener('click',()=>{if($('date').value){$('date').value=addDate($('date').value,-1);load();}});
   $('next').addEventListener('click',()=>{if($('date').value){$('date').value=addDate($('date').value,1);load();}});
   $('today').addEventListener('click',()=>{$('date').value=workToday();load();});$('stats-load').addEventListener('click',loadStats);
+  $('stats-month').addEventListener('change',loadStats);
+  function moveMonth(offset){const value=$('stats-month').value;if(!value)return;const [year,month]=value.split('-').map(Number);const d=new Date(Date.UTC(year,month-1+offset,1));$('stats-month').value=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;loadStats();}
+  $('month-previous').addEventListener('click',()=>moveMonth(-1));$('month-next').addEventListener('click',()=>moveMonth(1));
   setInterval(()=>{if(!document.hidden&&!modalOpen()&&!$('refresh').disabled)load();},60000);
-  load();
+  load();loadStats();
 })();
