@@ -64,6 +64,8 @@
         g.estimate.hours=null;
         g.estimate.intervals.forEach(i=>{if(i.qty>=10 && i.minutes===0)i.minutes=null;});
       });
+      // Older servers report normal model changes as missing production time.
+      data.groups.forEach(g=>{g.warnings=(g.warnings||[]).filter(w=>!/^기록 없는 \d+분은 추정시간에서 제외$/.test(w));});
       snapshot = data;
       available = true;
       $('error').hidden = legacyGroups.length===0;

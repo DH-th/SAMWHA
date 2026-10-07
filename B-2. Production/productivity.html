@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>생산성 — Production</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="stylesheet" href="productivity.css?v=20260930-server-check-7">
-<script src="productivity.js?v=20260930-server-check-7" defer></script>
+<link rel="stylesheet" href="productivity.css?v=20261007-model-switch-8">
+<script src="productivity.js?v=20261007-model-switch-8" defer></script>
 </head>
 <body>
 <header>
@@ -37,7 +37,7 @@
     <p id="excluded-summary" class="footnote"></p>
   </section>
   <section class="panel">
-    <div class="section-head"><div><h2>라인 · 모델별 실적</h2><p>새 S2 실적이 들어오면 다음 조회에서 추정시간과 달성률을 갱신합니다. 기록 없는 구간은 시간에 포함하지 않습니다.</p></div></div>
+    <div class="section-head"><div><h2>라인 · 모델별 실적</h2><p>새 S2 실적이 들어오면 다음 조회에서 추정시간과 달성률을 갱신합니다. 중간에 다른 모델을 생산해도 정상입니다. 라인 시간은 모델과 관계없이 실적이 있는 20분 구간을 한 번씩 합산합니다.</p></div></div>
     <div class="table-wrap"><table><thead><tr><th>생산일</th><th>라인</th><th>Plant / 모델</th><th>S2 수량</th><th>CAPA/H</th><th>추정 시작</th><th>추정 종료</th><th>모델 배분 H</th><th>UPH</th><th>기준수량</th><th>달성률</th><th>상태 / 마지막 수집</th><th>추정 이력</th></tr></thead><tbody id="rows"><tr><td colspan="13" class="empty">서버 자료를 조회합니다.</td></tr></tbody></table></div>
     <p class="footnote">CAPA/H는 현재 기준입니다. CAPA가 바뀌면 모델별 시간 배분과 달성률을 다시 계산하며 이전 계산은 이력에 보존합니다. 인원·공수가 없어 UPPH·노동 효율은 계산하지 않습니다.</p>
   </section>
@@ -58,7 +58,7 @@
   <details class="panel help"><summary>계산 방식과 집계 기준</summary>
     <p><b>라인 추정시간(H)</b> = 라인별 서로 다른 20분 구간 수 × 20 ÷ 60<br><b>모델 배분시간</b> = 각 구간 20분 × (모델 수량/CAPA) ÷ Σ(구간 모델별 수량/CAPA)<br><b>UPH</b> = S2 실적 ÷ 적용 생산시간(H)<br><b>잠정 CAPA 달성률</b> = Σ S2 실적 ÷ Σ (적용 CAPA × 모델별 생산시간) × 100</p>
     <p>예: 08:19·08:39·08:59에 등록하면 시작 08:00, 종료 09:00, 추정시간 1시간입니다. CAPA 120개/H에 S2 100개라면 달성률은 83.3%입니다. 달성률은 100%를 넘을 수 있으며 퍼센트의 단순 평균은 사용하지 않습니다.</p>
-    <p>같은 구간의 동일 모델 기록은 수량을 합산하고 시간은 한 번만 셉니다. 기록 없는 구간은 제외하므로 시작~종료의 차이와 합산 시간이 다를 수 있습니다. 같은 라인의 같은 구간에 여러 모델이 있어도 라인 시간은 총 20분입니다. 모델별 시간은 수량 ÷ CAPA/H의 비율로 나누며, 실제 모델 전환시각을 측정한 값은 아닙니다. 같은 구간 모델의 CAPA가 없으면 수량 비율로 20분을 나누고 달성률은 보류합니다. CAPA 누락 때문에 시간을 0분으로 처리하지 않습니다. 시각이 없으면 시간 추정과 달성률 계산을 보류합니다.</p>
+    <p>같은 구간의 동일 모델 기록은 수량을 합산하고 시간은 한 번만 셉니다. 모델별 시작~종료 사이에는 다른 모델 생산이 포함될 수 있으므로, 그 차이를 해당 모델의 생산시간으로 계산하지 않습니다. 같은 라인의 같은 구간에 여러 모델이 있어도 라인 시간은 총 20분입니다. 모델별 시간은 수량 ÷ CAPA/H의 비율로 나누며, 실제 모델 전환시각을 측정한 값은 아닙니다. 같은 구간 모델의 CAPA가 없으면 수량 비율로 20분을 나누고 달성률은 보류합니다. CAPA 누락 때문에 시간을 0분으로 처리하지 않습니다. 시각이 없으면 시간 추정과 달성률 계산을 보류합니다.</p>
     <p>자동 시간은 휴식·대기·고장 및 재전송/초기 일괄업로드를 판별하지 못하는 추정치입니다. 새 실적이 들어오면 자동 추정시간과 달성률을 갱신합니다. 추정시간과 당시 CAPA는 이력에 보관합니다.</p>
     <p>교대별 시간 제한 없이 합산합니다. 생산일은 원천 자료를 유지하며, 야간 자정 이후 기록의 날짜 복원에만 원천 교대를 사용합니다. 모델별 업로드 한 건이 10개 미만이면 수량·시간·달성률에서 제외합니다. 이 화면은 기존 원천 실적을 수정하지 않습니다.</p>
     <p>같은 ID의 동일 기록은 한 번만 집계하고, ID 충돌·음수 등 잘못된 기록은 제외 사실을 표시합니다. 원천 업로더가 서로 다른 ID로 중복 전송한 동일 제품은 현재 로그만으로 판별할 수 없습니다.</p>
