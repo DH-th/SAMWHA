@@ -106,7 +106,6 @@
     $('total').textContent = groups.length || (snapshot.sources.every(s=>(s.state==='ok' || (s.optional && s.state==='missing'))) && snapshot.issues.every(i=>i.informational)) ? fmt(sum('qty'),0) : '—';
     $('uph').textContent = complete ? `${fmt(sum('qty')/hours)} /H` : '계산 대기';
     $('hours').textContent = `${fmt(hours,2)} H · 자동 추정 ${valid.length} / ${groups.length}행`;
-    $('target').textContent = complete ? fmt(sum('target')) : '—';
     $('rate').textContent = complete ? `${fmt(sum('qty')/sum('target')*100)}%` : '—';
     $('coverage').textContent = complete ? '수량 합계 기준 · 퍼센트 단순 평균 제외' : '모든 행의 시간·CAPA·수집 상태 확인 필요';
     const lines = new Map();
@@ -122,7 +121,7 @@
       const estimate = g.estimate || {intervals:[],issues:[]};
       const changed = saved && saved.capa !== g.capa;
       return `<tr><td>${escape(g.prodDate)}</td><td>${escape(g.line)}</td>
-      <td>${escape(g.modelName || '모델 미확인')}<small>${escape(g.plantName || 'Plant 미매칭')}</small></td>
+      <td>${escape(g.modelName || '모델 미확인')}<small>${escape(g.matchedPlant || g.plantName || 'Plant 미매칭')}</small></td>
       <td class="num">${fmt(g.qty,0)}</td><td class="num">${fmt(g.capa)}${changed?`<small>저장 기준 ${fmt(saved.capa)}</small>`:''}</td>
       <td>${estimate.start?escape(estimate.start.slice(11)):'—'}<small>${estimate.start?escape(estimate.start.slice(0,10)):''}</small></td>
       <td>${estimate.end?escape(estimate.end.slice(11)):'—'}<small>${estimate.end?escape(estimate.end.slice(0,10)):''}</small></td>
@@ -137,10 +136,11 @@
     const slotOrder = [...Object.keys(slots)].sort((a,b)=>((parseInt(a)+16)%24)-((parseInt(b)+16)%24));
     $('trend').innerHTML = slotOrder.length ? slotOrder.map(s=>`<div class="bar-row"><span>${escape(s)}</span><div class="bar-track"><div class="bar-fill" style="width:${slots[s]/maximum*100}%"></div></div><strong>${fmt(slots[s],0)}</strong></div>`).join('') : '<p class="empty">시간대별 실적 없음</p>';
     const state = {ok:'파일 확인',missing:'파일 없음 · 수집 여부 확인',error:'파일 읽기 오류'};
-    const unresolved = groups.filter(g=>g.issues.length);
+    const unresolved = groups.filter(g=>g.issues.some(i=>/모델|CAPA|매핑|Plant|ID/.test(i)));
     $('quality').innerHTML = `<p>${escape(snapshot.quantityBasis)}</p><ul>${snapshot.sources.map(s=>`<li class="${(s.state==='ok' || (s.optional && s.state==='missing'))?'':'warning'}">${s.date} · ${s.optional&&s.state==='missing'?'인접 날짜 파일 없음 (선택일 파일 기준 조회)':state[s.state]}${s.rawCount===0&&(s.state==='ok' || (s.optional && s.state==='missing'))?' (기록 0건 · 무가동/수집 상태 확인)':''}</li>`).join('')}</ul>
       <p>마지막 기록이 오래되어도 무가동과 통신 중단을 자동 구분할 수 없습니다. 생산 중 갱신이 멈추면 수집 PC를 확인하세요.</p>
-      ${unresolved.length?`<h3>CAPA·모델·원천 확인: ${unresolved.length}개 행</h3>`:''}
+      <h3>미매칭 · CAPA 확인 코드 (${unresolved.length}건)</h3>
+      ${unresolved.length?`<div class="table-wrap"><table><thead><tr><th>모델 코드</th><th>Plant / 라인</th><th>수량</th><th>확인 내용</th></tr></thead><tbody>${unresolved.map(g=>`<tr><td><strong>${escape(g.modelName||'코드 없음')}</strong><br><button data-master-code="${escape(g.modelName)}">CAPA 검색</button></td><td>${escape(g.matchedPlant||g.plantName||'Plant 미등록')}<small>${escape(g.line)}</small></td><td>${fmt(g.qty,0)}</td><td>${escape(g.issues.join(' · '))}</td></tr>`).join('')}</tbody></table></div>`:'<p>현재 조회 조건에 미매칭·CAPA 확인 대상이 없습니다.</p>'}
       ${snapshot.issues.length?`<h3>원천 기록 검증</h3><p>문제 기록을 제외한 수량을 표시합니다. 원천 자료 확인 전 전체 실적으로 확정하지 마세요.</p><ul>${snapshot.issues.map(i=>`<li>${escape(i.date)} · ${escape(i.message)}${i.id?` (${escape(i.id)})`:''}</li>`).join('')}</ul>`:''}`;
     $('master-meta').textContent = `${snapshot.master.source} · 기준 버전 ${snapshot.master.version.slice(0,12)} · ${snapshot.master.rows.length}개 모델${snapshot.master.modifiedAt?' · '+timeText(snapshot.master.modifiedAt):''}`;
     renderMaster();
@@ -167,6 +167,21 @@
     } catch(err) { $('history-body').textContent = err.message; }
   }
 
+  $('capa-template').href = `${API}/master/template`;
+  $('capa-upload').addEventListener('click',async()=>{
+    const file=$('capa-file').files[0];
+    if(!file || !/\.xlsx$/i.test(file.name)){$('capa-upload-status').textContent='.xlsx 파일을 선택하세요.';return;}
+    if(file.size>10*1024*1024){$('capa-upload-status').textContent='10MB 이하 파일을 선택하세요.';return;}
+    const body=new FormData();body.append('file',file);
+    $('capa-upload').disabled=true;$('capa-upload-status').textContent='Excel 검증 및 저장 중…';
+    try {
+      const result=await json(`${API}/master/upload`,{method:'POST',body});
+      $('capa-upload-status').textContent=`저장 완료 · 신규 ${result.added}개 / CAPA 변경 ${result.updated}개${result.warning?' · '+result.warning:''}`;
+      $('capa-file').value='';await load();
+    } catch(err){$('capa-upload-status').textContent=err.message+' 저장 결과가 불확실하면 서버 Excel 다시 확인으로 확인하세요.';}
+    finally{$('capa-upload').disabled=false;}
+  });
+
   $('master-search').addEventListener('input', ()=>{renderMaster();document.querySelector('.master-table').scrollTop=0;});
   $('master-clear').addEventListener('click', ()=>{$('master-search').value='';renderMaster();document.querySelector('.master-table').scrollTop=0;$('master-search').focus();});
   $('master-refresh').addEventListener('click', load);
@@ -183,6 +198,7 @@
     const button=e.target.closest('button');if(!button)return;
     if(button.dataset.close)$(button.dataset.close).close();
     if(button.dataset.history)history(button.dataset.history);
+    if(button.hasAttribute('data-master-code')){$('master-search').value=button.dataset.masterCode;renderMaster();$('master-search').scrollIntoView({behavior:'smooth',block:'center'});$('master-search').focus({preventScroll:true});}
     if(button.dataset.line){$('line').value=button.dataset.line;render();}
   });
   ['line','plant','model'].forEach(id=>$(id).addEventListener('change',render));

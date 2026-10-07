@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B-9. Maintenance · SAMHWA</title>
+<link rel="stylesheet" href="maintenance.css?v=20261007-1"><script src="maintenance.js?v=20261007-1" defer></script>
+</head>
+<body>
+<header><div><a class="home" href="../index.html">SAMHWA / B-9</a><h1>Maintenance</h1><p>기술팀 근태 · 활동 기록</p></div><nav><a class="button" href="../B-3.%20Spare%20Part/index.html">B-3. Spare Part ↗</a><button id="settings-open">조 편성 · 교대 설정</button></nav></header>
+<main>
+<section class="toolbar"><div class="date-nav"><button id="previous" aria-label="이전 날짜">←</button><label>근무 시작일<input id="date" type="date" required></label><button id="next" aria-label="다음 날짜">→</button><button id="today">오늘</button><button id="refresh">새로고침</button></div><div class="legend"><span>Day 08:00–20:00</span><span>Night 20:00–다음 날 08:00</span><strong>OT 17:00 / 다음 날 05:00 이후</strong></div></section>
+<p id="connection" role="status" aria-live="polite">서버 조회 중…</p><p id="error" class="notice danger" role="alert" hidden></p>
+<div id="setup-notice" class="notice" hidden>이 날짜에 적용되는 조 편성이 없습니다. 상단 ‘조 편성 · 교대 설정’에서 A/B조 각 2명과 기준일을 입력하세요.</div>
+<section id="rosters" class="rosters" aria-label="담당 인원 및 근태"></section>
+<section class="panel"><div class="section-head"><div><h2>2시간 활동 보드</h2><p>각 칸을 눌러 사진·설명·소모품을 등록하세요. 같은 칸에 여러 활동을 기록할 수 있습니다.</p></div><span class="tag">6개 구간 × 2교대</span></div><div class="scroll"><table class="board"><thead><tr><th>교대 / 담당 조</th><th>1구간</th><th>2구간</th><th>3구간</th><th>4구간</th><th>5구간</th><th>6구간</th></tr></thead><tbody id="board"></tbody></table></div><p class="footnote">주황색 구간은 OT 시간이 포함됩니다. 16:00–18:00 중 17:00 이후, 04:00–06:00 중 05:00 이후만 OT입니다. 활동 기록은 출근 여부를 자동 확정하지 않습니다.</p></section>
+<section class="panel"><div class="section-head"><div><h2>기간별 통계</h2><p>과거 근태·활동·소모품 사용 내역을 조회합니다.</p></div><div class="stats-controls"><label>시작일<input id="stats-start" type="date"></label><label>종료일<input id="stats-end" type="date"></label><button id="stats-load">통계 조회</button></div></div><p id="stats-error" class="notice danger" hidden role="alert"></p><div id="stats"><p class="empty">기간을 선택하고 통계를 조회하세요. 최대 93일.</p></div></section>
+</main>
+<dialog id="settings"><form id="settings-form"><div class="dialog-head"><div><h2>조 편성 · 자동 교대</h2><p>기준일에 A조는 Day, B조는 Night입니다. 이후 14일마다 서로 바뀝니다.</p></div><button type="button" data-close="settings" aria-label="닫기">✕</button></div>
+<div class="form-grid"><label>편성 적용 시작일<input id="effective" type="date" required></label><label>A조 주간 시작 기준일<input id="anchor" type="date" required></label><fieldset><legend>A조 · 2명</legend><label>담당자 1<input id="a1" maxlength="80" required></label><label>담당자 2<input id="a2" maxlength="80" required></label></fieldset><fieldset><legend>B조 · 2명</legend><label>담당자 1<input id="b1" maxlength="80" required></label><label>담당자 2<input id="b2" maxlength="80" required></label></fieldset></div>
+<p class="footnote">이름은 중복 없이 입력하세요. 변경 편성은 적용일과 함께 이력으로 저장됩니다. 이미 기록을 저장한 날짜의 담당 인원과 근태는 유지됩니다.</p><p id="settings-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="settings">취소</button><button id="settings-save" class="primary">편성 저장</button></div><details><summary>편성 이력</summary><div id="settings-history"></div></details></form></dialog>
+<dialog id="attendance"><form id="attendance-form"><div class="dialog-head"><h2 id="attendance-title">근태 등록</h2><button type="button" data-close="attendance" aria-label="닫기">✕</button></div><p class="notice">출근 여부와 OT 여부를 확인해 주세요. 출퇴근 시각은 선택 입력이며, 두 시각이 모두 있을 때만 확인된 OT 시간을 집계합니다.</p><div id="attendance-fields"></div><p id="attendance-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="attendance">취소</button><button id="attendance-save" class="primary">근태 저장</button></div></form></dialog>
+<dialog id="activity"><div class="dialog-head"><div><h2 id="activity-title">활동 기록</h2><p id="activity-context"></p></div><button type="button" data-close="activity" aria-label="닫기">✕</button></div><div id="activity-list"></div><form id="activity-form"><div class="section-head compact"><h3 id="activity-mode">새 활동 등록</h3><button type="button" id="activity-new">새 기록 작성</button></div>
+<fieldset><legend>작업 담당자</legend><div id="activity-members" class="checks"></div></fieldset><label>설비 / 위치<input id="activity-location" maxlength="100" placeholder="예: L.9 컨베이어"></label><label>활동 설명<textarea id="description" rows="3" maxlength="2000" required placeholder="점검·수리 내용과 조치 결과를 간단히 기록하세요."></textarea></label>
+<div class="section-head compact"><h3>사용 소모품</h3><button type="button" id="consumable-add">+ 항목 추가</button></div><div id="consumables"></div><p class="footnote">소모품 사용 기록입니다. Spare Part 재고는 자동 차감되지 않습니다.</p>
+<label>사진 추가 · 여러 장 선택 가능<input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><p class="footnote">기록당 최대 8장 · 한 장 8MB 이하. 서버에 JPEG로 저장하며 긴 변은 최대 2,400px로 조정합니다.</p><div id="existing-photos" class="photo-grid"></div><div id="photo-preview" class="photo-grid"></div>
+<p id="activity-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="activity">닫기</button><button id="activity-save" class="primary">활동 저장</button></div></form></dialog>
+</body></html>
