@@ -9,7 +9,8 @@
   let snapshot = null, available = false, loading = false, requestId = 0;
   let controller = null;
   const now = new Date();
-  $('start').value = $('end').value = dateText(now);
+  if(now.getHours()<8) now.setDate(now.getDate()-1);
+  $('date').value = dateText(now);
 
   async function json(url, options = {}) {
     const res = await fetch(url, {...options, cache:'no-store'});
@@ -35,10 +36,9 @@
   async function load() {
     const id = ++requestId;
     controller?.abort();
-    const start = $('start').value, end = $('end').value;
-    const count = (Date.parse(end)-Date.parse(start))/86400000+1;
-    if (!start || !end || !Number.isFinite(count) || count < 1 || count > 31) {
-      $('error').textContent = '시작일과 종료일을 확인하세요. 한 번에 최대 31일까지 조회할 수 있습니다.';
+    const date = $('date').value;
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      $('error').textContent = '조회 날짜를 선택하세요.';
       $('error').hidden = false;
       available = false;
       loading = false;
@@ -53,9 +53,10 @@
     $('refresh').disabled = true;
     $('connection').textContent = '서버 조회 중…';
     try {
-      const data = await json(`${API}?start=${start}&end=${end}`, {signal:controller.signal});
+      const data = await json(`${API}?date=${date}`, {signal:controller.signal});
       if (id !== requestId) return;
       if (!Array.isArray(data.groups) || !Array.isArray(data.sources) || !data.master) throw new Error('서버 자료 형식을 확인하세요.');
+      if(data.date!==date || !data.windowStart || !data.windowEnd) throw new Error('08:00 기준 날짜 조회를 사용하려면 서버 productivity.py를 최신 파일로 교체하고 재시작하세요.');
       const legacyGroups = data.groups.filter(g=>(g.estimate?.intervals||[]).some(i=>i.qty>=10 && i.minutes===0));
       legacyGroups.forEach(g=>{
         g.comparison=null;g.uph=g.target=g.rate=null;
@@ -70,7 +71,7 @@
       available = true;
       $('error').hidden = legacyGroups.length===0;
       if(legacyGroups.length) $('error').textContent='이전 서버 계산이 실행 중입니다. 서버 PC에서 실행 중인 server.py와 같은 폴더의 productivity.py를 최신 파일로 교체한 뒤 서버 프로그램을 완전히 종료하고 다시 실행하세요. 웹 새로고침만으로는 서버 계산이 바뀌지 않습니다. 라인 구간은 20분이며 모델 배분은 서버 업데이트 후 확인할 수 있습니다.';
-      $('connection').textContent = `조회 완료 ${timeText(data.generatedAt)} · ${data.start} ~ ${data.end}`;
+      $('connection').textContent = `조회 완료 ${timeText(data.generatedAt)} · ${timeText(data.windowStart)} ~ ${timeText(data.windowEnd)}`;
       options('line', data.groups.map(g=>g.line), '전체 라인');
       options('plant', data.groups.map(g=>g.plantName), '전체 Plant');
       options('model', data.groups.map(g=>g.modelName), '전체 모델');
@@ -100,9 +101,9 @@
     const groups = selected();
     const sum = key => groups.reduce((n,g)=>n+(g[key] ?? 0),0);
     const valid = groups.filter(g=>g.status === '계산 가능');
-    const complete = groups.length > 0 && valid.length === groups.length && snapshot.sources.every(s=>s.state === 'ok') && snapshot.issues.every(i=>i.informational);
+    const complete = groups.length > 0 && valid.length === groups.length && snapshot.sources.every(s=>(s.state === 'ok' || (s.optional && s.state === 'missing'))) && snapshot.issues.every(i=>i.informational);
     const hours = lineHours(groups);
-    $('total').textContent = groups.length || (snapshot.sources.every(s=>s.state==='ok') && snapshot.issues.every(i=>i.informational)) ? fmt(sum('qty'),0) : '—';
+    $('total').textContent = groups.length || (snapshot.sources.every(s=>(s.state==='ok' || (s.optional && s.state==='missing'))) && snapshot.issues.every(i=>i.informational)) ? fmt(sum('qty'),0) : '—';
     $('uph').textContent = complete ? `${fmt(sum('qty')/hours)} /H` : '계산 대기';
     $('hours').textContent = `${fmt(hours,2)} H · 자동 추정 ${valid.length} / ${groups.length}행`;
     $('target').textContent = complete ? fmt(sum('target')) : '—';
@@ -111,7 +112,7 @@
     const lines = new Map();
     groups.forEach(g=>{if(!lines.has(g.line))lines.set(g.line,[]);lines.get(g.line).push(g);});
     $('line-summary').innerHTML = [...lines].sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true})).map(([line,items])=>{
-      const ready = items.every(g=>g.status==='계산 가능') && snapshot.sources.every(s=>s.state==='ok') && snapshot.issues.every(i=>i.informational);
+      const ready = items.every(g=>g.status==='계산 가능') && snapshot.sources.every(s=>(s.state==='ok' || (s.optional && s.state==='missing'))) && snapshot.issues.every(i=>i.informational);
       const qty=items.reduce((n,g)=>n+g.qty,0), hours=lineHours(items), target=items.reduce((n,g)=>n+(g.target||0),0);
       return `<tr><td><button data-line="${escape(line)}">${escape(line)}</button></td><td class="num">${fmt(qty,0)}</td><td class="num">${fmt(hours,2)}</td><td class="num">${ready?fmt(qty/hours):'—'}</td><td class="num">${ready?fmt(target):'—'}</td><td class="num good">${ready?fmt(qty/target*100)+'%':'—'}</td><td>${ready?'계산 가능':'자료 확인 필요'} · ${items.length}개 행</td></tr>`;
     }).join('') || '<tr><td colspan="7" class="empty">반영할 라인 실적이 없습니다.</td></tr>';
@@ -137,7 +138,7 @@
     $('trend').innerHTML = slotOrder.length ? slotOrder.map(s=>`<div class="bar-row"><span>${escape(s)}</span><div class="bar-track"><div class="bar-fill" style="width:${slots[s]/maximum*100}%"></div></div><strong>${fmt(slots[s],0)}</strong></div>`).join('') : '<p class="empty">시간대별 실적 없음</p>';
     const state = {ok:'파일 확인',missing:'파일 없음 · 수집 여부 확인',error:'파일 읽기 오류'};
     const unresolved = groups.filter(g=>g.issues.length);
-    $('quality').innerHTML = `<p>${escape(snapshot.quantityBasis)}</p><ul>${snapshot.sources.map(s=>`<li class="${s.state==='ok'?'':'warning'}">${s.date} · ${state[s.state]}${s.rawCount===0&&s.state==='ok'?' (기록 0건 · 무가동/수집 상태 확인)':''}</li>`).join('')}</ul>
+    $('quality').innerHTML = `<p>${escape(snapshot.quantityBasis)}</p><ul>${snapshot.sources.map(s=>`<li class="${(s.state==='ok' || (s.optional && s.state==='missing'))?'':'warning'}">${s.date} · ${s.optional&&s.state==='missing'?'인접 날짜 파일 없음 (선택일 파일 기준 조회)':state[s.state]}${s.rawCount===0&&(s.state==='ok' || (s.optional && s.state==='missing'))?' (기록 0건 · 무가동/수집 상태 확인)':''}</li>`).join('')}</ul>
       <p>마지막 기록이 오래되어도 무가동과 통신 중단을 자동 구분할 수 없습니다. 생산 중 갱신이 멈추면 수집 PC를 확인하세요.</p>
       ${unresolved.length?`<h3>CAPA·모델·원천 확인: ${unresolved.length}개 행</h3>`:''}
       ${snapshot.issues.length?`<h3>원천 기록 검증</h3><p>문제 기록을 제외한 수량을 표시합니다. 원천 자료 확인 전 전체 실적으로 확정하지 마세요.</p><ul>${snapshot.issues.map(i=>`<li>${escape(i.date)} · ${escape(i.message)}${i.id?` (${escape(i.id)})`:''}</li>`).join('')}</ul>`:''}`;
@@ -176,7 +177,7 @@
     selected().forEach(g=>rows.push([g.prodDate,g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.estimate?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'라인 20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
     const cell = value => {let s=String(value??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const blob = new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
-    const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=`productivity_${snapshot.start}_${snapshot.end}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=`productivity_${snapshot.date}_0800.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   });
   document.addEventListener('click',e=>{
     const button=e.target.closest('button');if(!button)return;
@@ -185,9 +186,9 @@
     if(button.dataset.line){$('line').value=button.dataset.line;render();}
   });
   ['line','plant','model'].forEach(id=>$(id).addEventListener('change',render));
-  ['start','end'].forEach(id=>$(id).addEventListener('change',()=>{++requestId;controller?.abort();loading=false;$('refresh').disabled=false;available=false;render();$('connection').textContent='조회 기간이 변경되었습니다. 조회 버튼을 누르세요.';}));
+  $('date').addEventListener('change',load);
   $('all-lines').addEventListener('click',()=>{$('line').value='';render();});
   $('refresh').addEventListener('click',load);
-  setInterval(()=>{if(!loading && !$('history').open && !document.hidden && (!snapshot || ($('start').value===snapshot.start && $('end').value===snapshot.end)))load();},30000);
+  setInterval(()=>{if(!loading && !$('history').open && !document.hidden && (!snapshot || $('date').value===snapshot.date))load();},30000);
   load();
 })();
