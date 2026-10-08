@@ -154,8 +154,8 @@
       const [year,m]=month.split('-').map(Number);
       const last=new Date(Date.UTC(year,m,0)).getUTCDate();
       const data=await api(`/stats?start=${month}-01&end=${month}-${String(last).padStart(2,'0')}`);if(gen!==statsGeneration)return;
-      const totals=data.people.reduce((sum,p)=>({work:sum.work+(p.present||0),ot:sum.ot+(p.otYes||0),missing:sum.missing+(p.absent||0)+(p.leave||0)}),{work:0,ot:0,missing:0});
-      $('stats').innerHTML=`<div class="monthly-totals"><div class="metric"><span>WORK</span><strong>${fmt(totals.work)}</strong></div><div class="metric"><span>OT</span><strong>${fmt(totals.ot)}</strong></div><div class="metric"><span>Missing</span><strong>${fmt(totals.missing)}</strong></div></div>`;
+      if(data.people.some(p=>!Number.isFinite(p.missing)))throw new Error('Server update required');
+      $('stats').innerHTML=`<div class="attendance-table"><table><thead><tr><th>Employee</th><th>WORK</th><th>OT</th><th>Missing</th></tr></thead><tbody>${data.people.map(p=>`<tr><td>${esc(p.name)}</td><td><span class="stat-work">${fmt(p.present)}</span></td><td>${fmt(p.otYes)}</td><td><span class="${p.missing?'stat-missing':'stat-zero'}">${fmt(p.missing)}</span></td></tr>`).join('')||'<tr><td colspan="4">No records</td></tr>'}</tbody></table></div>`;
 
     }catch(e){if(gen===statsGeneration){showError('stats-error',e.message);$('stats').innerHTML='<p class="empty">Stats unavailable</p>';}}
     finally{if(gen===statsGeneration)$('stats-load').disabled=false;}
