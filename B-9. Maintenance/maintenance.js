@@ -66,16 +66,15 @@
     showError('settings-error','');$('settings-save').disabled=true;$('settings').showModal();
     try{
       config=await api('/config',{headers:{'X-Maintenance-Password':settingsPassword}});const last=config.versions.at(-1),today=workToday();
-      $('effective').value=last&&last.effectiveFrom>today?last.effectiveFrom:today;
       $('anchor').value=last?.anchor||today;
       ['a1','a2','b1','b2'].forEach((id,i)=>$(id).value=last?.teams[i<2?'A':'B'][i%2].name||'');
-      $('settings-history').innerHTML=config.versions.slice().reverse().map(v=>`<div class="history-entry">적용 ${esc(v.effectiveFrom)} · A조 주간 기준 ${esc(v.anchor)}<br>A조 ${v.teams.A.map(m=>esc(m.name)).join(' / ')}<br>B조 ${v.teams.B.map(m=>esc(m.name)).join(' / ')}</div>`).join('')||'<p>저장된 편성이 없습니다.</p>';
+      $('settings-history').innerHTML=config.versions.slice().reverse().map(v=>`<div class="history-entry">A조 주간 기준 ${esc(v.anchor)}<br>A조 ${v.teams.A.map(m=>esc(m.name)).join(' / ')}<br>B조 ${v.teams.B.map(m=>esc(m.name)).join(' / ')}</div>`).join('')||'<p>저장된 편성이 없습니다.</p>';
       $('settings-save').disabled=false;
     }catch(e){showError('settings-error',e.message);}
   }
   $('settings-form').addEventListener('submit',async e=>{
     e.preventDefault();if(!config)return;$('settings-save').disabled=true;showError('settings-error','');
-    try{const options=jsonOptions({revision:config.revision,effectiveFrom:$('effective').value,anchor:$('anchor').value,teams:{A:[$('a1').value,$('a2').value],B:[$('b1').value,$('b2').value]}});options.headers['X-Maintenance-Password']=settingsPassword;await api('/config',options);$('settings').close();invalidateStats();await load();}
+    try{const options=jsonOptions({revision:config.revision,effectiveFrom:config.versions.length?[workToday(),config.versions.at(-1).effectiveFrom].sort().at(-1):$('anchor').value,anchor:$('anchor').value,teams:{A:[$('a1').value,$('a2').value],B:[$('b1').value,$('b2').value]}});options.headers['X-Maintenance-Password']=settingsPassword;await api('/config',options);$('settings').close();invalidateStats();await load();}
     catch(err){showError('settings-error',err.message);}finally{$('settings-save').disabled=false;}
   });
   function attendanceOpen(shift){
