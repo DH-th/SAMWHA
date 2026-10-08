@@ -35,7 +35,7 @@
       if(gen!==generation)return;
       if(!Array.isArray(data.activities)||!data.windows)throw new Error('서버 자료 형식을 확인하세요.');
       current=data;online=true;showError('error','');
-      $('connection').textContent=`${day} 08:00 ~ ${addDate(day,1)} 08:00 · ${data.saved?'저장된 기록':'아직 저장된 기록 없음'} · 태국 시간 기준`;
+      $('connection').textContent='';
       render();
     }catch(e){if(gen!==generation)return;showError('error',e.message);$('connection').textContent='조회 실패 · 표시된 이전 자료는 수정할 수 없습니다.';render();}
     finally{if(gen===generation)$('refresh').disabled=false;}
@@ -46,17 +46,17 @@
     $('setup-notice').hidden=!!roster;
     $('rosters').innerHTML=['day','night'].map(shift=>{
       const team=roster?.[shift];
-      return `<article class="roster ${shift}"><div class="roster-top"><div><span class="tag">${shiftName(shift)} · ${shift==='day'?'08:00–20:00':'20:00–다음 날 08:00'}</span><h2>${team?team.team+'조 담당 인원':'조 편성 필요'}</h2><p>OT ${shift==='day'?'17:00':'다음 날 05:00'} 이후${roster?' · 다음 교대 전환 '+esc(roster.nextRotation):''}</p></div><button data-attendance="${shift}" ${!online||!roster?'disabled':''}>근태 확인</button></div>${team?team.members.map(m=>{
+      return `<article class="roster ${shift}"><div class="roster-top"><div><span class="tag">${shiftName(shift)} · ${shift==='day'?'08:00–20:00':'20:00–다음 날 08:00'}</span><h2>${team?team.team+'조':'조 편성 필요'}</h2></div><button data-attendance="${shift}" ${!online||!roster?'disabled':''}>근태</button></div>${team?team.members.map(m=>{
         const a=current.attendance[shift]?.[m.id]||{};
         return `<div class="member"><div><strong>${esc(m.name)}</strong></div><div><span class="status ${a.status||''}">${a.status==='present'?'WORK ✓':a.status?'WORK —':'미확인'}</span><span class="status ${a.ot==='yes'?'ot':''}">${a.ot==='yes'?'OT ✓':'OT —'}</span>${a.note?`<small>${esc(a.note)}</small>`:''}</div></div>`;
-      }).join(''):'<p>조 편성과 교대 기준일을 설정하세요.</p>'}</article>`;
+      }).join(''):'<p>미설정</p>'}</article>`;
     }).join('');
     $('board').innerHTML=['day','night'].map(shift=>`<tr><th>${shiftName(shift)}<br>${roster?roster[shift].team+'조':''}<p>${roster?roster[shift].members.map(m=>esc(m.name)).join('<br>'):''}</p></th>${Array.from({length:6},(_,slot)=>`<td>${slotButton(shift,slot)}</td>`).join('')}</tr>`).join('');
     renderMobile();
   }
   function slotButton(shift,slot){
     const entries=current.activities.filter(a=>a.shift===shift&&a.slot===slot),photos=entries.reduce((n,a)=>n+a.photos.length,0);
-    return `<button class="slot ${entries.length?'filled':''} ${slot>=4?'ot-slot':''}" data-slot="${slot}" data-shift="${shift}" ${!online||!current.roster?'disabled':''}><span class="period">${period(shift,slot)}</span>${slot>=4?`<span class="ot-label">${slot===4?'후반 1시간 OT':'OT 구간'}</span>`:''}<span class="slot-text">${entries.length?esc(entries.map(a=>a.description).join(' / ')):'＋ 활동 기록 추가'}</span><span class="slot-meta">${entries.length?`${entries.length}건 · 사진 ${photos}장`:'미등록'}</span></button>`;
+    return `<button class="slot ${entries.length?'filled':''} ${slot>=4?'ot-slot':''}" data-slot="${slot}" data-shift="${shift}" ${!online||!current.roster?'disabled':''}><span class="period">${period(shift,slot)}</span>${slot>=4?`<span class="ot-label">${slot===4?'OT 1h':'OT'}</span>`:''}<span class="slot-text">${entries.length?esc(entries.map(a=>a.description).join(' / ')):'＋ 등록'}</span><span class="slot-meta">${entries.length?`${entries.length}건 · 사진 ${photos}장`:''}</span></button>`;
   }
   function renderMobile(){
     ['day','night'].forEach(s=>{$('pick-'+s).setAttribute('aria-pressed',String(s===mobileShift));document.querySelector('.roster.'+s)?.classList.toggle('mobile-selected',s===mobileShift);});
@@ -96,7 +96,7 @@
   function showActivities(){
     const entries=current.activities.filter(a=>a.shift===editContext.shift&&a.slot===editContext.slot);
     const names=Object.fromEntries(current.roster[editContext.shift].members.map(m=>[m.id,m.name]));
-    $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'활동 기록')}</strong><button type="button" data-edit="${a.id}">수정</button></div><p>${a.members.map(id=>esc(names[id]||id)).join(' · ')}</p><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">등록 ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · 수정 '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'<p class="empty">이 구간에 등록된 활동이 없습니다.</p>';
+    $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'활동 기록')}</strong><button type="button" data-edit="${a.id}">수정</button></div><p>${a.members.map(id=>esc(names[id]||id)).join(' · ')}</p><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">등록 ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · 수정 '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'';
   }
   function resetActivity(activity=null){
     editing=activity;requestId=crypto.randomUUID();$('activity-form').reset();clearPreviews();showError('activity-error','');
@@ -108,7 +108,7 @@
     if(!online||!current?.roster)return;
     editContext={date:current.date,shift,slot,revision:current.revision,rosterRevision:current.roster.configRevision};
     $('activity-title').textContent=`${shiftName(shift)} · ${period(shift,slot)}`;
-    $('activity-context').textContent=`근무 시작일 ${current.date} · ${current.roster[shift].team}조`;showActivities();resetActivity();$('activity').showModal();
+    $('activity-context').textContent=`${current.date} · ${current.roster[shift].team}조`;showActivities();resetActivity();$('activity').showModal();
   }
   function clearPreviews(){previewUrls.forEach(URL.revokeObjectURL);previewUrls=[];$('photo-preview').innerHTML='';}
   $('photos').addEventListener('change',()=>{
@@ -128,7 +128,7 @@
     finally{$('activity-save').disabled=false;}
   });
   let statsGeneration=0;
-  function invalidateStats(){++statsGeneration;$('stats-load').disabled=false;$('stats').innerHTML='<p class="empty">기록이 변경되었습니다. 통계 조회를 눌러 최신 결과를 확인하세요.</p>';}
+  function invalidateStats(){loadStats();}
 
   async function loadStats(){
     const gen=++statsGeneration;$('stats-load').disabled=true;showError('stats-error','');
@@ -138,7 +138,7 @@
       const [year,m]=month.split('-').map(Number);
       const last=new Date(Date.UTC(year,m,0)).getUTCDate();
       const data=await api(`/stats?start=${month}-01&end=${month}-${String(last).padStart(2,'0')}`);if(gen!==statsGeneration)return;
-      $('stats').innerHTML=`<p class="month-caption">${esc(data.start)} ~ ${esc(data.end)} · 근무 시작일 기준 (말일 야간은 다음 달 08:00까지)</p><div class="metrics"><div class="metric"><span>기록 있는 날짜 / 조회일</span><strong>${data.totals.savedDays} / ${data.days}</strong></div><div class="metric"><span>활동 기록</span><strong>${fmt(data.totals.activities)}건</strong></div><div class="metric"><span>활동이 등록된 2시간 구간</span><strong>${fmt(data.totals.filledSlots)}칸</strong></div><div class="metric"><span>등록 사진</span><strong>${fmt(data.totals.photos)}장</strong></div></div><div class="stats-grid"><div><h3>직원별 근태 · 활동</h3><div class="scroll"><table><thead><tr><th>담당자</th><th>출근</th><th>결근</th><th>휴가</th><th>미확인</th><th>OT 참여</th><th>활동 참여</th></tr></thead><tbody>${data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.present}</td><td>${p.absent}</td><td>${p.leave}</td><td>${p.unknown}</td><td>${p.otYes}</td><td>${p.activities}</td></tr>`).join('')||'<tr><td colspan="7">저장된 근태·활동 없음</td></tr>'}</tbody></table></div></div><div><h3>소모품 사용 합계</h3><div class="scroll"><table class="consumption"><thead><tr><th>소모품</th><th>수량</th><th>단위</th></tr></thead><tbody>${data.consumables.map(c=>`<tr><td>${esc(c.name)}</td><td>${fmt(c.qty)}</td><td>${esc(c.unit)}</td></tr>`).join('')||'<tr><td colspan="3">소모품 기록 없음</td></tr>'}</tbody></table></div></div></div><p class="footnote">근태는 저장된 날짜의 담당자별 교대 수입니다. 미저장 날짜를 결근으로 간주하지 않습니다. WORK와 OT는 체크된 교대 수입니다. 새 활동은 해당 조의 공동 기록으로 집계합니다.</p><h3 class="section-head">날짜별 활동 · 날짜를 눌러 과거 기록 조회</h3><div class="daily">${data.daily.map(d=>`<button class="day-link ${d.saved?'':'no-data'}" data-day="${d.date}"><span>${d.date.slice(5)}</span><strong>${d.saved?d.activities+'건':'미등록'}</strong></button>`).join('')}</div>`;
+      $('stats').innerHTML=`<div class="metrics"><div class="metric"><span>기록일</span><strong>${data.totals.savedDays} / ${data.days}</strong></div><div class="metric"><span>활동 기록</span><strong>${fmt(data.totals.activities)}건</strong></div><div class="metric"><span>등록 구간</span><strong>${fmt(data.totals.filledSlots)}칸</strong></div><div class="metric"><span>사진</span><strong>${fmt(data.totals.photos)}장</strong></div></div><div class="stats-grid"><div><h3>근태 · 활동</h3><div class="scroll"><table><thead><tr><th>담당자</th><th>WORK</th><th>OT</th><th>활동</th><th>미확인</th></tr></thead><tbody>${data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.present}</td><td>${p.otYes}</td><td>${p.activities}</td><td>${p.unknown}</td></tr>`).join('')||'<tr><td colspan="5">기록 없음</td></tr>'}</tbody></table></div></div><details class="legacy-consumables" ${data.consumables.length?'':'hidden'}><summary>소모품 이력</summary><div class="scroll"><table class="consumption"><thead><tr><th>소모품</th><th>수량</th><th>단위</th></tr></thead><tbody>${data.consumables.map(c=>`<tr><td>${esc(c.name)}</td><td>${fmt(c.qty)}</td><td>${esc(c.unit)}</td></tr>`).join('')||'<tr><td colspan="3">소모품 기록 없음</td></tr>'}</tbody></table></div></details></div><h3 class="section-head">날짜별 기록</h3><div class="daily">${data.daily.map(d=>`<button class="day-link ${d.saved?'':'no-data'}" data-day="${d.date}"><span>${d.date.slice(5)}</span><strong>${d.saved?d.activities+'건':'미등록'}</strong></button>`).join('')}</div>`;
       $('stats').querySelectorAll('table').forEach(table=>{
         const labels=[...table.querySelectorAll('thead th')].map(th=>th.textContent);
         table.querySelectorAll('tbody tr').forEach(row=>[...row.children].forEach((cell,i)=>{cell.dataset.label=cell.colSpan>1?'':labels[i]||'';}));
