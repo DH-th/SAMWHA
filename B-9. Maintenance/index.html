@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>B-9. Maintenance · SAMHWA</title>
-<link rel="stylesheet" href="maintenance.css?v=20261008-en-1"><script src="maintenance.js?v=20261008-en-1" defer></script>
+<link rel="stylesheet" href="maintenance.css?v=20261008-stats-1"><script src="maintenance.js?v=20261008-stats-1" defer></script>
 </head>
 <body>
-<header><div><a class="home" href="../index.html">SAMHWA / B-9</a><h1>Maintenance</h1></div><nav><a class="button" href="../B-3.%20Spare%20Part/index.html">B-3. Spare Part ↗</a><button id="settings-open">Teams</button></nav></header>
+<header><div><a class="home" href="../index.html">SAMHWA / B-9</a><h1>Maintenance</h1></div><nav><a class="button" href="../B-3.%20Spare%20Part/index.html">B-3. Spare Part ↗</a><button id="stats-open">Stats</button><button id="settings-open">Teams</button></nav></header>
 <main>
 <section class="toolbar"><div class="date-nav"><button id="previous" aria-label="Previous date">←</button><label>Date<input id="date" type="date" required></label><button id="next" aria-label="Next date">→</button><button id="today">Today</button><button id="refresh" aria-label="Refresh" title="Refresh">↻</button></div></section>
 <p id="connection" role="status" aria-live="polite">Loading…</p><p id="error" class="notice danger" role="alert" hidden></p>
@@ -14,8 +14,9 @@
 <div id="shift-picker" class="shift-picker" role="group" aria-label="Shift"><button id="pick-day" data-pick-shift="day" aria-pressed="true">Day<span>08:00–20:00</span></button><button id="pick-night" data-pick-shift="night" aria-pressed="false">Night<span>20:00–08:00 (+1)</span></button></div>
 <section id="rosters" class="rosters" aria-label="Team attendance"></section>
 <section class="panel"><div class="section-head"><div><h2>Activity</h2></div></div><div id="mobile-board" class="mobile-board" aria-label="Activities"></div><div class="scroll desktop-board"><table class="board"><thead><tr><th>Shift</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody id="board"></tbody></table></div></section>
-<section class="panel"><div class="section-head"><div><h2>Monthly</h2></div><div class="stats-controls"><button id="month-previous" aria-label="Previous month">←</button><label>Month<input id="stats-month" type="month"></label><button id="month-next" aria-label="Next month">→</button><button id="stats-load">Load</button></div></div><p id="stats-error" class="notice danger" hidden role="alert"></p><div id="stats"><p class="empty">Loading…</p></div></section>
+
 </main>
+<dialog id="stats-dialog"><div class="dialog-head"><h2>Monthly</h2><button type="button" data-close="stats-dialog" aria-label="Close">✕</button></div><div class="section-head"><div class="stats-controls"><button id="month-previous" aria-label="Previous month">←</button><label>Month<input id="stats-month" type="month"></label><button id="month-next" aria-label="Next month">→</button><button id="stats-load">Load</button></div></div><p id="stats-error" class="notice danger" hidden role="alert"></p><div id="stats"><p class="empty">Loading…</p></div></dialog>
 <dialog id="password-dialog"><form id="password-form"><div class="dialog-head"><h2>Password</h2><button type="button" data-close="password-dialog" aria-label="Close">✕</button></div><label>Password<input id="settings-password" type="password" inputmode="numeric" autocomplete="off" required></label><p id="password-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="password-dialog">Cancel</button><button id="password-submit" class="primary">OK</button></div></form></dialog>
 <dialog id="settings"><form id="settings-form"><div class="dialog-head"><div><h2>Teams</h2></div><button type="button" data-close="settings" aria-label="Close">✕</button></div>
 <div class="form-grid"><label>A · Day Start<input id="anchor" type="date" required></label><fieldset><legend>Team A</legend><label>Name 1<input id="a1" maxlength="80" required></label><label>Name 2<input id="a2" maxlength="80" required></label></fieldset><fieldset><legend>Team B</legend><label>Name 1<input id="b1" maxlength="80" required></label><label>Name 2<input id="b2" maxlength="80" required></label></fieldset></div>
@@ -23,6 +24,6 @@
 <dialog id="attendance"><form id="attendance-form"><div class="dialog-head"><h2 id="attendance-title">Attendance</h2><button type="button" data-close="attendance" aria-label="Close">✕</button></div><div id="attendance-fields"></div><p id="attendance-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="attendance">Cancel</button><button id="attendance-save" class="primary">Save</button></div></form></dialog>
 <dialog id="activity"><div class="dialog-head"><div><h2 id="activity-title">Activity</h2><p id="activity-context"></p></div><button type="button" data-close="activity" aria-label="Close">✕</button></div><div id="activity-list"></div><form id="activity-form"><div class="section-head compact"><h3 id="activity-mode">New</h3><button type="button" id="activity-new">+ New</button></div>
 <label>Notes<textarea id="description" rows="3" maxlength="2000" required placeholder="Notes"></textarea></label>
-<label>Photos<input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div id="existing-photos" class="photo-grid"></div><div id="photo-preview" class="photo-grid"></div>
+<div class="photo-picker"><span class="field-label">Photos</span><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden><button id="photos-select" type="button">+ Photos</button><span id="photos-count" role="status">No photos</span></div><div id="existing-photos" class="photo-grid"></div><div id="photo-preview" class="photo-grid"></div>
 <p id="activity-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="activity">Close</button><button id="activity-save" class="primary">Save</button></div></form></dialog>
 </body></html>

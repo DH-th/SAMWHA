@@ -67,7 +67,7 @@
         return `<div class="member"><div><strong>${esc(m.name)}</strong></div><div><span class="status ${a.status||''}">${a.status==='present'?'WORK ✓':a.status?'WORK —':'Pending'}</span><span class="status ${a.ot==='yes'?'ot':''}">${a.ot==='yes'?'OT ✓':'OT —'}</span>${a.note?`<small>${esc(a.note)}</small>`:''}</div></div>`;
       }).join(''):'<p>No team</p>'}</article>`;
     }).join('');
-    $('board').innerHTML=['day','night'].map(shift=>`<tr><th>${shiftName(shift)}<br>${roster?'Team '+roster[shift].team:''}<p>${roster?roster[shift].members.map(m=>esc(m.name)).join('<br>'):''}</p></th>${Array.from({length:6},(_,slot)=>`<td>${slotButton(shift,slot)}</td>`).join('')}</tr>`).join('');
+    $('board').innerHTML=['day','night'].map(shift=>`<tr><th>${shiftName(shift)}<br>${roster?'Team '+roster[shift].team:''}</th>${Array.from({length:6},(_,slot)=>`<td>${slotButton(shift,slot)}</td>`).join('')}</tr>`).join('');
     renderMobile();
   }
   function slotButton(shift,slot){
@@ -111,8 +111,7 @@
   function photoMarkup(photos){return photos.map(name=>`<a href="${photoUrl(name)}" target="_blank" rel="noopener"><img src="${photoUrl(name)}" alt="Photo" loading="lazy"></a>`).join('');}
   function showActivities(){
     const entries=current.activities.filter(a=>a.shift===editContext.shift&&a.slot===editContext.slot);
-    const names=Object.fromEntries(current.roster[editContext.shift].members.map(m=>[m.id,m.name]));
-    $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'Activity')}</strong><button type="button" data-edit="${a.id}">Edited</button></div><p>${a.members.map(id=>esc(names[id]||id)).join(' · ')}</p><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">Saved ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · Edited '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'';
+    $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'Activity')}</strong><button type="button" data-edit="${a.id}">Edit</button></div><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">Saved ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · Edited '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'';
   }
   function resetActivity(activity=null){
     editing=activity;requestId=crypto.randomUUID();$('activity-form').reset();clearPreviews();showError('activity-error','');
@@ -126,10 +125,11 @@
     $('activity-title').textContent=`${shiftName(shift)} · ${period(shift,slot)}`;
     $('activity-context').textContent=`${current.date} · Team ${current.roster[shift].team}`;showActivities();resetActivity();$('activity').showModal();
   }
-  function clearPreviews(){previewUrls.forEach(URL.revokeObjectURL);previewUrls=[];$('photo-preview').innerHTML='';}
+  function clearPreviews(){$('photos-count').textContent='No photos';previewUrls.forEach(URL.revokeObjectURL);previewUrls=[];$('photo-preview').innerHTML='';}
   $('photos').addEventListener('change',()=>{
     clearPreviews();const files=[...$('photos').files];
     if(files.length>8||files.some(f=>f.size>8*1024*1024)){showError('activity-error','Max 8 photos · 8 MB each');$('photos').value='';return;}
+    $('photos-count').textContent=files.length?`${files.length} selected`:'No photos';
     $('photo-preview').innerHTML=files.map(file=>{const url=URL.createObjectURL(file);previewUrls.push(url);return `<img src="${url}" alt="Preview">`;}).join('');showError('activity-error','');
   });
   $('activity-form').addEventListener('submit',async e=>{
@@ -144,7 +144,7 @@
     finally{$('activity-save').disabled=false;}
   });
   let statsGeneration=0;
-  function invalidateStats(){loadStats();}
+  function invalidateStats(){++statsGeneration;if($('stats-dialog').open)loadStats();}
 
   async function loadStats(){
     const gen=++statsGeneration;$('stats-load').disabled=true;showError('stats-error','');
@@ -154,11 +154,9 @@
       const [year,m]=month.split('-').map(Number);
       const last=new Date(Date.UTC(year,m,0)).getUTCDate();
       const data=await api(`/stats?start=${month}-01&end=${month}-${String(last).padStart(2,'0')}`);if(gen!==statsGeneration)return;
-      $('stats').innerHTML=`<div class="metrics"><div class="metric"><span>Days</span><strong>${data.totals.savedDays} / ${data.days}</strong></div><div class="metric"><span>Activity</span><strong>${fmt(data.totals.activities)}</strong></div><div class="metric"><span>Slots</span><strong>${fmt(data.totals.filledSlots)}</strong></div><div class="metric"><span>Photos</span><strong>${fmt(data.totals.photos)}</strong></div></div><div class="stats-grid"><div><div class="scroll"><table><thead><tr><th>Name</th><th>WORK</th><th>OT</th><th>Logs</th><th>Pending</th></tr></thead><tbody>${data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.present}</td><td>${p.otYes}</td><td>${p.activities}</td><td>${p.unknown}</td></tr>`).join('')||'<tr><td colspan="5">No records</td></tr>'}</tbody></table></div></div><details class="legacy-consumables" ${data.consumables.length?'':'hidden'}><summary>Parts history</summary><div class="scroll"><table class="consumption"><thead><tr><th>Part</th><th>Qty</th><th>Unit</th></tr></thead><tbody>${data.consumables.map(c=>`<tr><td>${esc(c.name)}</td><td>${fmt(c.qty)}</td><td>${esc(c.unit)}</td></tr>`).join('')||'<tr><td colspan="3">No items</td></tr>'}</tbody></table></div></details></div><h3 class="section-head">History</h3><div class="daily">${data.daily.map(d=>`<button class="day-link ${d.saved?'':'no-data'}" data-day="${d.date}"><span>${d.date.slice(5)}</span><strong>${d.saved?d.activities:'—'}</strong></button>`).join('')}</div>`;
-      $('stats').querySelectorAll('table').forEach(table=>{
-        const labels=[...table.querySelectorAll('thead th')].map(th=>th.textContent);
-        table.querySelectorAll('tbody tr').forEach(row=>[...row.children].forEach((cell,i)=>{cell.dataset.label=cell.colSpan>1?'':labels[i]||'';}));
-      });
+      const totals=data.people.reduce((sum,p)=>({work:sum.work+(p.present||0),ot:sum.ot+(p.otYes||0),missing:sum.missing+(p.absent||0)+(p.leave||0)}),{work:0,ot:0,missing:0});
+      $('stats').innerHTML=`<div class="monthly-totals"><div class="metric"><span>WORK</span><strong>${fmt(totals.work)}</strong></div><div class="metric"><span>OT</span><strong>${fmt(totals.ot)}</strong></div><div class="metric"><span>Missing</span><strong>${fmt(totals.missing)}</strong></div></div>`;
+
     }catch(e){if(gen===statsGeneration){showError('stats-error',e.message);$('stats').innerHTML='<p class="empty">Stats unavailable</p>';}}
     finally{if(gen===statsGeneration)$('stats-load').disabled=false;}
   }
@@ -185,5 +183,7 @@
   function moveMonth(offset){const value=$('stats-month').value;if(!value)return;const [year,month]=value.split('-').map(Number);const d=new Date(Date.UTC(year,month-1+offset,1));$('stats-month').value=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;loadStats();}
   $('month-previous').addEventListener('click',()=>moveMonth(-1));$('month-next').addEventListener('click',()=>moveMonth(1));
   setInterval(()=>{if(!document.hidden&&!modalOpen()&&!$('refresh').disabled)load();},60000);
-  load();loadStats();
+  $('stats-open').addEventListener('click',()=>{$('stats-dialog').showModal();loadStats();});
+  $('photos-select').addEventListener('click',()=>$('photos').click());
+  load();
 })();
