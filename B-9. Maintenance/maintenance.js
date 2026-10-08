@@ -64,7 +64,7 @@
       const team=roster?.[shift];
       return `<article class="roster ${shift}"><div class="roster-top"><div><span class="tag">${shiftName(shift)} · ${shift==='day'?'08:00–20:00':'20:00–08:00 (+1)'}</span><h2>${team?'Team '+team.team:'No team'}</h2></div><button data-attendance="${shift}" ${!online||!roster?'disabled':''}>Attendance</button></div>${team?team.members.map(m=>{
         const a=current.attendance[shift]?.[m.id]||{};
-        return `<div class="member"><div><strong>${esc(m.name)}</strong></div><div><span class="status ${a.status||''}">${a.status==='present'?'WORK ✓':a.status?'WORK —':'Pending'}</span><span class="status ${a.ot==='yes'?'ot':''}">${a.ot==='yes'?'OT ✓':'OT —'}</span>${a.note?`<small>${esc(a.note)}</small>`:''}</div></div>`;
+        return `<div class="member"><div><strong>${esc(m.name)}</strong></div><div><span class="status ${a.status||''}">${a.status==='present'?'WORK ✓':a.status?'WORK —':'Pending'}</span><span class="status ${a.ot==='yes'?'ot':''}">${a.ot==='yes'?'OT ✓':'OT —'}</span><small class="member-remark" title="${esc(a.note||'')}">${esc(a.note||'')}</small></div></div>`;
       }).join(''):'<p>No team</p>'}</article>`;
     }).join('');
     $('board').innerHTML=['day','night'].map(shift=>`<tr><th>${shiftName(shift)}<br>${roster?'Team '+roster[shift].team:''}</th>${Array.from({length:6},(_,slot)=>`<td>${slotButton(shift,slot)}</td>`).join('')}</tr>`).join('');
@@ -72,7 +72,7 @@
   }
   function slotButton(shift,slot){
     const entries=current.activities.filter(a=>a.shift===shift&&a.slot===slot),photos=entries.reduce((n,a)=>n+a.photos.length,0);
-    return `<button class="slot ${entries.length?'filled':''} ${slot>=4?'ot-slot':''}" data-slot="${slot}" data-shift="${shift}" ${!online||!current.roster?'disabled':''}><span class="period">${period(shift,slot)}</span>${slot>=4?`<span class="ot-label">${slot===4?'OT 1h':'OT'}</span>`:''}<span class="slot-text">${entries.length?esc(entries.map(a=>a.description).join(' / ')):'+ Add'}</span><span class="slot-meta">${entries.length?`${entries.length} · Photos ${photos}`:''}</span></button>`;
+    return `<button class="slot ${entries.length?'filled':''} ${slot>=4?'ot-slot':''}" aria-label="${shiftName(shift)} ${period(shift,slot)}" data-slot="${slot}" data-shift="${shift}" ${!online||!current.roster?'disabled':''}><span class="period">${period(shift,slot)}</span>${slot>=4?`<span class="ot-label">OT</span>`:''}<span class="slot-text">${entries.length?esc(entries.map(a=>a.description).join(' / ')):''}</span><span class="slot-meta">${entries.length?`${entries.length} · Photos ${photos}`:''}</span></button>`;
   }
   function renderMobile(){
     ['day','night'].forEach(s=>{$('pick-'+s).setAttribute('aria-pressed',String(s===mobileShift));document.querySelector('.roster.'+s)?.classList.toggle('mobile-selected',s===mobileShift);});
@@ -108,7 +108,7 @@
     try{await api('/attendance',jsonOptions({...editContext,records}));$('attendance').close();invalidateStats();await load();}
     catch(err){showError('attendance-error',err.message);}finally{$('attendance-save').disabled=false;}
   });
-  function photoMarkup(photos){return photos.map(name=>`<a href="${photoUrl(name)}" target="_blank" rel="noopener"><img src="${photoUrl(name)}" alt="Photo" loading="lazy"></a>`).join('');}
+  function photoMarkup(photos){return photos.map(name=>`<button type="button" class="photo-thumb" data-photo="${photoUrl(name)}" aria-label="Enlarge photo"><img src="${photoUrl(name)}" alt="Photo" loading="lazy"></button>`).join('');}
   function showActivities(){
     const entries=current.activities.filter(a=>a.shift===editContext.shift&&a.slot===editContext.slot);
     $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'Activity')}</strong><button type="button" data-edit="${a.id}">Edit</button></div><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">Saved ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · Edited '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'';
@@ -117,7 +117,7 @@
     editing=activity;requestId=crypto.randomUUID();$('activity-form').reset();clearPreviews();showError('activity-error','');
     $('activity-mode').textContent=activity?'Edit':'New';
     $('description').value=activity?.description||'';
-    $('existing-photos').innerHTML=(activity?.photos||[]).map(name=>`<label><img src="${photoUrl(name)}" alt="Photo"><span><input type="checkbox" data-keep-photo="${name}" checked>Keep</span></label>`).join('');
+    $('existing-photos').innerHTML=(activity?.photos||[]).map(name=>`<div><button type="button" class="photo-thumb" data-photo="${photoUrl(name)}" aria-label="Enlarge photo"><img src="${photoUrl(name)}" alt="Photo"></button><label><span><input type="checkbox" data-keep-photo="${name}" checked>Keep</span></label></div>`).join('');
   }
   function activityOpen(shift,slot){
     if(!online||!current?.roster)return;
@@ -130,7 +130,7 @@
     clearPreviews();const files=[...$('photos').files];
     if(files.length>8||files.some(f=>f.size>8*1024*1024)){showError('activity-error','Max 8 photos · 8 MB each');$('photos').value='';return;}
     $('photos-count').textContent=files.length?`${files.length} selected`:'No photos';
-    $('photo-preview').innerHTML=files.map(file=>{const url=URL.createObjectURL(file);previewUrls.push(url);return `<img src="${url}" alt="Preview">`;}).join('');showError('activity-error','');
+    $('photo-preview').innerHTML=files.map(file=>{const url=URL.createObjectURL(file);previewUrls.push(url);return `<button type="button" class="photo-thumb" data-photo="${url}" aria-label="Enlarge preview"><img src="${url}" alt="Preview"></button>`;}).join('');showError('activity-error','');
   });
   $('activity-form').addEventListener('submit',async e=>{
     e.preventDefault();const members=editing?.members||current.roster[editContext.shift].members.map(m=>m.id);
@@ -162,6 +162,7 @@
   }
   document.addEventListener('click',e=>{
     const button=e.target.closest('button');if(!button)return;
+    if(button.dataset.photo){$('photo-large').src=button.dataset.photo;$('photo-viewer').showModal();}
     if(button.dataset.close)$(button.dataset.close).close();
     if(button.dataset.pickShift){mobileShift=button.dataset.pickShift;renderMobile();}
     if(button.dataset.attendance)attendanceOpen(button.dataset.attendance);
@@ -184,6 +185,8 @@
   $('month-previous').addEventListener('click',()=>moveMonth(-1));$('month-next').addEventListener('click',()=>moveMonth(1));
   setInterval(()=>{if(!document.hidden&&!modalOpen()&&!$('refresh').disabled)load();},60000);
   $('stats-open').addEventListener('click',()=>{$('stats-dialog').showModal();loadStats();});
+  $('photo-viewer').addEventListener('close',()=>{$('photo-large').removeAttribute('src');$('photo-stage').classList.remove('zoomed');$('photo-zoom').textContent='Zoom +';});
+  $('photo-zoom').addEventListener('click',()=>{const zoom=$('photo-stage').classList.toggle('zoomed');$('photo-zoom').textContent=zoom?'Zoom −':'Zoom +';});
   $('photos-select').addEventListener('click',()=>$('photos').click());
   load();
 })();

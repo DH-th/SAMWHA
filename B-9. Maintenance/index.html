@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>B-9. Maintenance · SAMHWA</title>
-<link rel="stylesheet" href="maintenance.css?v=20261008-visual-1"><script src="maintenance.js?v=20261008-visual-1" defer></script>
+<link rel="stylesheet" href="maintenance.css?v=20261008-compact-2"><script src="maintenance.js?v=20261008-compact-2" defer></script>
 </head>
 <body>
 <header><div><a class="home" href="../index.html">SAMHWA / B-9</a><h1>Maintenance</h1></div><nav><a class="button" href="../B-3.%20Spare%20Part/index.html">B-3. Spare Part ↗</a><button id="stats-open">Stats</button><button id="settings-open">Teams</button></nav></header>
@@ -26,4 +26,5 @@
 <label>Notes<textarea id="description" rows="3" maxlength="2000" required placeholder="Notes"></textarea></label>
 <div class="photo-picker"><span class="field-label">Photos</span><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden><button id="photos-select" type="button">+ Photos</button><span id="photos-count" role="status">No photos</span></div><div id="existing-photos" class="photo-grid"></div><div id="photo-preview" class="photo-grid"></div>
 <p id="activity-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="activity">Close</button><button id="activity-save" class="primary">Save</button></div></form></dialog>
+<dialog id="photo-viewer" aria-label="Photo"><div class="photo-tools"><button id="photo-zoom" type="button">Zoom +</button><button type="button" data-close="photo-viewer" aria-label="Close photo">✕</button></div><div id="photo-stage"><img id="photo-large" alt="Photo"></div></dialog>
 </body></html>
