@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>B-9. Maintenance · SAMHWA</title>
-<link rel="stylesheet" href="maintenance.css?v=20261008-compact-2"><script src="maintenance.js?v=20261008-compact-2" defer></script>
+<link rel="stylesheet" href="maintenance.css?v=20261010-photos-1"><script src="maintenance.js?v=20261010-photos-1" defer></script>
 </head>
 <body>
 <header><div><a class="home" href="../index.html">SAMHWA / B-9</a><h1>Maintenance</h1></div><nav><a class="button" href="../B-3.%20Spare%20Part/index.html">B-3. Spare Part ↗</a><button id="stats-open">Stats</button><button id="settings-open">Teams</button></nav></header>
@@ -24,7 +24,8 @@
 <dialog id="attendance"><form id="attendance-form"><div class="dialog-head"><h2 id="attendance-title">Attendance</h2><button type="button" data-close="attendance" aria-label="Close">✕</button></div><div id="attendance-fields"></div><p id="attendance-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="attendance">Cancel</button><button id="attendance-save" class="primary">Save</button></div></form></dialog>
 <dialog id="activity"><div class="dialog-head"><div><h2 id="activity-title">Activity</h2><p id="activity-context"></p></div><button type="button" data-close="activity" aria-label="Close">✕</button></div><div id="activity-list"></div><form id="activity-form"><div class="section-head compact"><h3 id="activity-mode">New</h3><button type="button" id="activity-new">+ New</button></div>
 <label>Notes<textarea id="description" rows="3" maxlength="2000" required placeholder="Notes"></textarea></label>
-<div class="photo-picker"><span class="field-label">Photos</span><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden><button id="photos-select" type="button">+ Photos</button><span id="photos-count" role="status">No photos</span></div><div id="existing-photos" class="photo-grid"></div><div id="photo-preview" class="photo-grid"></div>
+<div class="photo-picker"><span class="field-label">Photos</span><input id="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,.heic,.heif" multiple hidden><button id="photos-select" type="button">+ Photos</button><span id="photos-count" role="status">No photos</span></div><div id="existing-photos" class="photo-grid"></div><div id="photo-preview" class="photo-grid"></div>
 <p id="activity-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="activity">Close</button><button id="activity-save" class="primary">Save</button></div></form></dialog>
 <dialog id="photo-viewer" aria-label="Photo"><div class="photo-tools"><button id="photo-zoom" type="button">Zoom +</button><button type="button" data-close="photo-viewer" aria-label="Close photo">✕</button></div><div id="photo-stage"><img id="photo-large" alt="Photo"></div></dialog>
+<dialog id="delete-dialog"><form id="delete-form"><div class="dialog-head"><h2>Delete activity</h2><button type="button" data-close="delete-dialog" aria-label="Close">✕</button></div><p id="delete-summary"></p><label>Password<input id="delete-password" type="password" inputmode="numeric" autocomplete="off" required></label><p id="delete-error" class="notice danger" hidden></p><div class="dialog-actions"><button type="button" data-close="delete-dialog">Cancel</button><button id="delete-save" class="delete-button">Delete</button></div></form></dialog>
 </body></html>

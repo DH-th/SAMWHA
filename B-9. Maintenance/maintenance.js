@@ -12,7 +12,7 @@
   const time=h=>`${String(h%24).padStart(2,'0')}:00`;
   const period=(shift,slot)=>{const h=(shift==='day'?8:20)+slot*2;return `${time(h)}–${time(h+2)}${h>=24?' (+1)':''}`;};
   const photoUrl=name=>`${API}/photos/${encodeURIComponent(name)}`;
-  let settingsPassword='';
+  let settingsPassword='',deleteId=null;
   let current=null,online=false,generation=0,config=null,editContext=null,editing=null,requestId=null,previewUrls=[];
   $('date').value=workToday();$('stats-month').value=workToday().slice(0,7);
   const bangkokHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',hourCycle:'h23'}).format(new Date()));
@@ -111,7 +111,7 @@
   function photoMarkup(photos){return photos.map(name=>`<button type="button" class="photo-thumb" data-photo="${photoUrl(name)}" aria-label="Enlarge photo"><img src="${photoUrl(name)}" alt="Photo" loading="lazy"></button>`).join('');}
   function showActivities(){
     const entries=current.activities.filter(a=>a.shift===editContext.shift&&a.slot===editContext.slot);
-    $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'Activity')}</strong><button type="button" data-edit="${a.id}">Edit</button></div><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">Saved ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · Edited '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'';
+    $('activity-list').innerHTML=entries.map(a=>`<article class="activity-item"><div class="roster-top"><strong>${esc(a.location||'Activity')}</strong><div class="record-actions"><button type="button" data-edit="${a.id}">Edit</button><button type="button" class="delete-button" data-delete="${a.id}">Delete</button></div></div><p class="description">${esc(a.description)}</p>${a.consumables.length?`<ul>${a.consumables.map(c=>`<li>${esc(c.name)} · ${fmt(c.qty)} ${esc(c.unit)}</li>`).join('')}</ul>`:''}<div class="photo-grid">${photoMarkup(a.photos)}</div><p class="stamp">Saved ${esc(stamp(a.createdAt))}${a.updatedAt!==a.createdAt?' · Edited '+esc(stamp(a.updatedAt)):''}</p></article>`).join('')||'';
   }
   function resetActivity(activity=null){
     editing=activity;requestId=crypto.randomUUID();$('activity-form').reset();clearPreviews();showError('activity-error','');
@@ -128,19 +128,33 @@
   function clearPreviews(){$('photos-count').textContent='No photos';previewUrls.forEach(URL.revokeObjectURL);previewUrls=[];$('photo-preview').innerHTML='';}
   $('photos').addEventListener('change',()=>{
     clearPreviews();const files=[...$('photos').files];
-    if(files.length>8||files.some(f=>f.size>8*1024*1024)){showError('activity-error','Max 8 photos · 8 MB each');$('photos').value='';return;}
+    if(files.length>8||files.some(f=>f.size>40*1024*1024)){showError('activity-error','Max 8 photos · 40 MB each');$('photos').value='';return;}
     $('photos-count').textContent=files.length?`${files.length} selected`:'No photos';
     $('photo-preview').innerHTML=files.map(file=>{const url=URL.createObjectURL(file);previewUrls.push(url);return `<button type="button" class="photo-thumb" data-photo="${url}" aria-label="Enlarge preview"><img src="${url}" alt="Preview"></button>`;}).join('');showError('activity-error','');
   });
+  async function preparePhoto(file){
+    // Resize decodable phone photos before upload; HEIC falls back to server decoding.
+    const url=URL.createObjectURL(file),img=new Image();
+    try{
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
+      const scale=Math.min(1,2400/Math.max(img.naturalWidth,img.naturalHeight));
+      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.88));
+      canvas.width=canvas.height=1;
+      if(blob)return new File([blob],file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
+      return file;
+    }catch{return file;}finally{URL.revokeObjectURL(url);}
+  }
   $('activity-form').addEventListener('submit',async e=>{
     e.preventDefault();const members=editing?.members||current.roster[editContext.shift].members.map(m=>m.id);
     const keepPhotos=[...$('existing-photos').querySelectorAll('input:checked')].map(el=>el.dataset.keepPhoto);
     if(keepPhotos.length+$('photos').files.length>8){showError('activity-error','Max 8 photos');return;}
     const body={...editContext,id:editing?.id,requestId,members,location:editing?.location||'',description:$('description').value,consumables:editing?.consumables||[],keepPhotos};
-    const form=new FormData();form.append('data',JSON.stringify(body));[...$('photos').files].forEach(file=>form.append('photos',file));
+    const files=[...$('photos').files];
     $('activity-save').disabled=true;showError('activity-error','');
-    try{await api('/activity',{method:'POST',body:form,signal:AbortSignal.timeout(90000)});$('activity').close();clearPreviews();invalidateStats();await load();}
-    catch(err){showError('activity-error',err.message+' · Retry Save if interrupted');}
+    try{const form=new FormData();form.append('data',JSON.stringify(body));for(const file of files)form.append('photos',await preparePhoto(file));await api('/activity',{method:'POST',body:form,signal:AbortSignal.timeout(90000)});$('activity').close();clearPreviews();invalidateStats();await load();}
+    catch(err){showError('activity-error',err.message);}
     finally{$('activity-save').disabled=false;}
   });
   let statsGeneration=0;
@@ -167,6 +181,7 @@
     if(button.dataset.pickShift){mobileShift=button.dataset.pickShift;renderMobile();}
     if(button.dataset.attendance)attendanceOpen(button.dataset.attendance);
     if(button.dataset.slot!==undefined)activityOpen(button.dataset.shift,Number(button.dataset.slot));
+    if(button.dataset.delete){deleteId=button.dataset.delete;$('delete-password').value='';$('delete-summary').textContent=current.activities.find(a=>a.id===deleteId)?.description||'';showError('delete-error','');$('delete-dialog').showModal();}
     if(button.dataset.edit){resetActivity(current.activities.find(a=>a.id===button.dataset.edit));$('activity-mode').scrollIntoView({block:'start',behavior:'smooth'});}
     if(button.dataset.day){$('date').value=button.dataset.day;load();window.scrollTo({top:0,behavior:'smooth'});}
   });
@@ -185,6 +200,12 @@
   $('month-previous').addEventListener('click',()=>moveMonth(-1));$('month-next').addEventListener('click',()=>moveMonth(1));
   setInterval(()=>{if(!document.hidden&&!modalOpen()&&!$('refresh').disabled)load();},60000);
   $('stats-open').addEventListener('click',()=>{$('stats-dialog').showModal();loadStats();});
+  $('delete-form').addEventListener('submit',async e=>{
+    e.preventDefault();$('delete-save').disabled=true;showError('delete-error','');
+    try{const options=jsonOptions({...editContext,id:deleteId});options.method='DELETE';options.headers['X-Maintenance-Password']=$('delete-password').value;await api('/activity',options);$('delete-dialog').close();$('activity').close();clearPreviews();invalidateStats();await load();}
+    catch(err){showError('delete-error',err.message);}finally{$('delete-save').disabled=false;}
+  });
+  $('delete-dialog').addEventListener('close',()=>{$('delete-password').value='';deleteId=null;});
   $('photo-viewer').addEventListener('close',()=>{$('photo-large').removeAttribute('src');$('photo-stage').classList.remove('zoomed');$('photo-zoom').textContent='Zoom +';});
   $('photo-zoom').addEventListener('click',()=>{const zoom=$('photo-stage').classList.toggle('zoomed');$('photo-zoom').textContent=zoom?'Zoom −':'Zoom +';});
   $('photos-select').addEventListener('click',()=>$('photos').click());
