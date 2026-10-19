@@ -9,6 +9,7 @@ const LOGO='assets/samhwa-mark.png';
 const expandedCategories=new Set();
 let lineContext=null, settingsDraft=null, settingsRevision=0, settingsSlots=[];
 const defaultSlots=()=>[{fieldId:'installed',label:'Install date',mode:'installed',value:''},{fieldId:'cleaned',label:'Last cleaned',mode:'blank',value:''}];
+const fieldType=f=>f?.valueType||(f?.id==='installed'||f?.fieldId==='installed'||/date|cleaned|날짜|일자/i.test(f?.label||'')?'date':'text');
 const fieldLibrary=()=>data.plateFields||[{id:'installed',label:'Install date'},{id:'cleaned',label:'Last cleaned'}];
 let batchRequest='',deleteContext=null;
 let data={revision:0,logo:'',categories:[],equipment:[]}, selected=new Set(), online=false, editing=null,categoryId=null,formRevision=0,cleanRequest='',generation=0,printItems=[],printGeneration=0;
@@ -110,7 +111,7 @@ function renderSettings(){
  }
  settingsPreviewControls();settingsPreview();
 }
-$('settings-open').onclick=()=>{if(!online)return;settingsRevision=data.revision;settingsDraft={lines:[...(data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))])],plateFields:structuredClone(fieldLibrary())};settingsSlots=settingsDraft.plateFields.slice(0,2).map(f=>({fieldId:f.id,label:f.label,mode:f.id==='installed'?'installed':'blank',value:''}));$('settings-preview-size').value='S';$('settings-error').textContent='';$('new-line').value='';$('new-field').value='';renderSettings();$('settings-dialog').showModal();};
+$('settings-open').onclick=()=>{if(!online)return;settingsRevision=data.revision;settingsDraft={lines:[...(data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))])],plateFields:structuredClone(fieldLibrary())};settingsSlots=settingsDraft.plateFields.slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}));$('settings-preview-size').value='S';$('settings-error').textContent='';$('new-line').value='';$('new-field').value='';renderSettings();$('settings-dialog').showModal();};
 $('settings-dialog').addEventListener('click',e=>{
  const choice=e.target.closest('[data-preview-field]');if(choice){const id=choice.dataset.previewField,index=settingsSlots.findIndex(f=>f.fieldId===id);if(index>=0){if(settingsSlots.length>1)settingsSlots.splice(index,1);}else{const f=settingsDraft.plateFields.find(f=>f.id===id);if(settingsSlots.length===2)settingsSlots.pop();settingsSlots.push({fieldId:f.id,label:f.label,mode:'blank',value:''});}renderSettings();return;}
  const b=e.target.closest('[data-list]');if(!b)return;
@@ -123,9 +124,9 @@ $('settings-dialog').addEventListener('click',e=>{
  renderSettings();
 });
 $('add-line').onclick=()=>{let value=$('new-line').value.trim().toUpperCase();const m=value.match(/^(?:L(?:INE)?[ .-]*)?(\d+)$/);if(m)value='L.'+Number(m[1]);if(!value||settingsDraft.lines.includes(value)){ $('settings-error').textContent='New line required';return;}settingsDraft.lines.push(value);$('new-line').value='';$('settings-error').textContent='';renderSettings();};
-$('add-field').onclick=()=>{const label=$('new-field').value.trim();if(!label||settingsDraft.plateFields.some(f=>f.label.toLowerCase()===label.toLowerCase())){$('settings-error').textContent='New field required';return;}settingsDraft.plateFields.push({id:crypto.randomUUID(),label});$('new-field').value='';$('settings-error').textContent='';renderSettings();};
+$('add-field').onclick=()=>{const label=$('new-field').value.trim();if(!label||settingsDraft.plateFields.some(f=>f.label.toLowerCase()===label.toLowerCase())){$('settings-error').textContent='New field required';return;}settingsDraft.plateFields.push({id:crypto.randomUUID(),label,valueType:$('new-field-type').value});$('new-field').value='';$('settings-error').textContent='';renderSettings();};
 $('settings-form').onsubmit=e=>{e.preventDefault();save(e.target,'settings-error',async()=>{data=await api('/settings',json({revision:settingsRevision,...settingsDraft}));$('settings-dialog').close();render();});};
-function plate(item,size){const category=data.categories.find(c=>c.id===item.categoryId)?.name||'';return `<article class="plate ${size.toLowerCase()}"><div class="plate-brand"><img src="${LOGO}" alt="SAMHWA"><div><strong>SAMHWA</strong><small>INDUSTRIAL CO., LTD.</small></div><span>ASSET<br>CONTROL</span></div><div class="plate-main"><div class="asset-info"><div class="asset-category">${esc(category)}</div><strong class="asset-code ${item.code.length>14?'long-code':''}">${esc(item.code)}</strong></div><div class="asset-qr">${item.id?`<img src="${API}/qr/${item.id}" alt="QR">`:'<div class="qr-placeholder">QR<br><small>After save</small></div>'}<span>SCAN / SERVICE</span></div></div><div class="plate-dates" style="grid-template-columns:repeat(${(item.plateSlots||defaultSlots()).length},minmax(0,1fr))">${(item.plateSlots||defaultSlots()).map(f=>`<div><small>${esc(f.label)}</small>${f.mode==='blank'?'<span class="clean-blank"></span>':`<strong class="${(f.value||'').length>12?'long-value':''}">${esc(f.mode==='installed'?dateText(item.installed):f.value)}</strong>`}</div>`).join('')}</div></article>`;}
+function plate(item,size){const category=data.categories.find(c=>c.id===item.categoryId)?.name||'';return `<article class="plate ${size.toLowerCase()}"><div class="plate-brand"><img src="${LOGO}" alt="SAMHWA"><div><strong>SAMHWA</strong><small>INDUSTRIAL CO., LTD.</small></div><span>ASSET<br>CONTROL</span></div><div class="plate-main"><div class="asset-info"><div class="asset-category">${esc(category)}</div><strong class="asset-code ${item.code.length>14?'long-code':''}">${esc(item.code)}</strong></div><div class="asset-qr">${item.id?`<img src="${API}/qr/${item.id}" alt="QR">`:'<div class="qr-placeholder">QR<br><small>After save</small></div>'}<span>SCAN / SERVICE</span></div></div><div class="plate-dates" style="grid-template-columns:repeat(${(item.plateSlots||defaultSlots()).length},minmax(0,1fr))">${(item.plateSlots||defaultSlots()).map(f=>`<div><small>${esc(f.label)}</small>${f.mode==='blank'?'<span class="clean-blank"></span>':`<strong class="${(f.value||'').length>12?'long-value':''}">${esc(f.mode==='installed'?dateText(item.installed):(fieldType(f)==='date'?dateText(f.value):f.value))}</strong>`}</div>`).join('')}</div></article>`;}
 
 function equipmentPreview(){
  const number=$('equipment-number').value.trim(), model=$('equipment-model').value.trim().toUpperCase()||'MODEL';
@@ -137,7 +138,7 @@ function settingsPreview(){
  $('settings-live-preview').innerHTML=plate({id:null,categoryId:current()?.categoryId||data.categories[0]?.id,code:current()?.code||'U202-01',installed:current()?.installed||today(),plateSlots:settingsSlots},$('settings-preview-size').value);
 }
 function settingsPreviewControls(){
- $('settings-preview-values').innerHTML=settingsSlots.map((s,i)=>`<div class="sample-slot"><label>${esc(s.label)}<select data-sample-mode="${i}"><option value="blank" ${s.mode==='blank'?'selected':''}>Blank</option><option value="fixed" ${s.mode==='fixed'?'selected':''}>Fixed</option><option value="installed" ${s.mode==='installed'?'selected':''}>Install date</option></select></label><label ${s.mode==='fixed'?'':'hidden'}>Text / Date<input data-sample-value="${i}" value="${esc(s.value)}" maxlength="24"></label></div>`).join('');
+ $('settings-preview-values').innerHTML=settingsSlots.map((s,i)=>{const def=settingsDraft.plateFields.find(f=>f.id===s.fieldId)||s,kind=fieldType(def);s.valueType=kind;return `<div class="sample-slot"><label>${esc(s.label)}<select data-sample-mode="${i}"><option value="blank" ${s.mode==='blank'?'selected':''}>Blank</option><option value="fixed" ${s.mode==='fixed'?'selected':''}>${kind==='date'?'Date':'Text'}</option>${s.fieldId==='installed'?`<option value="installed" ${s.mode==='installed'?'selected':''}>Install date</option>`:''}</select></label><label ${s.mode==='fixed'?'':'hidden'}>${esc(s.label)}<input type="${kind}" data-sample-value="${i}" value="${esc(kind==='date'?s.value.replaceAll('.','-'):s.value)}" maxlength="24"></label></div>`;}).join('');
 }
 $('settings-preview-size').onchange=settingsPreview;
 $('settings-preview-values').addEventListener('change',e=>{if(e.target.hasAttribute('data-sample-mode')){settingsSlots[Number(e.target.dataset.sampleMode)].mode=e.target.value;settingsPreviewControls();settingsPreview();}});
@@ -168,21 +169,22 @@ $('line-filter').onchange=filterChanged;$('filter').onchange=filterChanged;$('se
 let sheetRows=[],sheetActive=0,sheetRevision=0,sheetRequest='';
 function freshRow(category,model){
  const rows=[...data.equipment,...sheetRows],numbers=rows.filter(e=>e.model.toUpperCase()===(model||'').toUpperCase()).map(e=>Number(e.number)||0);
- return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'S',plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,mode:f.id==='installed'?'installed':'blank',value:''}))};
+ return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'S',plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}))};
 }
 function sheetOpen(items=null,category='',model=''){
  if(!online)return;if(!data.categories.length){categoryOpen();return;}
  sheetRows=items?structuredClone(items):[];
  if(!items)sheetRows.push(freshRow(category||$('filter').value,model));
- sheetRows.forEach(r=>r.plateSlots=r.plateSlots||defaultSlots());sheetActive=0;sheetRevision=data.revision;sheetRequest=crypto.randomUUID();
+ sheetRows.forEach(r=>{r.plateSlots=r.plateSlots||defaultSlots();r.plateSlots.forEach(f=>f.valueType=fieldType(fieldLibrary().find(d=>d.id===f.fieldId)||f));});sheetActive=0;sheetRevision=data.revision;sheetRequest=crypto.randomUUID();
  $('rows-error').textContent='';$('row-products').innerHTML=[...new Set(data.equipment.map(e=>e.model))].map(m=>`<option value="${esc(m)}"></option>`).join('');
  sheetRender();$('rows-dialog').showModal();
 }
 const rowOption=(value,label,chosen)=>`<option value="${esc(value)}" ${value===chosen?'selected':''}>${esc(label)}</option>`;
 function sheetFieldCell(row,index){
  const slot=row.plateSlots[index],fields=[...fieldLibrary()];
- if(slot&&!fields.some(f=>f.id===slot.fieldId))fields.push({id:slot.fieldId,label:slot.label});
- return `<td><select data-slot="${index}" data-key="fieldId" aria-label="Field ${index+1}">${index?rowOption('','None',slot?.fieldId||''):''}${fields.map(f=>rowOption(f.id,f.label,slot?.fieldId)).join('')}</select></td><td><div class="row-value"><select data-slot="${index}" data-key="mode" aria-label="Value ${index+1}" ${slot?'':'disabled'}>${['blank','fixed','installed'].map((v,i)=>rowOption(v,['Blank','Fixed','Install date'][i],slot?.mode||'blank')).join('')}</select><input data-slot="${index}" data-key="value" aria-label="Text ${index+1}" maxlength="24" placeholder="Text / Date" value="${esc(slot?.value||'')}" ${slot?.mode==='fixed'?'required':'hidden disabled'}></div></td>`;
+ if(slot&&!fields.some(f=>f.id===slot.fieldId))fields.push({id:slot.fieldId,label:slot.label,valueType:slot.valueType});
+ const definition=fields.find(f=>f.id===slot?.fieldId),kind=fieldType(definition||slot),modes=slot?.fieldId==='installed'?['installed','blank','fixed']:['blank','fixed'];
+ return `<td class="field-value-cell"><select data-slot="${index}" data-key="fieldId" aria-label="Field ${index+1}">${index?rowOption('','None',slot?.fieldId||''):''}${fields.map(f=>rowOption(f.id,f.label,slot?.fieldId)).join('')}</select><div class="row-value"><select data-slot="${index}" data-key="mode" aria-label="Value ${index+1}" ${slot?'':'disabled'}>${modes.map(v=>rowOption(v,{blank:'Blank',fixed:kind==='date'?'Date':'Text',installed:'Install date'}[v],slot?.mode||'blank')).join('')}</select><input type="${kind}" data-slot="${index}" data-key="value" aria-label="${esc(slot?.label||'Value')}" maxlength="24" placeholder="${esc(slot?.label||'Value')}" value="${esc(slot?.mode==='installed'?row.installed:kind==='date'?(slot?.value||'').replaceAll('.','-'):slot?.value||'')}" ${slot?.mode==='fixed'?'required':slot?.mode==='installed'?'readonly':'hidden disabled'}></div></td>`;
 }
 function sheetRowHtml(row,i){return `<tr data-row="${i}" class="${i===sheetActive?'active':''}"><td><button type="button" data-pick="${i}" aria-label="Preview row ${i+1}">${i+1}</button></td><td><select data-key="categoryId" aria-label="Category" required>${data.categories.map(c=>rowOption(c.id,c.name,row.categoryId)).join('')}</select></td><td><input data-key="model" aria-label="Product" list="row-products" value="${esc(row.model)}" maxlength="14" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" required></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" required></td><td><select data-key="line" aria-label="Line">${rowOption('','Unassigned',row.line)}${(data.lines||[]).map(l=>rowOption(l,l,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td><td><select data-key="size" aria-label="Size">${['S','M'].map(v=>rowOption(v,v,row.size)).join('')}</select></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td><button type="button" data-drop="${i}" aria-label="Remove row ${i+1}" title="Remove row" ${sheetRows.length===1?'disabled':''}>×</button></td></tr>`;}
 function sheetRender(){
@@ -205,13 +207,13 @@ function sheetInput(e){
   const index=Number(el.dataset.slot);
   if(key==='fieldId'){
    if(!el.value)row.plateSlots.splice(index,1);
-   else{const def=fieldLibrary().find(f=>f.id===el.value)||row.plateSlots[index];row.plateSlots[index]={fieldId:el.value,label:def.label,mode:row.plateSlots[index]?.mode||'blank',value:row.plateSlots[index]?.value||''};}
+   else{const def=fieldLibrary().find(f=>f.id===el.value)||row.plateSlots[index];row.plateSlots[index]={fieldId:el.value,label:def.label,valueType:fieldType(def),mode:el.value==='installed'?'installed':'blank',value:''};}
   }else if(row.plateSlots[index])row.plateSlots[index][key]=el.value;
   if(key==='mode'||key==='fieldId'){
    tr.outerHTML=sheetRowHtml(row,sheetActive);
    $('entry-rows').children[sheetActive].querySelector(`[data-slot="${index}"][data-key="${key}"]`).focus();
   }
- }else row[key]=el.value;
+ }else {row[key]=el.value;if(key==='installed')tr.querySelectorAll('[data-key="value"][readonly]').forEach(input=>input.value=el.value);}
  sheetPreview();
 }
 $('entry-rows').addEventListener('input',e=>{if(e.target.tagName==='INPUT')sheetInput(e);});
