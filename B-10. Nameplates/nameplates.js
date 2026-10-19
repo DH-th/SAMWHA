@@ -24,14 +24,14 @@ async function api(path,options={}){
 const json=body=>({method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 async function save(form,error,fn){const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);$(error).textContent='';try{await fn();}catch(e){$(error).textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}}
 function choices(id,value){$(id).innerHTML=data.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(value)$(id).value=value;}
-function selectedState(){ $('selected-count').textContent=`${selected.size} selected`;$('print-open').disabled=!online||!selected.size;$('delete-open').disabled=!online||!selected.size;$('line-open').disabled=!online||!selected.size;const rows=visible();$('select-all').checked=!!rows.length&&rows.every(e=>selected.has(e.id));$('select-all').indeterminate=rows.some(e=>selected.has(e.id))&&!$('select-all').checked;}
+function selectedState(){ $('selected-count').textContent=`${selected.size} selected`;$('print-open').disabled=!online||!selected.size;$('delete-open').disabled=!online||!selected.size;$('line-open').disabled=!online||!selected.size;$('rows-edit').disabled=!online||!selected.size;const rows=visible();$('select-all').checked=!!rows.length&&rows.every(e=>selected.has(e.id));$('select-all').indeterminate=rows.some(e=>selected.has(e.id))&&!$('select-all').checked;}
 function visible(){const q=$('search').value.trim().toLowerCase();return data.equipment.filter(e=>(!$('filter').value||e.categoryId===$('filter').value)&&(!$('line-filter').value||($('line-filter').value==='__none__'?!e.line:e.line===$('line-filter').value))&&(!q||e.code.toLowerCase().includes(q)));}
 function renderCatalog(){
  const entries=visible();$('catalog').innerHTML=data.categories.filter(c=>!$('filter').value||c.id===$('filter').value).map(c=>{
  const items=entries.filter(e=>e.categoryId===c.id).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
  if(!items.length&&($('search').value||$('line-filter').value))return '';
  const models=[...new Set(items.map(e=>e.model))];
- return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add range</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}"><small>${esc(e.line||'Unassigned')} · No. ${esc(e.number)}</small>${esc(e.code)}</button><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div><span class="tag">${e.size}</span></div>`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
+ return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}"><small>${esc(e.line||'Unassigned')} · No. ${esc(e.number)}</small>${esc(e.code)}</button><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div><span class="tag">${e.size}</span></div>`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
 
  }).join('')||'<div class="empty">No equipment</div>';selectedState();
 }
@@ -52,9 +52,9 @@ function render(){
 }
 async function load(){const gen=++generation;online=false;render();message('Loading…',false);try{const result=await api('/catalog');if(gen!==generation)return;data=result;online=true;selected=new Set([...selected].filter(id=>data.equipment.some(e=>e.id===id)));message('');render();}catch(e){if(gen!==generation)return;message(e.message);render();}}
 function navigate(id){const u=new URL(location.href);if(id)u.searchParams.set('id',id);else u.searchParams.delete('id');history.pushState({},'',u);render();window.scrollTo(0,0);}
-function equipmentOpen(item=null){if(!online)return;if(!data.categories.length){categoryOpen();return;}editing=item?.id||null;batchRequest=crypto.randomUUID();formRevision=data.revision;$('equipment-form').reset();choices('equipment-category',item?.categoryId||$('filter').value);$('equipment-model').value=item?.model||'';$('equipment-line').value=item?.line||($('line-filter').value==='__none__'?'':$('line-filter').value);$('equipment-number').value=item?.number||'01';$('equipment-end').value=$('equipment-number').value;$('range-end-label').hidden=!!editing;$('range-arrow').hidden=!!editing;$('equipment-end').required=!editing;$('equipment-save-print').hidden=!!editing;$('equipment-title').textContent=editing?'Edit equipment':'Add equipment';$('equipment-installed').max=today();$('equipment-installed').value=item?.installed||today();$('equipment-size').value=item?.size||'S';$('equipment-error').textContent='';rangeSummary();slotEditor(item?(item.plateSlots||defaultSlots()):fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,mode:f.id==='installed'?'installed':'blank',value:''})));$('equipment-dialog').showModal();equipmentPreview();}
+function equipmentOpen(item=null){sheetOpen(item?[item]:null);}
 function suggestNumber(){if(editing)return;const model=$('equipment-model').value.trim().toUpperCase();const numbers=data.equipment.filter(e=>e.model===model).map(e=>Number(e.number));$('equipment-number').value=String(Math.max(0,...numbers)+1).padStart(2,'0');$('equipment-end').value=$('equipment-number').value;rangeSummary();}
-function addProduct(category,model=''){equipmentOpen();$('equipment-category').value=category;$('equipment-model').value=model;suggestNumber();equipmentPreview();}
+function addProduct(category,model=''){sheetOpen(null,category,model);}
 $('equipment-model').addEventListener('change',suggestNumber);
 function rangeSummary(){const a=Number($('equipment-number').value),b=Number($('equipment-end').value),model=$('equipment-model').value.trim().toUpperCase();$('range-summary').hidden=!!editing;$('range-summary').textContent=Number.isInteger(a)&&Number.isInteger(b)&&a>=1&&b>=a&&b<=9999&&b-a<300?`${model||'Product'}-${String(a).padStart(2,'0')} → ${model||'Product'}-${String(b).padStart(2,'0')} · ${b-a+1} units`:'Range · 1–9999 / Max 300 units';}
 ['equipment-number','equipment-end','equipment-model'].forEach(id=>$(id).addEventListener('input',rangeSummary));
@@ -147,11 +147,14 @@ $('plate-open').onclick=()=>{if(!current())return;$('preview-size').value=curren
 async function imagesReady(root){await Promise.all([...root.querySelectorAll('img')].map(img=>new Promise((resolve,reject)=>{if(img.complete){img.naturalWidth?resolve():reject(Error('QR / logo unavailable · Check server'));return;}const timer=setTimeout(()=>reject(Error('Image loading timeout · Retry')),15000);img.onload=()=>{clearTimeout(timer);resolve();};img.onerror=()=>{clearTimeout(timer);reject(Error('QR / logo unavailable · Check server'));};})));}
 async function printPreview(){const gen=++printGeneration;$('print-button').disabled=true;$('print-status').textContent='Loading…';$('print-pages').innerHTML='';$('print-output').innerHTML='';try{
  const copies=Number($('copies').value),size=$('print-size').value;if(!Number.isInteger(copies)||copies<1||copies>100||printItems.length*copies>300)throw Error('Copies 1–100 · Max 300 labels');
- const items=printItems.flatMap(e=>Array.from({length:copies},()=>e)),capacity=size==='S'?30:12;let html='';
- for(let i=0;i<items.length;i+=capacity)html+=`<section class="sheet ${size.toLowerCase()}">${items.slice(i,i+capacity).map(e=>plate(e,size)).join('')}</section>`;
- $('print-pages').innerHTML=html;await imagesReady($('print-pages'));if(gen!==printGeneration)return;$('print-status').textContent=`${items.length} labels · ${Math.ceil(items.length/capacity)} pages`;$('print-button').disabled=false;
+ const items=printItems.flatMap(e=>Array.from({length:copies},()=>e));let html='',pages=0;
+ for(const layout of (size==='item'?['S','M']:[size])){
+ const group=size==='item'?items.filter(e=>e.size===layout):items,capacity=layout==='S'?30:12;
+ for(let i=0;i<group.length;i+=capacity){html+=`<section class="sheet ${layout.toLowerCase()}">${group.slice(i,i+capacity).map(e=>plate(e,layout)).join('')}</section>`;pages++;}
+ }
+ $('print-pages').innerHTML=html;await imagesReady($('print-pages'));if(gen!==printGeneration)return;$('print-status').textContent=`${items.length} labels · ${pages} pages`;$('print-button').disabled=false;
  }catch(e){if(gen===printGeneration)$('print-status').textContent=e.message;}}
-function printOpen(items,size){printItems=items.map(e=>structuredClone(e));$('copies').value=1;$('print-size').value=size||items[0]?.size||'S';$('print-dialog').showModal();printPreview();}
+function printOpen(items,size){printItems=items.map(e=>structuredClone(e));$('copies').value=1;$('print-size').value=size||(new Set(items.map(e=>e.size)).size>1?'item':items[0]?.size)||'S';$('print-dialog').showModal();printPreview();}
 $('print-open').onclick=()=>printOpen(data.equipment.filter(e=>selected.has(e.id)));
 $('print-one').onclick=()=>{const size=$('preview-size').value;$('plate-dialog').close();printOpen([current()],size);};
 $('print-size').onchange=printPreview;$('copies').oninput=printPreview;
@@ -162,5 +165,64 @@ $('select-all').onchange=e=>{visible().forEach(item=>e.target.checked?selected.a
 $('catalog').addEventListener('toggle',e=>{if(e.target.matches('details[data-group]')&&e.target.isConnected){e.target.open?expandedCategories.add(e.target.dataset.group):expandedCategories.delete(e.target.dataset.group);}},true);
 function filterChanged(){expandedCategories.clear();if($('line-filter').value||$('search').value||$('filter').value)visible().forEach(item=>expandedCategories.add(item.categoryId));renderCatalog();}
 $('line-filter').onchange=filterChanged;$('filter').onchange=filterChanged;$('search').oninput=filterChanged;$('refresh').onclick=load;$('new-open').onclick=()=>equipmentOpen();$('category-open').onclick=()=>categoryOpen();$('edit-open').onclick=()=>equipmentOpen(current());$('back').onclick=()=>navigate(null);window.addEventListener('popstate',render);
+let sheetRows=[],sheetActive=0,sheetRevision=0,sheetRequest='';
+function freshRow(category,model){
+ const rows=[...data.equipment,...sheetRows],numbers=rows.filter(e=>e.model.toUpperCase()===(model||'').toUpperCase()).map(e=>Number(e.number)||0);
+ return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'S',plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,mode:f.id==='installed'?'installed':'blank',value:''}))};
+}
+function sheetOpen(items=null,category='',model=''){
+ if(!online)return;if(!data.categories.length){categoryOpen();return;}
+ sheetRows=items?structuredClone(items):[];
+ if(!items)sheetRows.push(freshRow(category||$('filter').value,model));
+ sheetRows.forEach(r=>r.plateSlots=r.plateSlots||defaultSlots());sheetActive=0;sheetRevision=data.revision;sheetRequest=crypto.randomUUID();
+ $('rows-error').textContent='';$('row-products').innerHTML=[...new Set(data.equipment.map(e=>e.model))].map(m=>`<option value="${esc(m)}"></option>`).join('');
+ sheetRender();$('rows-dialog').showModal();
+}
+const rowOption=(value,label,chosen)=>`<option value="${esc(value)}" ${value===chosen?'selected':''}>${esc(label)}</option>`;
+function sheetFieldCell(row,index){
+ const slot=row.plateSlots[index],fields=[...fieldLibrary()];
+ if(slot&&!fields.some(f=>f.id===slot.fieldId))fields.push({id:slot.fieldId,label:slot.label});
+ return `<td><select data-slot="${index}" data-key="fieldId" aria-label="Field ${index+1}">${index?rowOption('','None',slot?.fieldId||''):''}${fields.map(f=>rowOption(f.id,f.label,slot?.fieldId)).join('')}</select></td><td><div class="row-value"><select data-slot="${index}" data-key="mode" aria-label="Value ${index+1}" ${slot?'':'disabled'}>${['blank','fixed','installed'].map((v,i)=>rowOption(v,['Blank','Fixed','Install date'][i],slot?.mode||'blank')).join('')}</select><input data-slot="${index}" data-key="value" aria-label="Text ${index+1}" maxlength="24" placeholder="Text / Date" value="${esc(slot?.value||'')}" ${slot?.mode==='fixed'?'required':'hidden disabled'}></div></td>`;
+}
+function sheetRowHtml(row,i){return `<tr data-row="${i}" class="${i===sheetActive?'active':''}"><td><button type="button" data-pick="${i}" aria-label="Preview row ${i+1}">${i+1}</button></td><td><select data-key="categoryId" aria-label="Category" required>${data.categories.map(c=>rowOption(c.id,c.name,row.categoryId)).join('')}</select></td><td><input data-key="model" aria-label="Product" list="row-products" value="${esc(row.model)}" maxlength="14" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" required></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" required></td><td><select data-key="line" aria-label="Line">${rowOption('','Unassigned',row.line)}${(data.lines||[]).map(l=>rowOption(l,l,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td><td><select data-key="size" aria-label="Size">${['S','M'].map(v=>rowOption(v,v,row.size)).join('')}</select></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td><button type="button" data-drop="${i}" aria-label="Remove row ${i+1}" title="Remove row" ${sheetRows.length===1?'disabled':''}>×</button></td></tr>`;}
+function sheetRender(){
+ $('entry-rows').innerHTML=sheetRows.map(sheetRowHtml).join('');$('rows-count').textContent=`${sheetRows.length} rows`;$('row-add').disabled=sheetRows.length>=300;sheetPreview();
+}
+function sheetPreview(){
+ const r=sheetRows[sheetActive];if(!r)return;
+ const code=(r.model.trim().toUpperCase()||'MODEL')+'-'+(r.number?String(Number(r.number)||r.number).padStart(2,'0'):'01');
+ $('rows-preview').innerHTML=plate({...r,code},r.size);
+ $('rows-info').innerHTML=`<small>ROW ${sheetActive+1} / ${sheetRows.length}</small><strong>${esc(code)}</strong><span>${esc(data.categories.find(c=>c.id===r.categoryId)?.name||'')} · ${esc(r.line||'Unassigned')}</span><span>${r.size==='M'?'80 × 40':'50 × 25'} mm · ${esc(dateText(r.installed))}</span>`;
+ $('entry-rows').querySelectorAll('tr').forEach((tr,i)=>tr.classList.toggle('active',i===sheetActive));
+}
+$('row-add').onclick=()=>{const r=sheetRows[sheetActive];sheetRows.push(freshRow(r.categoryId,r.model));sheetActive=sheetRows.length-1;sheetRender();const tr=$('entry-rows').lastElementChild;tr.querySelector('[data-key="model"]').focus();};
+$('entry-rows').addEventListener('focusin',e=>{const tr=e.target.closest('[data-row]');if(tr){sheetActive=Number(tr.dataset.row);sheetPreview();}});
+$('entry-rows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-pick')){sheetActive=Number(b.dataset.pick);sheetPreview();}if(b.hasAttribute('data-drop')){sheetRows.splice(Number(b.dataset.drop),1);sheetActive=Math.min(sheetActive,sheetRows.length-1);sheetRender();}});
+function sheetInput(e){
+ const el=e.target,tr=el.closest('[data-row]');if(!tr||!el.dataset.key)return;
+ sheetActive=Number(tr.dataset.row);const row=sheetRows[sheetActive],key=el.dataset.key;
+ if(el.hasAttribute('data-slot')){
+  const index=Number(el.dataset.slot);
+  if(key==='fieldId'){
+   if(!el.value)row.plateSlots.splice(index,1);
+   else{const def=fieldLibrary().find(f=>f.id===el.value)||row.plateSlots[index];row.plateSlots[index]={fieldId:el.value,label:def.label,mode:row.plateSlots[index]?.mode||'blank',value:row.plateSlots[index]?.value||''};}
+  }else if(row.plateSlots[index])row.plateSlots[index][key]=el.value;
+  if(key==='mode'||key==='fieldId'){
+   tr.outerHTML=sheetRowHtml(row,sheetActive);
+   $('entry-rows').children[sheetActive].querySelector(`[data-slot="${index}"][data-key="${key}"]`).focus();
+  }
+ }else row[key]=el.value;
+ sheetPreview();
+}
+$('entry-rows').addEventListener('input',e=>{if(e.target.tagName==='INPUT')sheetInput(e);});
+$('entry-rows').addEventListener('change',e=>{if(e.target.tagName==='SELECT')sheetInput(e);});
+$('rows-edit').onclick=()=>sheetOpen(data.equipment.filter(e=>selected.has(e.id)));
+$('rows-form').onsubmit=e=>{e.preventDefault();const print=e.submitter?.id==='rows-print';save(e.target,'rows-error',async()=>{
+ const rows=sheetRows.map(r=>({id:r.id||null,categoryId:r.categoryId,model:r.model,number:r.number,line:r.line,installed:r.installed,size:r.size,plateSlots:r.plateSlots}));
+ const result=await api('/equipment/rows',json({revision:sheetRevision,requestId:sheetRequest,rows}));
+ const ids=result.savedIds;delete result.savedIds;data=result;selected=new Set(ids);$('rows-dialog').close();render();
+ if(print)printOpen(data.equipment.filter(r=>ids.includes(r.id)));else message(`${ids.length} units saved`,false);
+ });};
+
 load();
 })();
