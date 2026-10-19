@@ -7,7 +7,9 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'n
 const dateText=x=>x?x.replaceAll('-','.'): '—';
 const LOGO='assets/samhwa-mark.png';
 const expandedCategories=new Set();
-let lineContext=null;
+let lineContext=null, settingsDraft=null, settingsRevision=0;
+const defaultSlots=()=>[{fieldId:'installed',label:'Install date',mode:'installed',value:''},{fieldId:'cleaned',label:'Last cleaned',mode:'blank',value:''}];
+const fieldLibrary=()=>data.plateFields||[{id:'installed',label:'Install date'},{id:'cleaned',label:'Last cleaned'}];
 let batchRequest='',deleteContext=null;
 let data={revision:0,logo:'',categories:[],equipment:[]}, selected=new Set(), online=false, editing=null,categoryId=null,formRevision=0,cleanRequest='',generation=0,printItems=[],printGeneration=0;
 const activeId=()=>new URL(location.href).searchParams.get('id');
@@ -42,15 +44,15 @@ function renderDetail(){
 }
 function render(){
  const filter=$('filter').value;$('filter').innerHTML='<option value="">All</option>'+data.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('filter').value=filter;
- const line=$('line-filter').value,lines=[...new Set(data.equipment.map(e=>e.line).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ const line=$('line-filter').value,lines=data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))];
  $('line-filter').innerHTML='<option value="">All lines</option><option value="__none__">Unassigned</option>'+lines.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');$('line-filter').value=line;
- $('line-options').innerHTML=lines.map(l=>`<option value="${esc(l)}"></option>`).join('');
+ ['equipment-line','assign-line'].forEach(id=>{$(id).innerHTML='<option value="">Unassigned</option>'+lines.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');});
  $('catalog-view').hidden=!!activeId();$('detail-view').hidden=!activeId();
- ['category-open','new-open'].forEach(id=>$(id).disabled=!online);renderCatalog();renderDetail();
+ ['category-open','new-open','settings-open'].forEach(id=>$(id).disabled=!online);renderCatalog();renderDetail();
 }
 async function load(){const gen=++generation;online=false;render();message('Loading…',false);try{const result=await api('/catalog');if(gen!==generation)return;data=result;online=true;selected=new Set([...selected].filter(id=>data.equipment.some(e=>e.id===id)));message('');render();}catch(e){if(gen!==generation)return;message(e.message);render();}}
 function navigate(id){const u=new URL(location.href);if(id)u.searchParams.set('id',id);else u.searchParams.delete('id');history.pushState({},'',u);render();window.scrollTo(0,0);}
-function equipmentOpen(item=null){if(!online)return;if(!data.categories.length){categoryOpen();return;}editing=item?.id||null;batchRequest=crypto.randomUUID();formRevision=data.revision;$('equipment-form').reset();choices('equipment-category',item?.categoryId||$('filter').value);$('equipment-model').value=item?.model||'';$('equipment-line').value=item?.line||($('line-filter').value==='__none__'?'':$('line-filter').value);$('equipment-number').value=item?.number||'01';$('equipment-end').value=$('equipment-number').value;$('range-end-label').hidden=!!editing;$('range-arrow').hidden=!!editing;$('equipment-end').required=!editing;$('equipment-save-print').hidden=!!editing;$('equipment-title').textContent=editing?'Edit equipment':'Add equipment';$('equipment-installed').max=today();$('equipment-installed').value=item?.installed||today();$('equipment-size').value=item?.size||'S';$('equipment-error').textContent='';rangeSummary();$('equipment-dialog').showModal();}
+function equipmentOpen(item=null){if(!online)return;if(!data.categories.length){categoryOpen();return;}editing=item?.id||null;batchRequest=crypto.randomUUID();formRevision=data.revision;$('equipment-form').reset();choices('equipment-category',item?.categoryId||$('filter').value);$('equipment-model').value=item?.model||'';$('equipment-line').value=item?.line||($('line-filter').value==='__none__'?'':$('line-filter').value);$('equipment-number').value=item?.number||'01';$('equipment-end').value=$('equipment-number').value;$('range-end-label').hidden=!!editing;$('range-arrow').hidden=!!editing;$('equipment-end').required=!editing;$('equipment-save-print').hidden=!!editing;$('equipment-title').textContent=editing?'Edit equipment':'Add equipment';$('equipment-installed').max=today();$('equipment-installed').value=item?.installed||today();$('equipment-size').value=item?.size||'S';$('equipment-error').textContent='';rangeSummary();slotEditor(item?(item.plateSlots||defaultSlots()):fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,mode:f.id==='installed'?'installed':'blank',value:''})));$('equipment-dialog').showModal();}
 function suggestNumber(){if(editing)return;const model=$('equipment-model').value.trim().toUpperCase();const numbers=data.equipment.filter(e=>e.model===model).map(e=>Number(e.number));$('equipment-number').value=String(Math.max(0,...numbers)+1).padStart(2,'0');$('equipment-end').value=$('equipment-number').value;rangeSummary();}
 function addProduct(category,model=''){equipmentOpen();$('equipment-category').value=category;$('equipment-model').value=model;suggestNumber();}
 $('equipment-model').addEventListener('change',suggestNumber);
@@ -59,7 +61,7 @@ function rangeSummary(){const a=Number($('equipment-number').value),b=Number($('
 function categoryOpen(id=null){if(!online)return;categoryId=id;formRevision=data.revision;$('category-name').value=data.categories.find(c=>c.id===id)?.name||'';$('category-error').textContent='';$('category-dialog').showModal();}
 $('category-form').onsubmit=e=>{e.preventDefault();save(e.target,'category-error',async()=>{data=await api('/category',json({revision:formRevision,id:categoryId,name:$('category-name').value}));$('category-dialog').close();render();});};
 $('equipment-form').onsubmit=e=>{e.preventDefault();const print=e.submitter?.id==='equipment-save-print';save(e.target,'equipment-error',async()=>{
- const body={revision:formRevision,id:editing,categoryId:$('equipment-category').value,model:$('equipment-model').value,number:$('equipment-number').value,installed:$('equipment-installed').value,size:$('equipment-size').value,line:$('equipment-line').value};
+ const body={revision:formRevision,id:editing,categoryId:$('equipment-category').value,model:$('equipment-model').value,number:$('equipment-number').value,installed:$('equipment-installed').value,size:$('equipment-size').value,line:$('equipment-line').value,plateSlots:readSlots()};
  const result=editing?await api('/equipment',json(body)):await api('/equipment/batch',json({...body,start:body.number,end:$('equipment-end').value,requestId:batchRequest}));
  const ids=result.createdIds||[];delete result.createdIds;data=result;if(!editing)selected=new Set(ids);$('equipment-dialog').close();render();
  if(print)printOpen(data.equipment.filter(item=>ids.includes(item.id)),body.size);
@@ -88,7 +90,36 @@ $('line-open').onclick=()=>{if(!online||!selected.size)return;lineContext={revis
 $('line-form').onsubmit=e=>{e.preventDefault();save(e.target,'line-error',async()=>{data=await api('/equipment/line',json({...lineContext,line:$('assign-line').value}));$('line-dialog').close();render();});};
 $('clean-open').onclick=()=>{const e=current();if(!online||!e)return;formRevision=data.revision;cleanRequest=crypto.randomUUID();$('clean-form').reset();$('clean-code').textContent=e.code;$('clean-date').value=today();$('clean-date').min=e.installed;$('clean-date').max=today();$('clean-error').textContent='';$('clean-dialog').showModal();};
 $('clean-form').onsubmit=e=>{e.preventDefault();save(e.target,'clean-error',async()=>{const options=json({revision:formRevision,requestId:cleanRequest,date:$('clean-date').value,note:$('clean-note').value});options.method='POST';data=await api(`/equipment/${current().id}/cleaning`,options);$('clean-dialog').close();render();});};
-function plate(item,size){const category=data.categories.find(c=>c.id===item.categoryId)?.name||'';return `<article class="plate ${size.toLowerCase()}"><div class="plate-brand"><img src="${LOGO}" alt="SAMHWA"><div><strong>SAMHWA</strong><small>INDUSTRIAL CO., LTD.</small></div><span>ASSET<br>CONTROL</span></div><div class="plate-main"><div class="asset-info"><div class="asset-category">${esc(category)}</div><strong class="asset-code ${item.code.length>14?'long-code':''}">${esc(item.code)}</strong></div><div class="asset-qr"><img src="${API}/qr/${item.id}" alt="QR"><span>SCAN / SERVICE</span></div></div><div class="plate-dates"><div><small>INSTALL DATE</small><strong>${dateText(item.installed)}</strong></div><div><small>LAST CLEANED</small><span class="clean-blank"></span></div></div></article>`;}
+function readSlots(){return [...$('slot-rows').children].map(row=>({fieldId:row.querySelector('[data-slot-field]').value,mode:row.querySelector('[data-slot-mode]').value,value:row.querySelector('[data-slot-value]').value,label:row.querySelector('[data-slot-field]').selectedOptions[0]?.textContent||''}));}
+function slotEditor(slots){
+ $('slot-count').value=slots.length;
+ $('slot-rows').innerHTML=slots.map((slot,i)=>{
+ const fields=[...fieldLibrary()];if(!fields.some(f=>f.id===slot.fieldId))fields.push({id:slot.fieldId,label:slot.label});
+ return `<div class="slot-row"><label>${i+1} · Field<select data-slot-field>${fields.map(f=>`<option value="${esc(f.id)}" ${f.id===slot.fieldId?'selected':''}>${esc(f.label)}</option>`).join('')}</select></label><label>Value<select data-slot-mode><option value="blank" ${slot.mode==='blank'?'selected':''}>Blank</option><option value="fixed" ${slot.mode==='fixed'?'selected':''}>Fixed</option><option value="installed" ${slot.mode==='installed'?'selected':''}>Install date</option></select></label><label ${slot.mode==='fixed'?'':'hidden'}>Text / Date<input data-slot-value maxlength="24" value="${esc(slot.value)}" ${slot.mode==='fixed'?'required':''}></label></div>`;
+ }).join('');
+}
+$('slot-count').onchange=()=>{const slots=readSlots();if($('slot-count').value==='1')slots.length=1;else if(slots.length===1){const f=fieldLibrary().find(f=>f.id!==slots[0].fieldId)||fieldLibrary()[0];slots.push({fieldId:f.id,label:f.label,mode:'blank',value:''});}slotEditor(slots);};
+$('slot-rows').onchange=e=>{if(e.target.matches('[data-slot-mode]')){const input=e.target.closest('.slot-row').querySelector('[data-slot-value]');input.parentElement.hidden=e.target.value!=='fixed';input.required=e.target.value==='fixed';}};
+function renderSettings(){
+ for(const [kind,items] of [['lines',settingsDraft.lines],['fields',settingsDraft.plateFields]]){
+  $('settings-'+kind).innerHTML=items.map((v,i)=>`<div class="list-row"><span>${esc(kind==='lines'?v:v.label)}</span><button type="button" data-list="${kind}" data-index="${i}" data-move="-1" aria-label="Move up" ${i===0?'disabled':''}>↑</button><button type="button" data-list="${kind}" data-index="${i}" data-move="1" aria-label="Move down" ${i===items.length-1?'disabled':''}>↓</button><button type="button" data-list="${kind}" data-index="${i}" data-remove="1">Delete</button></div>`).join('');
+ }
+}
+$('settings-open').onclick=()=>{if(!online)return;settingsRevision=data.revision;settingsDraft={lines:[...(data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))])],plateFields:structuredClone(fieldLibrary())};$('settings-error').textContent='';$('new-line').value='';$('new-field').value='';renderSettings();$('settings-dialog').showModal();};
+$('settings-dialog').addEventListener('click',e=>{
+ const b=e.target.closest('[data-list]');if(!b)return;
+ const list=b.dataset.list==='lines'?settingsDraft.lines:settingsDraft.plateFields,i=Number(b.dataset.index);
+ if(b.dataset.remove){
+  if(b.dataset.list==='lines'){const count=data.equipment.filter(e=>e.line===list[i]).length;if(!confirm(`Delete ${list[i]}? ${count} units → Unassigned`))return;}
+  else {if(list.length===1){$('settings-error').textContent='At least one field';return;}if(!confirm('Remove field from list? Existing nameplates stay unchanged.'))return;}
+  list.splice(i,1);
+ }else{const j=i+Number(b.dataset.move);[list[i],list[j]]=[list[j],list[i]];}
+ renderSettings();
+});
+$('add-line').onclick=()=>{let value=$('new-line').value.trim().toUpperCase();const m=value.match(/^(?:L(?:INE)?[ .-]*)?(\d+)$/);if(m)value='L.'+Number(m[1]);if(!value||settingsDraft.lines.includes(value)){ $('settings-error').textContent='New line required';return;}settingsDraft.lines.push(value);$('new-line').value='';$('settings-error').textContent='';renderSettings();};
+$('add-field').onclick=()=>{const label=$('new-field').value.trim();if(!label||settingsDraft.plateFields.some(f=>f.label.toLowerCase()===label.toLowerCase())){$('settings-error').textContent='New field required';return;}settingsDraft.plateFields.push({id:crypto.randomUUID(),label});$('new-field').value='';$('settings-error').textContent='';renderSettings();};
+$('settings-form').onsubmit=e=>{e.preventDefault();save(e.target,'settings-error',async()=>{data=await api('/settings',json({revision:settingsRevision,...settingsDraft}));$('settings-dialog').close();render();});};
+function plate(item,size){const category=data.categories.find(c=>c.id===item.categoryId)?.name||'';return `<article class="plate ${size.toLowerCase()}"><div class="plate-brand"><img src="${LOGO}" alt="SAMHWA"><div><strong>SAMHWA</strong><small>INDUSTRIAL CO., LTD.</small></div><span>ASSET<br>CONTROL</span></div><div class="plate-main"><div class="asset-info"><div class="asset-category">${esc(category)}</div><strong class="asset-code ${item.code.length>14?'long-code':''}">${esc(item.code)}</strong></div><div class="asset-qr"><img src="${API}/qr/${item.id}" alt="QR"><span>SCAN / SERVICE</span></div></div><div class="plate-dates" style="grid-template-columns:repeat(${(item.plateSlots||defaultSlots()).length},minmax(0,1fr))">${(item.plateSlots||defaultSlots()).map(f=>`<div><small>${esc(f.label)}</small>${f.mode==='blank'?'<span class="clean-blank"></span>':`<strong class="${(f.value||'').length>12?'long-value':''}">${esc(f.mode==='installed'?dateText(item.installed):f.value)}</strong>`}</div>`).join('')}</div></article>`;}
 
 function preview(){const e=current();if(e)$('plate-preview').innerHTML=plate(e,$('preview-size').value);}
 $('plate-open').onclick=()=>{if(!current())return;$('preview-size').value=current().size;preview();$('plate-dialog').showModal();};$('preview-size').onchange=preview;
