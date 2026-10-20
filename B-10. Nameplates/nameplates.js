@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const dateText=x=>x?x.replaceAll('-','.'): '—';
+function equipmentCode(model,number){const name=model.trim().toUpperCase()||'MODEL',serial=String(number??'').trim();return name+(serial?'-'+String(Number(serial)||serial).padStart(2,'0'):'');}
 const LOGO='assets/samhwa-mark.png';
 let labelSize='S';
 function selectLabelSize(size){
@@ -21,6 +22,25 @@ let data={revision:0,logo:'',categories:[],equipment:[]}, selected=new Set(), on
 const activeId=()=>new URL(location.href).searchParams.get('id');
 const current=()=>data.equipment.find(e=>e.id===activeId());
 const lastClean=e=>e.cleanings.map(c=>c.date).sort().at(-1)||'';
+function cleaningState(e,asOf=today()){
+ const interval=Number(e.cleaningIntervalDays)||0;
+ if(!interval)return {key:'off',due:'',days:null,label:'Cycle not set'};
+ const base=lastClean(e)||e.installed,dueDate=new Date(base+'T00:00:00Z');
+ dueDate.setUTCDate(dueDate.getUTCDate()+interval);
+ const due=dueDate.toISOString().slice(0,10),days=Math.round((dueDate-new Date(asOf+'T00:00:00Z'))/86400000);
+ return {due,days,key:days<0?'overdue':days===0?'today':days<=7?'soon':'scheduled',label:days<0?`${-days}d overdue`:days===0?'Due today':days<=7?`Due in ${days}d`:`In ${days}d`};
+}
+function cleaningBadge(e){const s=cleaningState(e);return `<span class="cycle-badge ${s.key}">${esc(s.label)}</span>`;}
+function cleaningHistory(e){return e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<p class="empty">No cleaning records</p>';}
+function inlineEquipment(e){
+ const state=cleaningState(e);
+ return `<section class="equipment-inline" id="equipment-panel-${e.id}" aria-label="${esc(e.code)} cleaning and history"><div class="inline-top"><div><h3>${esc(e.code)} · Cleaning</h3><p>Next cleaning: <strong>${dateText(state.due)}</strong> ${cleaningBadge(e)}</p></div><div class="inline-actions"><button type="button" data-inline-edit="${e.id}">Edit equipment</button><button type="button" data-inline-plate="${e.id}">Nameplate</button><button type="button" data-detail="${e.id}" aria-label="Close ${esc(e.code)} details">✕</button></div></div><form class="cycle-form" data-cycle-form="${e.id}" data-revision="${data.revision}"><label>Cleaning cycle (days)<input name="interval" type="number" min="0" max="3650" step="1" list="cleaning-cycle-options" value="${e.cleaningIntervalDays||0}" required></label><button type="submit" ${online?'':'disabled'}>Save cycle</button><p>0 = off. Count from the latest cleaning, or installation if no cleaning is recorded.</p><p class="error" role="alert"></p></form><div class="inline-cleaning-grid"><form class="inline-clean-form" data-clean-form="${e.id}" data-revision="${data.revision}" data-request="${crypto.randomUUID()}"><h4>Record cleaning</h4><label>Date<input name="date" type="date" min="${esc(e.installed)}" max="${today()}" value="${today()}" required></label><label>Notes<textarea name="note" maxlength="300" rows="3" placeholder="Work performed / findings"></textarea></label><p class="error" role="alert"></p><button class="primary" type="submit" ${online?'':'disabled'}>Save cleaning</button></form><div class="inline-history"><h4>Cleaning history <span>${e.cleanings.length}</span></h4>${cleaningHistory(e)}</div></div></section>`;
+}
+function renderCleaningSummary(){
+ const counts={all:data.equipment.length,overdue:0,today:0,soon:0,scheduled:0,off:0};
+ data.equipment.forEach(e=>counts[cleaningState(e).key]++);
+ $('cleaning-summary').innerHTML=[['all','All equipment'],['overdue','Overdue'],['today','Due today'],['soon','Within 7 days'],['off','Cycle not set']].map(([key,label])=>`<button type="button" data-cycle-filter="${key}" class="cycle-card ${key}" aria-pressed="${$('cleaning-filter').value===key}"><span>${label}</span><strong>${counts[key]}</strong></button>`).join('');
+}
 function message(text,error=true){$('message').textContent=text;$('message').className=error?'':'success';}
 async function api(path,options={}){
  const r=await fetch(API+path,{...options,cache:'no-store',signal:AbortSignal.timeout(60000)});
@@ -31,13 +51,13 @@ const json=body=>({method:'PUT',headers:{'Content-Type':'application/json'},body
 async function save(form,error,fn){const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);$(error).textContent='';try{await fn();}catch(e){$(error).textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}}
 function choices(id,value){$(id).innerHTML=data.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(value)$(id).value=value;}
 function selectedState(){ $('selected-count').textContent=`${selected.size} selected`;$('print-open').disabled=!online||!selected.size;$('delete-open').disabled=!online||!selected.size;$('line-open').disabled=!online||!selected.size;$('rows-edit').disabled=!online||!selected.size;const rows=visible();$('select-all').checked=!!rows.length&&rows.every(e=>selected.has(e.id));$('select-all').indeterminate=rows.some(e=>selected.has(e.id))&&!$('select-all').checked;}
-function visible(){const q=$('search').value.trim().toLowerCase();return data.equipment.filter(e=>(!$('filter').value||e.categoryId===$('filter').value)&&(!$('line-filter').value||($('line-filter').value==='__none__'?!e.line:e.line===$('line-filter').value))&&(!q||e.code.toLowerCase().includes(q)));}
+function visible(){const q=$('search').value.trim().toLowerCase(),cycle=$('cleaning-filter').value;return data.equipment.filter(e=>(!$('filter').value||e.categoryId===$('filter').value)&&(!$('line-filter').value||($('line-filter').value==='__none__'?!e.line:e.line===$('line-filter').value))&&(cycle==='all'||cleaningState(e).key===cycle)&&(!q||e.code.toLowerCase().includes(q)));}
 function renderCatalog(){
  const entries=visible();$('catalog').innerHTML=data.categories.filter(c=>!$('filter').value||c.id===$('filter').value).map(c=>{
  const items=entries.filter(e=>e.categoryId===c.id).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
- if(!items.length&&($('search').value||$('line-filter').value))return '';
+ if(!items.length&&($('search').value||$('line-filter').value||$('cleaning-filter').value!=='all'))return '';
  const models=[...new Set(items.map(e=>e.model))];
- return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}">${esc(e.code)}</button><div class="equipment-line"><small>LINE</small>${esc(e.line||'-')}</div><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div></div>`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
+ return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}" aria-expanded="${activeId()===e.id}" aria-controls="equipment-panel-${e.id}">${esc(e.code)} <span class="row-chevron" aria-hidden="true">${activeId()===e.id?'⌃':'⌄'}</span></button><div class="equipment-line"><small>LINE</small>${esc(e.line||'-')}</div><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div><div class="cleaning-next"><small>NEXT CLEANING</small><span>${dateText(cleaningState(e).due)}</span>${cleaningBadge(e)}</div></div>${activeId()===e.id?inlineEquipment(e):''}`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
 
  }).join('')||'<div class="empty">No equipment</div>';selectedState();
 }
@@ -53,11 +73,12 @@ function render(){
  const line=$('line-filter').value,lines=data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))];
  $('line-filter').innerHTML='<option value="">All lines</option><option value="__none__">-</option>'+lines.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');$('line-filter').value=line;
  ['equipment-line','assign-line'].forEach(id=>{$(id).innerHTML='<option value="">-</option>'+lines.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');});
- $('catalog-view').hidden=!!activeId();$('detail-view').hidden=!activeId();
- ['category-open','new-open','settings-open'].forEach(id=>$(id).disabled=!online);renderCatalog();renderDetail();
+ $('catalog-view').hidden=false;$('detail-view').hidden=true;
+ const focused=current();if(focused)expandedCategories.add(focused.categoryId);
+ ['category-open','new-open','settings-open'].forEach(id=>$(id).disabled=!online);renderCleaningSummary();renderCatalog();
 }
 async function load(){const gen=++generation;online=false;render();message('Loading…',false);try{const result=await api('/catalog');if(gen!==generation)return;data=result;online=true;selected=new Set([...selected].filter(id=>data.equipment.some(e=>e.id===id)));message('');render();}catch(e){if(gen!==generation)return;message(e.message);render();}}
-function navigate(id){const u=new URL(location.href);if(id)u.searchParams.set('id',id);else u.searchParams.delete('id');history.pushState({},'',u);render();window.scrollTo(0,0);}
+function navigate(id){const u=new URL(location.href);if(id)u.searchParams.set('id',id);else u.searchParams.delete('id');history.pushState({},'',u);render();}
 function equipmentOpen(item=null){sheetOpen(item?[item]:null);}
 function suggestNumber(){if(editing)return;const model=$('equipment-model').value.trim().toUpperCase();const numbers=data.equipment.filter(e=>e.model===model).map(e=>Number(e.number));$('equipment-number').value=String(Math.max(0,...numbers)+1).padStart(2,'0');$('equipment-end').value=$('equipment-number').value;rangeSummary();}
 function addProduct(category,model=''){sheetOpen(null,category,model);}
@@ -149,7 +170,7 @@ function plate(item,size){const category=data.categories.find(c=>c.id===item.cat
 
 function equipmentPreview(){
  const number=$('equipment-number').value.trim(), model=$('equipment-model').value.trim().toUpperCase()||'MODEL';
- const item={id:editing,categoryId:$('equipment-category').value,code:model+'-'+(number?String(Number(number)||number).padStart(2,'0'):'01'),installed:$('equipment-installed').value,plateSlots:readSlots()};
+ const item={id:editing,categoryId:$('equipment-category').value,code:equipmentCode(model,number),installed:$('equipment-installed').value,plateSlots:readSlots()};
  $('equipment-live-preview').innerHTML=plate(item,labelSize);
 }
 ['input','change'].forEach(event=>$('equipment-form').addEventListener(event,e=>{if(e.target.matches('input,select'))equipmentPreview();}));
@@ -177,16 +198,16 @@ $('print-open').onclick=()=>printOpen(data.equipment.filter(e=>selected.has(e.id
 $('print-one').onclick=()=>{const size=$('preview-size').value;$('plate-dialog').close();printOpen([current()],size);};
 $('print-size').onchange=()=>{selectLabelSize($('print-size').value);printPreview();};$('copies').oninput=printPreview;
 $('print-button').onclick=async()=>{if($('print-button').disabled)return;$('print-button').disabled=true;try{$('print-output').innerHTML=$('print-pages').innerHTML;await imagesReady($('print-output'));$('print-dialog').close();window.print();}catch(e){$('print-status').textContent=e.message;}finally{$('print-button').disabled=false;}};
-document.addEventListener('click',e=>{const button=e.target.closest('button');if(!button)return;if(button.dataset.close)$(button.dataset.close).close();if(button.dataset.detail)navigate(button.dataset.detail);if(button.dataset.category)categoryOpen(button.dataset.category);if(button.dataset.deleteCategory)deleteOpen(button.dataset.deleteCategory,button.dataset.deleteModel||null);if(button.dataset.printCategory&&online)printOpen(visible().filter(item=>item.categoryId===button.dataset.printCategory&&item.model===button.dataset.printModel));if(button.dataset.addCategory)addProduct(button.dataset.addCategory,button.dataset.addModel||'');});
+document.addEventListener('click',e=>{const button=e.target.closest('button');if(!button)return;if(button.dataset.close)$(button.dataset.close).close();if(button.dataset.detail)navigate(activeId()===button.dataset.detail?null:button.dataset.detail);if(button.dataset.inlineEdit)equipmentOpen(data.equipment.find(item=>item.id===button.dataset.inlineEdit));if(button.dataset.inlinePlate){selectLabelSize(labelSize);const item=data.equipment.find(item=>item.id===button.dataset.inlinePlate);$('plate-preview').innerHTML=plate(item,labelSize);$('plate-dialog').showModal();}if(button.dataset.category)categoryOpen(button.dataset.category);if(button.dataset.deleteCategory)deleteOpen(button.dataset.deleteCategory,button.dataset.deleteModel||null);if(button.dataset.printCategory&&online)printOpen(visible().filter(item=>item.categoryId===button.dataset.printCategory&&item.model===button.dataset.printModel));if(button.dataset.addCategory)addProduct(button.dataset.addCategory,button.dataset.addModel||'');});
 $('catalog').addEventListener('change',e=>{if(!e.target.dataset.select)return;e.target.checked?selected.add(e.target.dataset.select):selected.delete(e.target.dataset.select);selectedState();});
 $('select-all').onchange=e=>{visible().forEach(item=>e.target.checked?selected.add(item.id):selected.delete(item.id));renderCatalog();};
 $('catalog').addEventListener('toggle',e=>{if(e.target.matches('details[data-group]')&&e.target.isConnected){e.target.open?expandedCategories.add(e.target.dataset.group):expandedCategories.delete(e.target.dataset.group);}},true);
-function filterChanged(){expandedCategories.clear();if($('line-filter').value||$('search').value||$('filter').value)visible().forEach(item=>expandedCategories.add(item.categoryId));renderCatalog();}
-$('line-filter').onchange=filterChanged;$('filter').onchange=filterChanged;$('search').oninput=filterChanged;$('refresh').onclick=load;$('new-open').onclick=()=>equipmentOpen();$('category-open').onclick=()=>categoryOpen();$('edit-open').onclick=()=>equipmentOpen(current());$('back').onclick=()=>navigate(null);window.addEventListener('popstate',render);
+function filterChanged(){expandedCategories.clear();if($('line-filter').value||$('search').value||$('filter').value||$('cleaning-filter').value!=='all')visible().forEach(item=>expandedCategories.add(item.categoryId));renderCatalog();}
+$('cleaning-filter').onchange=()=>{renderCleaningSummary();filterChanged();};$('cleaning-summary').onclick=e=>{const button=e.target.closest('[data-cycle-filter]');if(button){$('cleaning-filter').value=button.dataset.cycleFilter;renderCleaningSummary();filterChanged();}};$('line-filter').onchange=filterChanged;$('filter').onchange=filterChanged;$('search').oninput=filterChanged;$('refresh').onclick=load;$('new-open').onclick=()=>equipmentOpen();$('category-open').onclick=()=>categoryOpen();$('edit-open').onclick=()=>equipmentOpen(current());$('back').onclick=()=>navigate(null);window.addEventListener('popstate',render);
 let sheetRows=[],sheetActive=0,sheetRevision=0,sheetRequest='';
 function freshRow(category,model){
  const rows=[...data.equipment,...sheetRows],numbers=rows.filter(e=>e.model.toUpperCase()===(model||'').toUpperCase()).map(e=>Number(e.number)||0);
- return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'S',plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}))};
+ return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'S',cleaningIntervalDays:0,plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}))};
 }
 function sheetOpen(items=null,category='',model=''){
  if(!online)return;if(!data.categories.length){categoryOpen();return;}
@@ -203,13 +224,13 @@ function sheetFieldCell(row,index){
  if(slot&&!fields.some(f=>f.id===slot.fieldId))fields.push({id:slot.fieldId,label:slot.label,valueType:slot.valueType});
  return `<td class="field-value-cell"><select data-slot="${index}" data-key="fieldId" aria-label="Field ${index+1}">${index?rowOption('','None',slot?.fieldId||''):''}${fields.map(f=>rowOption(f.id,f.label,slot?.fieldId)).join('')}</select></td>`;
 }
-function sheetRowHtml(row,i){return `<tr data-row="${i}" class="${i===sheetActive?'active':''}"><td><button type="button" data-pick="${i}" aria-label="Preview row ${i+1}">${i+1}</button></td><td><select data-key="categoryId" aria-label="Category" required>${data.categories.map(c=>rowOption(c.id,c.name,row.categoryId)).join('')}</select></td><td><input data-key="model" aria-label="Product" list="row-products" value="${esc(row.model)}" maxlength="14" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" required></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" required></td><td><select data-key="line" aria-label="Line">${rowOption('','-',row.line)}${(data.lines||[]).map(l=>rowOption(l,l,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td><button type="button" data-drop="${i}" aria-label="Remove row ${i+1}" title="Remove row" ${sheetRows.length===1?'disabled':''}>×</button></td></tr>`;}
+function sheetRowHtml(row,i){return `<tr data-row="${i}" class="${i===sheetActive?'active':''}"><td><button type="button" data-pick="${i}" aria-label="Preview row ${i+1}">${i+1}</button></td><td><select data-key="categoryId" aria-label="Category" required>${data.categories.map(c=>rowOption(c.id,c.name,row.categoryId)).join('')}</select></td><td><input data-key="model" aria-label="Product" list="row-products" value="${esc(row.model)}" maxlength="14" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" required></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" placeholder="Optional" title="Leave blank for no number"></td><td><select data-key="line" aria-label="Line">${rowOption('','-',row.line)}${(data.lines||[]).map(l=>rowOption(l,l,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td><input type="number" data-key="cleaningIntervalDays" aria-label="Cleaning cycle days" min="0" max="3650" step="1" value="${row.cleaningIntervalDays||0}" required></td><td><button type="button" data-drop="${i}" aria-label="Remove row ${i+1}" title="Remove row" ${sheetRows.length===1?'disabled':''}>×</button></td></tr>`;}
 function sheetRender(){
  $('entry-rows').innerHTML=sheetRows.map(sheetRowHtml).join('');$('rows-count').textContent=`${sheetRows.length} rows`;$('row-add').disabled=sheetRows.length>=300;sheetPreview();
 }
 function sheetPreview(){
  const r=sheetRows[sheetActive];if(!r)return;
- const code=(r.model.trim().toUpperCase()||'MODEL')+'-'+(r.number?String(Number(r.number)||r.number).padStart(2,'0'):'01');
+ const code=equipmentCode(r.model,r.number);
  $('rows-preview').innerHTML=plate({...r,code},labelSize);
  $('rows-info').innerHTML=`<small>ROW ${sheetActive+1} / ${sheetRows.length}</small><strong>${esc(code)}</strong><span>${esc(data.categories.find(c=>c.id===r.categoryId)?.name||'')} · Line ${esc(r.line||'-')}</span><span>${labelSize==='M'?'80 × 40':'50 × 25'} mm · ${esc(dateText(r.installed))}</span>`;
  $('entry-rows').querySelectorAll('tr').forEach((tr,i)=>tr.classList.toggle('active',i===sheetActive));
@@ -239,11 +260,25 @@ $('entry-rows').addEventListener('input',e=>{if(e.target.tagName==='INPUT')sheet
 $('entry-rows').addEventListener('change',e=>{if(e.target.tagName==='SELECT')sheetInput(e);});
 $('rows-edit').onclick=()=>sheetOpen(data.equipment.filter(e=>selected.has(e.id)));
 $('rows-form').onsubmit=e=>{e.preventDefault();const print=e.submitter?.id==='rows-print';save(e.target,'rows-error',async()=>{
- const rows=sheetRows.map(r=>({id:r.id||null,categoryId:r.categoryId,model:r.model,number:r.number,line:r.line,installed:r.installed,size:r.size,plateSlots:r.plateSlots}));
+ const rows=sheetRows.map(r=>({id:r.id||null,categoryId:r.categoryId,model:r.model,number:r.number,line:r.line,installed:r.installed,size:r.size,cleaningIntervalDays:Number(r.cleaningIntervalDays)||0,plateSlots:r.plateSlots}));
  const result=await api('/equipment/rows',json({revision:sheetRevision,requestId:sheetRequest,rows}));
  const ids=result.savedIds;delete result.savedIds;data=result;selected=new Set(ids);$('rows-dialog').close();render();
  if(print)printOpen(data.equipment.filter(r=>ids.includes(r.id)));else message(`${ids.length} units saved`,false);
  });};
 
-load();
+$('catalog').addEventListener('submit',async event=>{
+ const form=event.target,cycleId=form.dataset.cycleForm,cleanId=form.dataset.cleanForm;
+ if(!cycleId&&!cleanId)return;event.preventDefault();
+ const button=form.querySelector('button[type=submit]'),error=form.querySelector('.error');
+ if(button.disabled)return;button.disabled=true;error.textContent='';
+ try{
+  const body={revision:Number(form.dataset.revision)};
+  let result;
+  if(cycleId){body.cleaningIntervalDays=Number(form.elements.interval.value);result=await api(`/equipment/${cycleId}/cycle`,json(body));}
+  else{Object.assign(body,{date:form.elements.date.value,note:form.elements.note.value,requestId:form.dataset.request});const options=json(body);options.method='POST';result=await api(`/equipment/${cleanId}/cleaning`,options);}
+  data=result;render();message(cycleId?'Cleaning cycle saved':'Cleaning recorded · Next cleaning updated',false);
+ }catch(err){error.textContent=err.message;button.disabled=false;}
+});
+
+load().then(()=>{const item=current();if(item)document.getElementById('equipment-panel-'+item.id)?.scrollIntoView({block:'center'});});
 })();
