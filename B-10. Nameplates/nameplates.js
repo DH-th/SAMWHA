@@ -6,6 +6,11 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const dateText=x=>x?x.replaceAll('-','.'): '—';
 const LOGO='assets/samhwa-mark.png';
+let labelSize='S';
+function selectLabelSize(size){
+ labelSize=size==='M'?'M':'S';
+ ['rows-preview-size','equipment-preview-size','preview-size','settings-preview-size','print-size'].forEach(id=>$(id).value=labelSize);
+}
 const expandedCategories=new Set();
 let lineContext=null, settingsDraft=null, settingsRevision=0, settingsSlots=[];
 const defaultSlots=()=>[{fieldId:'installed',label:'Install date',mode:'installed',value:''},{fieldId:'cleaned',label:'Last cleaned',mode:'blank',value:''}];
@@ -32,7 +37,7 @@ function renderCatalog(){
  const items=entries.filter(e=>e.categoryId===c.id).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
  if(!items.length&&($('search').value||$('line-filter').value))return '';
  const models=[...new Set(items.map(e=>e.model))];
- return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}"><small>${esc(e.line||'-')} · No. ${esc(e.number)}</small>${esc(e.code)}</button><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div><span class="tag">${e.size}</span></div>`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
+ return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}"><small>${esc(e.line||'-')} · No. ${esc(e.number)}</small>${esc(e.code)}</button><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div></div>`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
 
  }).join('')||'<div class="empty">No equipment</div>';selectedState();
 }
@@ -40,7 +45,7 @@ function renderDetail(){
  const e=current();if(!e){$('detail').innerHTML='<div class="empty">Equipment not found</div>';$('history').innerHTML='';document.querySelectorAll('.detail-actions button').forEach(b=>b.disabled=true);return;}
  document.querySelectorAll('.detail-actions button').forEach(b=>b.disabled=!online);
  const category=data.categories.find(c=>c.id===e.categoryId)?.name||'';
- $('detail').innerHTML=`<article class="info"><span class="tag">${esc(category)} / ${esc(e.model)} / ${esc(e.number)}</span><h1>${esc(e.code)}</h1><div class="info-grid"><div><small>LINE</small><strong>${esc(e.line||'-')}</strong></div><div><small>INSTALL DATE</small><strong>${dateText(e.installed)}</strong></div><div><small>LAST CLEANED</small><strong>${dateText(lastClean(e))}</strong></div><div><small>NAMEPLATE</small><strong>${e.size==='S'?'50 × 25':'80 × 40'} mm</strong></div></div></article>`;
+ $('detail').innerHTML=`<article class="info"><span class="tag">${esc(category)} / ${esc(e.model)} / ${esc(e.number)}</span><h1>${esc(e.code)}</h1><div class="info-grid"><div><small>LINE</small><strong>${esc(e.line||'-')}</strong></div><div><small>INSTALL DATE</small><strong>${dateText(e.installed)}</strong></div><div><small>LAST CLEANED</small><strong>${dateText(lastClean(e))}</strong></div></div></article>`;
  $('history').innerHTML=e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<div class="empty">No cleaning records</div>';
 }
 function render(){
@@ -79,7 +84,7 @@ $('equipment-form').onsubmit=e=>{e.preventDefault();const print=e.submitter?.id=
  const body={revision:formRevision,id:editing,categoryId:$('equipment-category').value,model:$('equipment-model').value,number:$('equipment-number').value,installed:$('equipment-installed').value,size:$('equipment-size').value,line:$('equipment-line').value,plateSlots:readSlots()};
  const result=editing?await api('/equipment',json(body)):await api('/equipment/batch',json({...body,start:body.number,end:$('equipment-end').value,requestId:batchRequest}));
  const ids=result.createdIds||[];delete result.createdIds;data=result;if(!editing)selected=new Set(ids);$('equipment-dialog').close();render();
- if(print)printOpen(data.equipment.filter(item=>ids.includes(item.id)),body.size);
+ if(print)printOpen(data.equipment.filter(item=>ids.includes(item.id)));
  else if(ids.length)message(`${ids.length} units added · Ready to print`,false);
  });};
 function deleteOpen(categoryId=null,model=null){
@@ -125,7 +130,7 @@ function renderSettings(){
  }
  settingsPreviewControls();settingsPreview();
 }
-$('settings-open').onclick=()=>{if(!online)return;settingsRevision=data.revision;settingsDraft={lines:[...(data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))])],plateFields:structuredClone(fieldLibrary())};settingsSlots=settingsDraft.plateFields.slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}));$('settings-preview-size').value='S';$('settings-error').textContent='';$('new-line').value='';$('new-field').value='';renderSettings();$('settings-dialog').showModal();};
+$('settings-open').onclick=()=>{if(!online)return;settingsRevision=data.revision;settingsDraft={lines:[...(data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))])],plateFields:structuredClone(fieldLibrary())};settingsSlots=settingsDraft.plateFields.slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}));selectLabelSize(labelSize);$('settings-error').textContent='';$('new-line').value='';$('new-field').value='';renderSettings();$('settings-dialog').showModal();};
 $('settings-dialog').addEventListener('click',e=>{
  const choice=e.target.closest('[data-preview-field]');if(choice){const id=choice.dataset.previewField,index=settingsSlots.findIndex(f=>f.fieldId===id);if(index>=0){if(settingsSlots.length>1)settingsSlots.splice(index,1);}else{const f=settingsDraft.plateFields.find(f=>f.id===id);if(settingsSlots.length===2)settingsSlots.pop();settingsSlots.push({fieldId:f.id,label:f.label,mode:'blank',value:''});}renderSettings();return;}
  const b=e.target.closest('[data-list]');if(!b)return;
@@ -145,7 +150,7 @@ function plate(item,size){const category=data.categories.find(c=>c.id===item.cat
 function equipmentPreview(){
  const number=$('equipment-number').value.trim(), model=$('equipment-model').value.trim().toUpperCase()||'MODEL';
  const item={id:editing,categoryId:$('equipment-category').value,code:model+'-'+(number?String(Number(number)||number).padStart(2,'0'):'01'),installed:$('equipment-installed').value,plateSlots:readSlots()};
- $('equipment-live-preview').innerHTML=plate(item,$('equipment-size').value);
+ $('equipment-live-preview').innerHTML=plate(item,labelSize);
 }
 ['input','change'].forEach(event=>$('equipment-form').addEventListener(event,e=>{if(e.target.matches('input,select'))equipmentPreview();}));
 function settingsPreview(){
@@ -154,25 +159,23 @@ function settingsPreview(){
 function settingsPreviewControls(){
  $('settings-preview-values').innerHTML=settingsSlots.map((s,i)=>{const def=settingsDraft.plateFields.find(f=>f.id===s.fieldId)||s,kind=fieldType(def);s.valueType=kind;return `<div class="sample-slot"><label>${esc(s.label)}<select data-sample-mode="${i}"><option value="blank" ${s.mode==='blank'?'selected':''}>Blank</option><option value="fixed" ${s.mode==='fixed'?'selected':''}>${kind==='date'?'Date':'Text'}</option>${s.fieldId==='installed'?`<option value="installed" ${s.mode==='installed'?'selected':''}>Install date</option>`:''}</select></label><label ${s.mode==='fixed'?'':'hidden'}>${esc(s.label)}<input type="${kind}" data-sample-value="${i}" value="${esc(kind==='date'?s.value.replaceAll('.','-'):s.value)}" maxlength="24"></label></div>`;}).join('');
 }
-$('settings-preview-size').onchange=settingsPreview;
+$('settings-preview-size').onchange=()=>{selectLabelSize($('settings-preview-size').value);settingsPreview();};
 $('settings-preview-values').addEventListener('change',e=>{if(e.target.hasAttribute('data-sample-mode')){settingsSlots[Number(e.target.dataset.sampleMode)].mode=e.target.value;settingsPreviewControls();settingsPreview();}});
 $('settings-preview-values').addEventListener('input',e=>{if(e.target.hasAttribute('data-sample-value')){settingsSlots[Number(e.target.dataset.sampleValue)].value=e.target.value;settingsPreview();}});
 function preview(){const e=current();if(e)$('plate-preview').innerHTML=plate(e,$('preview-size').value);}
-$('plate-open').onclick=()=>{if(!current())return;$('preview-size').value=current().size;preview();$('plate-dialog').showModal();};$('preview-size').onchange=preview;
+$('plate-open').onclick=()=>{if(!current())return;selectLabelSize(labelSize);preview();$('plate-dialog').showModal();};$('preview-size').onchange=()=>{selectLabelSize($('preview-size').value);preview();};
 async function imagesReady(root){await Promise.all([...root.querySelectorAll('img')].map(img=>new Promise((resolve,reject)=>{if(img.complete){img.naturalWidth?resolve():reject(Error('QR / logo unavailable · Check server'));return;}const timer=setTimeout(()=>reject(Error('Image loading timeout · Retry')),15000);img.onload=()=>{clearTimeout(timer);resolve();};img.onerror=()=>{clearTimeout(timer);reject(Error('QR / logo unavailable · Check server'));};})));}
 async function printPreview(){const gen=++printGeneration;$('print-button').disabled=true;$('print-status').textContent='Loading…';$('print-pages').innerHTML='';$('print-output').innerHTML='';try{
- const copies=Number($('copies').value),size=$('print-size').value;if(!Number.isInteger(copies)||copies<1||copies>100||printItems.length*copies>300)throw Error('Copies 1–100 · Max 300 labels');
+ const copies=Number($('copies').value),size=$('print-size').value;if(!['S','M'].includes(size))throw Error('Select label size · S or M');if(!Number.isInteger(copies)||copies<1||copies>100||printItems.length*copies>300)throw Error('Copies 1–100 · Max 300 labels');
  const items=printItems.flatMap(e=>Array.from({length:copies},()=>e));let html='',pages=0;
- for(const layout of (size==='item'?['S','M']:[size])){
- const group=size==='item'?items.filter(e=>e.size===layout):items,capacity=layout==='S'?30:12;
- for(let i=0;i<group.length;i+=capacity){html+=`<section class="sheet ${layout.toLowerCase()}">${group.slice(i,i+capacity).map(e=>plate(e,layout)).join('')}</section>`;pages++;}
- }
+ const capacity=size==='S'?30:12;
+ for(let i=0;i<items.length;i+=capacity){html+=`<section class="sheet ${size.toLowerCase()}">${items.slice(i,i+capacity).map(e=>plate(e,size)).join('')}</section>`;pages++;}
  $('print-pages').innerHTML=html;await imagesReady($('print-pages'));if(gen!==printGeneration)return;$('print-status').textContent=`${items.length} labels · ${pages} pages`;$('print-button').disabled=false;
  }catch(e){if(gen===printGeneration)$('print-status').textContent=e.message;}}
-function printOpen(items,size){printItems=items.map(e=>structuredClone(e));$('copies').value=1;$('print-size').value=size||(new Set(items.map(e=>e.size)).size>1?'item':items[0]?.size)||'S';$('print-dialog').showModal();printPreview();}
+function printOpen(items,size=labelSize){printItems=items.map(e=>structuredClone(e));$('copies').value=1;selectLabelSize(size);$('print-dialog').showModal();printPreview();}
 $('print-open').onclick=()=>printOpen(data.equipment.filter(e=>selected.has(e.id)));
 $('print-one').onclick=()=>{const size=$('preview-size').value;$('plate-dialog').close();printOpen([current()],size);};
-$('print-size').onchange=printPreview;$('copies').oninput=printPreview;
+$('print-size').onchange=()=>{selectLabelSize($('print-size').value);printPreview();};$('copies').oninput=printPreview;
 $('print-button').onclick=async()=>{if($('print-button').disabled)return;$('print-button').disabled=true;try{$('print-output').innerHTML=$('print-pages').innerHTML;await imagesReady($('print-output'));$('print-dialog').close();window.print();}catch(e){$('print-status').textContent=e.message;}finally{$('print-button').disabled=false;}};
 document.addEventListener('click',e=>{const button=e.target.closest('button');if(!button)return;if(button.dataset.close)$(button.dataset.close).close();if(button.dataset.detail)navigate(button.dataset.detail);if(button.dataset.category)categoryOpen(button.dataset.category);if(button.dataset.deleteCategory)deleteOpen(button.dataset.deleteCategory,button.dataset.deleteModel||null);if(button.dataset.printCategory&&online)printOpen(visible().filter(item=>item.categoryId===button.dataset.printCategory&&item.model===button.dataset.printModel));if(button.dataset.addCategory)addProduct(button.dataset.addCategory,button.dataset.addModel||'');});
 $('catalog').addEventListener('change',e=>{if(!e.target.dataset.select)return;e.target.checked?selected.add(e.target.dataset.select):selected.delete(e.target.dataset.select);selectedState();});
@@ -189,6 +192,7 @@ function sheetOpen(items=null,category='',model=''){
  if(!online)return;if(!data.categories.length){categoryOpen();return;}
  sheetRows=items?structuredClone(items):[];
  if(!items)sheetRows.push(freshRow(category||$('filter').value,model));
+ selectLabelSize(labelSize);
  sheetRows.forEach(r=>{r.plateSlots=r.plateSlots||defaultSlots();r.plateSlots.forEach(f=>f.valueType=fieldType(fieldLibrary().find(d=>d.id===f.fieldId)||f));});sheetActive=0;sheetRevision=data.revision;sheetRequest=crypto.randomUUID();
  $('rows-error').textContent='';$('row-products').innerHTML=[...new Set(data.equipment.map(e=>e.model))].map(m=>`<option value="${esc(m)}"></option>`).join('');
  sheetRender();$('rows-dialog').showModal();
@@ -199,17 +203,19 @@ function sheetFieldCell(row,index){
  if(slot&&!fields.some(f=>f.id===slot.fieldId))fields.push({id:slot.fieldId,label:slot.label,valueType:slot.valueType});
  return `<td class="field-value-cell"><select data-slot="${index}" data-key="fieldId" aria-label="Field ${index+1}">${index?rowOption('','None',slot?.fieldId||''):''}${fields.map(f=>rowOption(f.id,f.label,slot?.fieldId)).join('')}</select></td>`;
 }
-function sheetRowHtml(row,i){return `<tr data-row="${i}" class="${i===sheetActive?'active':''}"><td><button type="button" data-pick="${i}" aria-label="Preview row ${i+1}">${i+1}</button></td><td><select data-key="categoryId" aria-label="Category" required>${data.categories.map(c=>rowOption(c.id,c.name,row.categoryId)).join('')}</select></td><td><input data-key="model" aria-label="Product" list="row-products" value="${esc(row.model)}" maxlength="14" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" required></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" required></td><td><select data-key="line" aria-label="Line">${rowOption('','-',row.line)}${(data.lines||[]).map(l=>rowOption(l,l,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td><td><select data-key="size" aria-label="Size">${['S','M'].map(v=>rowOption(v,v,row.size)).join('')}</select></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td><button type="button" data-drop="${i}" aria-label="Remove row ${i+1}" title="Remove row" ${sheetRows.length===1?'disabled':''}>×</button></td></tr>`;}
+function sheetRowHtml(row,i){return `<tr data-row="${i}" class="${i===sheetActive?'active':''}"><td><button type="button" data-pick="${i}" aria-label="Preview row ${i+1}">${i+1}</button></td><td><select data-key="categoryId" aria-label="Category" required>${data.categories.map(c=>rowOption(c.id,c.name,row.categoryId)).join('')}</select></td><td><input data-key="model" aria-label="Product" list="row-products" value="${esc(row.model)}" maxlength="14" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" required></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" required></td><td><select data-key="line" aria-label="Line">${rowOption('','-',row.line)}${(data.lines||[]).map(l=>rowOption(l,l,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td><button type="button" data-drop="${i}" aria-label="Remove row ${i+1}" title="Remove row" ${sheetRows.length===1?'disabled':''}>×</button></td></tr>`;}
 function sheetRender(){
  $('entry-rows').innerHTML=sheetRows.map(sheetRowHtml).join('');$('rows-count').textContent=`${sheetRows.length} rows`;$('row-add').disabled=sheetRows.length>=300;sheetPreview();
 }
 function sheetPreview(){
  const r=sheetRows[sheetActive];if(!r)return;
  const code=(r.model.trim().toUpperCase()||'MODEL')+'-'+(r.number?String(Number(r.number)||r.number).padStart(2,'0'):'01');
- $('rows-preview').innerHTML=plate({...r,code},r.size);
- $('rows-info').innerHTML=`<small>ROW ${sheetActive+1} / ${sheetRows.length}</small><strong>${esc(code)}</strong><span>${esc(data.categories.find(c=>c.id===r.categoryId)?.name||'')} · ${esc(r.line||'-')}</span><span>${r.size==='M'?'80 × 40':'50 × 25'} mm · ${esc(dateText(r.installed))}</span>`;
+ $('rows-preview').innerHTML=plate({...r,code},labelSize);
+ $('rows-info').innerHTML=`<small>ROW ${sheetActive+1} / ${sheetRows.length}</small><strong>${esc(code)}</strong><span>${esc(data.categories.find(c=>c.id===r.categoryId)?.name||'')} · ${esc(r.line||'-')}</span><span>${labelSize==='M'?'80 × 40':'50 × 25'} mm · ${esc(dateText(r.installed))}</span>`;
  $('entry-rows').querySelectorAll('tr').forEach((tr,i)=>tr.classList.toggle('active',i===sheetActive));
 }
+$('rows-preview-size').onchange=()=>{selectLabelSize($('rows-preview-size').value);sheetPreview();};
+$('equipment-preview-size').onchange=()=>{selectLabelSize($('equipment-preview-size').value);equipmentPreview();};
 $('row-add').onclick=()=>{const r=sheetRows[sheetActive];sheetRows.push(freshRow(r.categoryId,r.model));sheetActive=sheetRows.length-1;sheetRender();const tr=$('entry-rows').lastElementChild;tr.querySelector('[data-key="model"]').focus();};
 $('entry-rows').addEventListener('focusin',e=>{const tr=e.target.closest('[data-row]');if(tr){sheetActive=Number(tr.dataset.row);sheetPreview();}});
 $('entry-rows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-pick')){sheetActive=Number(b.dataset.pick);sheetPreview();}if(b.hasAttribute('data-drop')){sheetRows.splice(Number(b.dataset.drop),1);sheetActive=Math.min(sheetActive,sheetRows.length-1);sheetRender();}});
