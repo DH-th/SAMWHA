@@ -27,3 +27,5 @@
 .entry-table td:first-child{position:sticky;left:0;z-index:1;box-shadow:1px 0 #dce4ef}.entry-table th:first-child{left:0;z-index:2}
 
 .field-value-cell{min-width:190px}.field-value-cell>.row-value{margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}.row-value input[readonly]{background:#f0f3f8;color:#52667a}.list-add:has(#new-field-type){flex-wrap:wrap}
+
+.category-list-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.category-list-row{align-items:center}.category-list-row>span{font-weight:600}.category-list-row .category-list-actions button{min-height:36px;padding:5px 9px}.field-value-cell{vertical-align:middle!important}@media(max-width:600px){.category-list-row{flex-wrap:wrap}.category-list-row>span{flex-basis:100%}.category-list-actions{width:100%}}
