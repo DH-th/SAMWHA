@@ -7,7 +7,7 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'n
 const dateText=x=>x?x.replaceAll('-','.'): '—';
 function equipmentCode(model,number){const name=model.normalize('NFC').trim().replace(/\s+/g,' ').toUpperCase()||'MODEL',serial=String(number??'').trim();return name+(serial?'-'+String(Number(serial)||serial).padStart(2,'0'):'');}
 const LOGO='assets/samhwa-mark.png';
-let labelSize='S';
+let labelSize='M';
 function selectLabelSize(size){
  labelSize=size==='M'?'M':'S';
  ['rows-preview-size','equipment-preview-size','preview-size','settings-preview-size','print-size'].forEach(id=>$(id).value=labelSize);
@@ -79,7 +79,7 @@ function renderDetail(){
  $('history').innerHTML=e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<div class="empty">No cleaning records</div>';
 }
 
-function mobileData(result){return {revision:result.revision,logo:result.logo||'',equipment:result.item?[result.item]:[],categories:result.item?[{id:result.item.categoryId,name:result.category||''}]:[],productCycles:[]};}
+function mobileData(result){return {revision:result.revision,logo:result.logo||'',equipment:result.item?[result.item]:[],categories:result.item?[{id:result.item.categoryId,name:result.category||''}]:[],productMedia:result.productMedia?[result.productMedia]:[],productCycles:[]};}
 function renderMobileCleaning(){
  document.body.classList.add('mobile-cleaning');
  document.querySelector('header nav').hidden=true;
@@ -89,7 +89,7 @@ function renderMobileCleaning(){
  $('catalog').innerHTML='';
  const item=current();
  const cleaningEnabled=item&&hasCleaningOption(item);
- $('mobile-cleaning-view').innerHTML=item?`<section class="mobile-equipment-title"><small>${esc(data.categories.find(c=>c.id===item.categoryId)?.name||'EQUIPMENT')}</small><h2>${esc(item.code)}</h2></section><section class="mobile-entry-panel mobile-equipment-info"><h2>Equipment information</h2><dl><div><dt>Product</dt><dd>${esc(item.model)}</dd></div><div><dt>Line</dt><dd>${esc(item.line||'-')}</dd></div><div><dt>Install date</dt><dd>${dateText(item.installed)}</dd></div>${(item.plateSlots||defaultSlots()).filter(f=>f.fieldId!=='installed'&&f.fieldId!=='cleaned').map(f=>`<div><dt>${esc(f.label)}</dt><dd>${f.mode==='blank'?'—':esc(fieldType(f)==='date'?dateText(f.value):f.value||'—')}</dd></div>`).join('')}${cleaningEnabled?`<div><dt>Last cleaned</dt><dd>${dateText(lastClean(item))}</dd></div>`:''}</dl></section>${cleaningEnabled?`<section class="mobile-entry-panel">${canRecordCleaning(item)?cleaningEntry(item):'<p class="mobile-session-note">Scan this equipment QR again to register cleaning.</p>'}</section><section class="mobile-history-panel"><h2>Cleaning history <span>${item.cleanings.length}</span></h2><div class="inline-history">${cleaningHistory(item)}</div></section>`:''}`:'<section class="mobile-entry-panel"><h2>Scan equipment QR</h2><p>Open the QR on your equipment to view its information.</p></section>';
+ $('mobile-cleaning-view').innerHTML=item?`<section class="mobile-equipment-title"><small>${esc(data.categories.find(c=>c.id===item.categoryId)?.name||'EQUIPMENT')}</small><h2>${esc(item.code)}</h2></section><section class="mobile-entry-panel mobile-equipment-info"><h2>Equipment information</h2><dl><div><dt>Product</dt><dd>${esc(item.model)}</dd></div><div><dt>Line</dt><dd>${esc(item.line||'-')}</dd></div><div><dt>Install date</dt><dd>${dateText(item.installed)}</dd></div>${(item.plateSlots||defaultSlots()).filter(f=>f.fieldId!=='installed'&&f.fieldId!=='cleaned').map(f=>`<div><dt>${esc(f.label)}</dt><dd>${f.mode==='blank'?'—':esc(fieldType(f)==='date'?dateText(f.value):f.value||'—')}</dd></div>`).join('')}${cleaningEnabled?`<div><dt>Last cleaned</dt><dd>${dateText(lastClean(item))}</dd></div>`:''}</dl></section>${mobileProductMedia(item)}${cleaningEnabled?`<section class="mobile-entry-panel">${canRecordCleaning(item)?cleaningEntry(item):'<p class="mobile-session-note">Scan this equipment QR again to register cleaning.</p>'}</section><section class="mobile-history-panel"><h2>Cleaning history <span>${item.cleanings.length}</span></h2><div class="inline-history">${cleaningHistory(item)}</div></section>`:''}`:'<section class="mobile-entry-panel"><h2>Scan equipment QR</h2><p>Open the QR on your equipment to view its information.</p></section>';
 }
 function render(){
  if(isMobileDevice()){renderMobileCleaning();return;}
@@ -109,7 +109,7 @@ function suggestNumber(){if(editing)return;const model=$('equipment-model').valu
 function addProduct(category,model=''){
  if(!online||isMobileDevice()||productEditor)return;
  category=category||data.categories[0]?.id||'';
- productEditor={isNew:true,categoryId:category,model,rows:[freshRow(category,model)],interval:0,revision:data.revision,requestId:crypto.randomUUID(),previewIndex:0,previewOpen:false,common:{line:'__keep__',installed:'',field1:'__keep__',field2:'__keep__'}};
+ productEditor={isNew:true,media:{representative:null,attachments:[]},categoryId:category,model,rows:[freshRow(category,model)],interval:0,revision:data.revision,requestId:crypto.randomUUID(),previewIndex:0,previewOpen:false,common:{line:'__keep__',installed:'',field1:'__keep__',field2:'__keep__'}};
  message('');renderCatalog();document.querySelector('[data-product-name]')?.focus();
 }
 $('equipment-model').addEventListener('change',suggestNumber);
@@ -237,7 +237,7 @@ $('cleaning-filter').onchange=()=>{renderCleaningSummary();filterChanged();};$('
 let sheetRows=[],sheetActive=0,sheetRevision=0,sheetRequest='';
 function freshRow(category,model){
  const rows=[...data.equipment,...sheetRows],numbers=rows.filter(e=>e.model.toUpperCase()===(model||'').toUpperCase()).map(e=>Number(e.number)||0);
- return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'S',cleaningIntervalDays:0,plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}))};
+ return {id:null,categoryId:category||data.categories[0]?.id||'',model:model||'',number:String(Math.max(0,...numbers)+1).padStart(2,'0'),line:'',installed:today(),size:'M',cleaningIntervalDays:0,plateSlots:fieldLibrary().slice(0,2).map(f=>({fieldId:f.id,label:f.label,valueType:fieldType(f),mode:f.id==='installed'?'installed':'blank',value:''}))};
 }
 function sheetOpen(items=null,category='',model=''){
  if(!online)return;if(!data.categories.length){categoryOpen();return;}
@@ -315,13 +315,94 @@ function openProductEditor(categoryId,model){
  const rows=data.equipment.filter(e=>e.categoryId===categoryId&&e.model===model).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
  if(!rows.length)return;
  const cycle=(data.productCycles||[]).find(p=>p.categoryId===categoryId&&p.model===model);
- productEditor={categoryId,model,rows:structuredClone(rows),interval:cycle?.cleaningIntervalDays||0,revision:data.revision,requestId:crypto.randomUUID(),previewIndex:0,previewOpen:false,common:{line:'__keep__',installed:'',field1:'__keep__',field2:'__keep__'}};
+ productEditor={media:structuredClone((data.productMedia||[]).find(p=>p.categoryId===categoryId&&p.model===model)||{representative:null,attachments:[]}),categoryId,model,rows:structuredClone(rows),interval:cycle?.cleaningIntervalDays||0,revision:data.revision,requestId:crypto.randomUUID(),previewIndex:0,previewOpen:false,common:{line:'__keep__',installed:'',field1:'__keep__',field2:'__keep__'}};
  expandedCategories.add(categoryId);message('');renderCatalog();
 }
+function imageUrl(image){return API+'/images/'+encodeURIComponent(image.file);}
+function mobileProductMedia(item){
+ const media=(data.productMedia||[]).find(p=>p.categoryId===item.categoryId&&p.model===item.model);
+ if(!media?.representative&&!media?.attachments?.length)return '';
+ const figure=(image,title)=>`<figure><button type="button" class="mobile-photo-open" data-photo-src="${imageUrl(image)}" data-photo-caption="${esc(image.caption||title)}" aria-label="${esc(image.caption||title)} · Enlarge"><img src="${imageUrl(image)}" alt="${esc(image.caption||title)}" loading="lazy"></button>${image.caption?`<figcaption>${esc(image.caption)}</figcaption>`:''}</figure>`;
+ return `<section class="mobile-entry-panel product-mobile-images">${media.representative?figure(media.representative,'Product photo'):''}${media.attachments?.length?`<h2>Manuals &amp; information</h2>${media.attachments.map((image,i)=>figure(image,'Supporting image '+(i+1))).join('')}`:''}</section>`;
+}
+// The mobile viewer stays on the equipment page and keeps unsaved cleaning inputs intact.
+const photoViewer=$('mobile-photo-viewer'),photoStage=$('mobile-photo-stage'),photoImage=$('mobile-photo-image');
+let photoState={scale:1,x:0,y:0},photoReturnFocus=null,photoList=[],photoIndex=0,photoGesture=null;
+const photoPointers=new Map();
+function photoPanBounds(){return {x:Math.max(0,(photoImage.offsetWidth*photoState.scale-photoStage.clientWidth)/2),y:Math.max(0,(photoImage.offsetHeight*photoState.scale-photoStage.clientHeight)/2)};}
+function showPhoto(index){
+ if(index<0||index>=photoList.length)return;
+ photoIndex=index;photoPointers.clear();photoGesture=null;photoState={scale:1,x:0,y:0};
+ const photo=photoList[index];photoImage.src=photo.src;photoImage.alt=photo.caption;$('mobile-photo-caption').textContent=photo.caption;
+ $('photo-position').textContent=(index+1)+' / '+photoList.length;$('photo-previous').disabled=index===0;$('photo-next').disabled=index===photoList.length-1;
+ $('photo-navigation').hidden=photoList.length<2;drawPhoto();
+}
+function drawPhoto(){const bounds=photoPanBounds();photoState.x=Math.max(-bounds.x,Math.min(bounds.x,photoState.x));photoState.y=Math.max(-bounds.y,Math.min(bounds.y,photoState.y));photoImage.style.transform=`translate(${photoState.x}px,${photoState.y}px) scale(${photoState.scale})`;$('photo-zoom-level').textContent=Math.round(photoState.scale*100)+'%';$('photo-zoom-out').disabled=photoState.scale<=1;$('photo-zoom-in').disabled=photoState.scale>=5;}
+function zoomPhoto(scale){photoState.scale=Math.max(1,Math.min(5,scale));if(photoState.scale===1){photoState.x=0;photoState.y=0;}drawPhoto();}
+function closePhoto(){if(photoViewer.hidden)return;photoViewer.hidden=true;document.body.classList.remove('photo-viewing');document.querySelector('main').inert=false;document.querySelector('header').inert=false;photoPointers.clear();photoGesture=null;photoList=[];photoImage.removeAttribute('src');photoReturnFocus?.focus({preventScroll:true});}
+$('mobile-cleaning-view').addEventListener('click',event=>{
+ const button=event.target.closest('[data-photo-src]');if(!button)return;
+ photoReturnFocus=button;const buttons=[...$('mobile-cleaning-view').querySelectorAll('[data-photo-src]')];photoList=buttons.map(el=>({src:el.dataset.photoSrc,caption:el.dataset.photoCaption}));showPhoto(buttons.indexOf(button));
+ photoViewer.hidden=false;document.body.classList.add('photo-viewing');document.querySelector('main').inert=true;document.querySelector('header').inert=true;drawPhoto();$('photo-close').focus({preventScroll:true});
+});
+$('photo-previous').onclick=()=>showPhoto(photoIndex-1);$('photo-next').onclick=()=>showPhoto(photoIndex+1);
+photoImage.addEventListener('load',drawPhoto);
+$('photo-close').onclick=closePhoto;$('photo-zoom-in').onclick=()=>zoomPhoto(photoState.scale*1.5);$('photo-zoom-out').onclick=()=>zoomPhoto(photoState.scale/1.5);$('photo-reset').onclick=()=>{photoState={scale:1,x:0,y:0};drawPhoto();};
+photoViewer.addEventListener('keydown',event=>{
+ if(event.key==='Escape'){event.preventDefault();closePhoto();}
+ if(event.key==='ArrowLeft'){event.preventDefault();showPhoto(photoIndex-1);}
+ if(event.key==='ArrowRight'){event.preventDefault();showPhoto(photoIndex+1);}
+ if(event.key==='Tab'){const buttons=[...photoViewer.querySelectorAll('button:not(:disabled)')].filter(button=>!button.closest('[hidden]')),first=buttons[0],last=buttons.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}
+});
+photoStage.addEventListener('pointerdown',event=>{
+ if(photoPointers.size>=2||event.button!==0)return;
+ if(!photoPointers.size){const bounds=photoPanBounds();photoGesture={id:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now(),multiple:false,canPrevious:photoState.x>=bounds.x-1,canNext:photoState.x<=-bounds.x+1};}
+ else if(photoGesture)photoGesture.multiple=true;
+ photoStage.setPointerCapture(event.pointerId);photoPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+});
+photoStage.addEventListener('pointermove',event=>{
+ if(!photoPointers.has(event.pointerId))return;
+ const before=[...photoPointers.values()];photoPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});const after=[...photoPointers.values()];
+ if(before.length===2){
+  const distance=points=>Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y),oldDistance=distance(before);if(!oldDistance)return;
+  const bounds=photoStage.getBoundingClientRect(),center=points=>({x:(points[0].x+points[1].x)/2-bounds.left-bounds.width/2,y:(points[0].y+points[1].y)/2-bounds.top-bounds.height/2});
+  const from=center(before),to=center(after),scale=Math.max(1,Math.min(5,photoState.scale*distance(after)/oldDistance)),ratio=scale/photoState.scale;
+  photoState.x=to.x-(from.x-photoState.x)*ratio;photoState.y=to.y-(from.y-photoState.y)*ratio;photoState.scale=scale;
+ }else if(photoState.scale>1){photoState.x+=after[0].x-before[0].x;photoState.y+=after[0].y-before[0].y;}
+ if(photoState.scale===1){photoState.x=0;photoState.y=0;}drawPhoto();
+});
+photoStage.addEventListener('pointerup',event=>{
+ const gesture=photoGesture;photoPointers.delete(event.pointerId);
+ if(gesture?.id===event.pointerId&&!gesture.multiple&&performance.now()-gesture.time<1200){
+  const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+  if(Math.abs(dx)>=48&&Math.abs(dx)>Math.abs(dy)*1.4){if(dx<0&&gesture.canNext)showPhoto(photoIndex+1);else if(dx>0&&gesture.canPrevious)showPhoto(photoIndex-1);}
+ }
+ if(!photoPointers.size)photoGesture=null;
+});
+for(const type of ['pointercancel','lostpointercapture'])photoStage.addEventListener(type,event=>{photoPointers.delete(event.pointerId);if(!photoPointers.size)photoGesture=null;});
+function productMediaEditor(){
+ const media=productEditor.media;
+ const card=(image,key)=>`<article class="product-image-card"><a href="${imageUrl(image)}" target="_blank" rel="noopener"><img src="${imageUrl(image)}" alt="${key==='representative'?'Product photo':'Supporting image'}" loading="lazy"></a><label>Description<textarea data-media-caption="${key}" maxlength="300" rows="2">${esc(image.caption)}</textarea></label><div>${key!=='representative'?`<button type="button" data-media-move="${key}" data-direction="-1" aria-label="Move image ${Number(key)+1} up" ${Number(key)===0?'disabled':''}>↑</button><button type="button" data-media-move="${key}" data-direction="1" aria-label="Move image ${Number(key)+1} down" ${Number(key)===media.attachments.length-1?'disabled':''}>↓</button>`:''}<button type="button" data-media-remove="${key}">Remove</button></div></article>`;
+ return `<details class="product-media-options" ${productEditor.mediaOpen?'open':''}><summary>Product photos &amp; information · ${(media.representative?1:0)+media.attachments.length} images</summary><p>Shared by all equipment in this Product. JPG / PNG / WEBP · Up to 8 MB per image. Save all to apply.</p><h4>Representative photo · 1 image</h4>${media.representative?card(media.representative,'representative'):''}<label class="product-image-upload">${media.representative?'Replace photo':'Upload photo'}<input type="file" data-media-upload="representative" accept="image/jpeg,image/png,image/webp"></label><h4>Supporting images · Manuals &amp; information</h4><div class="product-image-grid">${media.attachments.map((image,i)=>card(image,i)).join('')}</div><label class="product-image-upload">Add supporting images (${media.attachments.length} / 20)<input type="file" data-media-upload="attachments" accept="image/jpeg,image/png,image/webp" multiple ${media.attachments.length>=20?'disabled':''}></label><p role="status" class="product-upload-status">${productEditor.uploading?'Uploading images…':''}</p></details>`;
+}
+$('catalog').addEventListener('toggle',event=>{if(event.target.matches('.product-media-options')&&event.target.isConnected&&productEditor)productEditor.mediaOpen=event.target.open;},true);
+$('catalog').addEventListener('input',event=>{if(event.target.tagName==='TEXTAREA')productEditorInput(event);});
+$('catalog').addEventListener('change',async event=>{
+ const input=event.target;if(!input.hasAttribute('data-media-upload')||!productEditor)return;
+ const files=[...input.files],draft=productEditor;if(!files.length||draft.uploading)return;
+ const form=input.closest('form'),error=form.querySelector('.product-settings-error');error.textContent='';
+ if(input.dataset.mediaUpload==='attachments'&&draft.media.attachments.length+files.length>20){error.textContent='Supporting images · Max 20';input.value='';return;}
+ draft.uploading=true;form.querySelectorAll('button,input[type=file]').forEach(el=>el.disabled=true);form.querySelector('.product-upload-status').textContent='Uploading images…';
+ try{
+  const images=[];for(const file of files){if(file.size>8*1024*1024)throw Error('Image · Max 8 MB per file');const body=new FormData();body.append('file',file);images.push(await api('/product/image',{method:'POST',body}));}
+  if(input.dataset.mediaUpload==='representative')draft.media.representative=images[0];else draft.media.attachments.push(...images);
+  draft.uploading=false;renderCatalog();
+ }catch(err){draft.uploading=false;renderCatalog();document.querySelector('.product-settings-error').textContent=err.message;}
+});
 function productEditorRow(row,index){return `<tr data-product-row="${index}"><td><button type="button" data-product-preview="${index}" class="product-code-button">${esc(equipmentCode(row.model,row.number))}</button></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" placeholder="Optional"></td><td><select data-key="line" aria-label="Line">${rowOption('','-',row.line)}${(data.lines||[]).map(v=>rowOption(v,v,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td>${row.id?'':`<button type="button" data-product-drop="${index}" ${productEditor.rows.length===1?'disabled':''} aria-label="Remove new row ${index+1}">×</button>`}</td></tr>`;}
 function productEditorHtml(){
  const draft=productEditor,fields=fieldLibrary(),cycle=(data.productCycles||[]).find(p=>p.categoryId===draft.categoryId&&p.model===draft.model),preview=draft.rows[draft.previewIndex]||draft.rows[0];
- return `<form class="product-settings-form" data-product-settings="1">${draft.isNew?`<div class="product-identity"><label>Category<select data-product-category required><option value="">Select category</option>${data.categories.map(c=>rowOption(c.id,c.name,draft.categoryId)).join('')}</select></label><label>Product name<input data-product-name value="${esc(draft.model)}" maxlength="60" placeholder="Enter Product name" required></label></div>${!data.categories.length?'<p>Create a category in Settings before saving a Product.</p>':''}`:''}<div class="product-settings-top"><label>Cleaning cycle (days)<input type="number" name="interval" data-product-interval min="0" max="3650" step="1" value="${draft.interval}" list="cleaning-cycle-options" required></label><span>All ${draft.rows.length} units · 0 = off${cycle?.needsReview?' · Review previous cycles':''}</span></div><details class="product-common"><summary>Apply the same setting to all rows</summary><div class="product-common-controls"><label>Line<select data-common="line">${rowOption('__keep__','Keep current',draft.common.line)}${rowOption('','-',draft.common.line)}${(data.lines||[]).map(v=>rowOption(v,v,draft.common.line)).join('')}</select></label><label>Install date<input type="date" data-common="installed" max="${today()}" value="${esc(draft.common.installed)}"></label><label>Field 1<select data-common="field1">${rowOption('__keep__','Keep current',draft.common.field1)}${fields.map(f=>rowOption(f.id,f.label,draft.common.field1)).join('')}</select></label><label>Field 2<select data-common="field2">${rowOption('__keep__','Keep current',draft.common.field2)}${rowOption('','None',draft.common.field2)}${fields.map(f=>rowOption(f.id,f.label,draft.common.field2)).join('')}</select></label><button type="button" data-product-apply>Apply to all</button></div></details><div class="product-table-scroll"><table class="entry-table product-settings-table"><thead><tr><th>Equipment / preview</th><th>No.</th><th>Line</th><th>Install date</th><th>Field 1</th><th>Field 2</th><th></th></tr></thead><tbody>${draft.rows.map(productEditorRow).join('')}</tbody></table></div><div class="product-table-actions"><button type="button" data-product-add ${draft.rows.length>=300?'disabled':''}>＋ Add row</button><span>${draft.rows.length} rows · Complete Product list</span></div><details class="product-preview-options" ${draft.previewOpen?'open':''}><summary>Label preview · S / M</summary><div class="product-preview-content"><label>Preview size<select data-product-preview-size>${rowOption('S','S · 50 × 25 mm',labelSize)}${rowOption('M','M · 80 × 40 mm',labelSize)}</select></label><div class="product-preview">${plate({...preview,code:equipmentCode(preview.model,preview.number)},labelSize)}</div></div></details><p class="error product-settings-error" role="alert"></p><div class="product-settings-actions"><button type="button" data-product-cancel>Cancel</button><button type="submit" name="action" value="print">Save &amp; Print</button><button type="submit" name="action" value="save" class="primary">Save all</button></div></form>`;
+ return `<form class="product-settings-form" data-product-settings="1">${draft.isNew?`<div class="product-identity"><label>Category<select data-product-category required><option value="">Select category</option>${data.categories.map(c=>rowOption(c.id,c.name,draft.categoryId)).join('')}</select></label><label>Product name<input data-product-name value="${esc(draft.model)}" maxlength="60" placeholder="Enter Product name" required></label></div>${!data.categories.length?'<p>Create a category in Settings before saving a Product.</p>':''}`:''}<div class="product-settings-top"><label>Cleaning cycle (days)<input type="number" name="interval" data-product-interval min="0" max="3650" step="1" value="${draft.interval}" list="cleaning-cycle-options" required></label><span>All ${draft.rows.length} units · 0 = off${cycle?.needsReview?' · Review previous cycles':''}</span></div><details class="product-common"><summary>Apply the same setting to all rows</summary><div class="product-common-controls"><label>Line<select data-common="line">${rowOption('__keep__','Keep current',draft.common.line)}${rowOption('','-',draft.common.line)}${(data.lines||[]).map(v=>rowOption(v,v,draft.common.line)).join('')}</select></label><label>Install date<input type="date" data-common="installed" max="${today()}" value="${esc(draft.common.installed)}"></label><label>Field 1<select data-common="field1">${rowOption('__keep__','Keep current',draft.common.field1)}${fields.map(f=>rowOption(f.id,f.label,draft.common.field1)).join('')}</select></label><label>Field 2<select data-common="field2">${rowOption('__keep__','Keep current',draft.common.field2)}${rowOption('','None',draft.common.field2)}${fields.map(f=>rowOption(f.id,f.label,draft.common.field2)).join('')}</select></label><button type="button" data-product-apply>Apply to all</button></div></details><div class="product-table-scroll"><table class="entry-table product-settings-table"><thead><tr><th>Equipment / preview</th><th>No.</th><th>Line</th><th>Install date</th><th>Field 1</th><th>Field 2</th><th></th></tr></thead><tbody>${draft.rows.map(productEditorRow).join('')}</tbody></table></div><div class="product-table-actions"><button type="button" data-product-add ${draft.rows.length>=300?'disabled':''}>＋ Add row</button><span>${draft.rows.length} rows · Complete Product list</span></div><details class="product-preview-options" ${draft.previewOpen?'open':''}><summary>Label preview · S / M</summary><div class="product-preview-content"><label>Preview size<select data-product-preview-size>${rowOption('S','S · 50 × 25 mm',labelSize)}${rowOption('M','M · 80 × 40 mm',labelSize)}</select></label><div class="product-preview">${plate({...preview,code:equipmentCode(preview.model,preview.number)},labelSize)}</div></div></details>${productMediaEditor()}<p class="error product-settings-error" role="alert"></p><div class="product-settings-actions"><button type="button" data-product-cancel>Cancel</button><button type="submit" name="action" value="print">Save &amp; Print</button><button type="submit" name="action" value="save" class="primary">Save all</button></div></form>`;
 }
 function productSlot(row,index,fieldId){
  if(!fieldId){row.plateSlots.splice(index,1);return;}
@@ -338,6 +419,7 @@ function productPreviewUpdate(){
 function productEditorInput(event){
  const el=event.target,form=el.closest('.product-settings-form');if(!form||!productEditor)return;
  const error=form.querySelector('.product-settings-error');error.textContent='';
+ if(el.hasAttribute('data-media-caption')){const image=el.dataset.mediaCaption==='representative'?productEditor.media.representative:productEditor.media.attachments[Number(el.dataset.mediaCaption)];if(image)image.caption=el.value;return;}
  if(el.hasAttribute('data-product-name')){
   productEditor.model=el.value.normalize('NFC').trim().replace(/\s+/g,' ').toUpperCase();
   productEditor.rows.forEach((row,i)=>{row.model=productEditor.model;form.querySelector(`[data-product-row="${i}"] .product-code-button`).textContent=equipmentCode(row.model,row.number);});
@@ -364,6 +446,9 @@ $('catalog').addEventListener('click',event=>{
  const button=event.target.closest('button');if(!button)return;
  if(button.hasAttribute('data-product-edit')){openProductEditor(button.dataset.productEdit,button.dataset.productModel);return;}
  if(!productEditor)return;
+ if(productEditor.uploading)return;
+ if(button.hasAttribute('data-media-remove')){if(button.dataset.mediaRemove==='representative')productEditor.media.representative=null;else productEditor.media.attachments.splice(Number(button.dataset.mediaRemove),1);renderCatalog();return;}
+ if(button.hasAttribute('data-media-move')){const index=Number(button.dataset.mediaMove),target=index+Number(button.dataset.direction),images=productEditor.media.attachments;if(target>=0&&target<images.length)[images[index],images[target]]=[images[target],images[index]];renderCatalog();return;}
  if(button.hasAttribute('data-product-cancel')){productEditor=null;renderCatalog();return;}
  if(button.hasAttribute('data-product-preview')){productEditor.previewIndex=Number(button.dataset.productPreview);productEditor.previewOpen=true;const details=button.closest('form').querySelector('.product-preview-options');details.open=true;productPreviewUpdate();return;}
  if(button.hasAttribute('data-product-drop')){if(productEditor.rows.length<=1)return;productEditor.rows.splice(Number(button.dataset.productDrop),1);productEditor.previewIndex=Math.min(productEditor.previewIndex,productEditor.rows.length-1);renderCatalog();return;}
@@ -390,15 +475,16 @@ $('catalog').addEventListener('click',event=>{
 document.addEventListener('submit',async event=>{
  const form=event.target;if(!form.matches('.product-settings-form')||!productEditor)return;event.preventDefault();
  const buttons=[...form.querySelectorAll('button')],controls=[...form.querySelectorAll('input,select')],error=form.querySelector('.product-settings-error'),draft=productEditor,print=event.submitter?.value==='print';
- if(buttons.some(b=>b.dataset.saving==='1'))return;
+ if(draft.uploading||buttons.some(b=>b.dataset.saving==='1'))return;
  const submit=event.submitter||form.querySelector('button[type=submit]');submit.dataset.saving='1';buttons.forEach(b=>b.disabled=true);controls.forEach(el=>el.disabled=true);error.textContent='';
  try{
-  const rows=draft.rows.map(row=>({id:row.id||null,number:row.number,line:row.line,installed:row.installed,size:row.size||'S',plateSlots:row.plateSlots}));
-  const result=await api('/product/settings',json({revision:draft.revision,requestId:draft.requestId,create:!!draft.isNew,categoryId:draft.categoryId,model:draft.model,cleaningIntervalDays:draft.interval,rows}));
+  const rows=draft.rows.map(row=>({id:row.id||null,number:row.number,line:row.line,installed:row.installed,size:row.size||'M',plateSlots:row.plateSlots}));
+  const result=await api('/product/settings',json({revision:draft.revision,requestId:draft.requestId,create:!!draft.isNew,categoryId:draft.categoryId,model:draft.model,cleaningIntervalDays:draft.interval,rows,media:draft.media}));
   const ids=result.savedIds;delete result.savedIds;data=result;if(draft.isNew){expandedCategories.add(draft.categoryId);$('filter').value='';$('line-filter').value='';$('cleaning-filter').value='all';$('search').value='';}productEditor=null;render();message(`${ids.length} units · Product settings saved`,false);
   if(print)printOpen(data.equipment.filter(e=>ids.includes(e.id)));
  }catch(err){error.textContent=err.message;buttons.forEach(b=>b.disabled=false);controls.forEach(el=>el.disabled=false);delete submit.dataset.saving;}
 });
 
+selectLabelSize('M');
 load().then(()=>{const item=current();if(item&&!isMobileDevice())document.getElementById('equipment-panel-'+item.id)?.scrollIntoView({block:'center'});});
 })();

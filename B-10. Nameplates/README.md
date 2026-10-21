@@ -17,6 +17,13 @@
 - No. is optional in the equipment table. A blank number prints just the product code (for example, `U202`); a numbered entry prints `U202-01`. Equipment codes remain unique. Editing the number preserves the QR identity and cleaning history.
 - Line and cleaning schedule are web information and are not added to printed nameplates. Label size is chosen for the entire print job.
 
+## Product images and default size
+
+- Printing and previews start with **M (80 × 40 mm)**. S remains available for each print job.
+- In the inline Product settings, expand **Product photos & information**. Upload one representative photo and up to 20 supporting images (manual pages, equipment information), with descriptions up to 300 characters. Supporting images can be reordered or removed. **Save all** commits these changes together with the equipment rows and cycle; Cancel leaves the saved Product unchanged.
+- Accepted images: JPG, PNG, WEBP, up to 8 MB and 20 megapixels per source. The server applies orientation, resizes to at most 2400 pixels on the longest side, and stores WEBP images. Images are shared by category + Product and appear on every matching equipment QR page, including equipment without Last cleaned. Tap an image to enlarge it in an overlay on the same page. Pinch or use +/− to zoom (100–500%), drag to pan, and use Reset or Close. Swipe left/right (or use the previous/next buttons and arrow keys) to browse the representative photo followed by supporting images in their saved order. The counter shows the current image. At higher zoom levels dragging pans the photo; swiping outward from its edge changes images. Changing images resets zoom, and the first/last images stop at the gallery boundary. Closing preserves the page position and any unsaved cleaning inputs. Management and uploads remain PC-only.
+- Product metadata is stored in `nameplates/data.json`; image files are stored in `nameplates/images/` under the configured server storage directory. Back up both together. Uploads are staged until Save all; unreferenced files are retained to avoid breaking recovery/history. Removing an image from a Product does not erase its stored file.
+
 ## Deployment
 
 Upload `index.html`, `nameplates.js`, `nameplates.css` and the updated `Server/nameplates.py` to their existing locations. Restart the Python server to enable the cleaning-cycle API. Existing data is read compatibly without a separate migration command.
