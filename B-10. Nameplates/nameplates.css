@@ -48,3 +48,5 @@
 .product-editing header nav{display:none}
 
 .product-identity{display:grid;grid-template-columns:minmax(150px,1fr) minmax(200px,2fr);gap:16px;margin-bottom:20px}.product-identity input,.product-identity select{width:100%}.new-product-group{background:#fff;border:1px solid var(--border,#d8e2ef);border-radius:12px;overflow:hidden}@media(max-width:600px){.product-identity{grid-template-columns:1fr}}
+
+.mobile-equipment-info h2{font-size:17px;margin:0 0 16px}.mobile-equipment-info dl{margin:0}.mobile-equipment-info dl>div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.mobile-equipment-info dl>div:last-child{border:0}.mobile-equipment-info dt{font-size:13px;color:var(--muted)}.mobile-equipment-info dd{margin:0;overflow-wrap:anywhere;font-weight:600}

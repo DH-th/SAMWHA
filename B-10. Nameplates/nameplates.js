@@ -23,7 +23,8 @@ const activeId=()=>new URL(location.href).searchParams.get('id');
 const current=()=>data.equipment.find(e=>e.id===activeId());
 const isMobileDevice=()=>!!navigator.userAgentData?.mobile||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 const scanToken=()=>new URL(location.href).searchParams.get('scan')||'';
-function canRecordCleaning(e){const token=scanToken().split('.');return isMobileDevice()&&token.length===3&&token[0]===e.id&&Number(token[1])*1000>Date.now();}
+function hasCleaningOption(e){return (e.plateSlots||defaultSlots()).some(slot=>slot.fieldId==='cleaned');}
+function canRecordCleaning(e){if(!hasCleaningOption(e))return false;const token=scanToken().split('.');return isMobileDevice()&&token.length===3&&token[0]===e.id&&Number(token[1])*1000>Date.now();}
 
 const lastClean=e=>e.cleanings.map(c=>c.date).sort().at(-1)||'';
 function cleaningState(e,asOf=today()){
@@ -78,16 +79,17 @@ function renderDetail(){
  $('history').innerHTML=e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<div class="empty">No cleaning records</div>';
 }
 
-function mobileData(result){return {revision:result.revision,logo:result.logo||'',equipment:result.item?[result.item]:[],categories:[],productCycles:[]};}
+function mobileData(result){return {revision:result.revision,logo:result.logo||'',equipment:result.item?[result.item]:[],categories:result.item?[{id:result.item.categoryId,name:result.category||''}]:[],productCycles:[]};}
 function renderMobileCleaning(){
  document.body.classList.add('mobile-cleaning');
  document.querySelector('header nav').hidden=true;
- document.querySelector('header h1').textContent='Cleaning';
+ document.querySelector('header h1').textContent='Equipment';
  document.querySelector('header a').removeAttribute('href');
  $('catalog-view').hidden=true;$('detail-view').hidden=true;$('mobile-cleaning-view').hidden=false;
  $('catalog').innerHTML='';
  const item=current();
- $('mobile-cleaning-view').innerHTML=item?`<section class="mobile-equipment-title"><small>EQUIPMENT CLEANING</small><h2>${esc(item.code)}</h2></section><section class="mobile-entry-panel">${canRecordCleaning(item)?cleaningEntry(item):'<p class="mobile-session-note">Scan this equipment QR again to register cleaning.</p>'}</section><section class="mobile-history-panel"><h2>Cleaning history <span>${item.cleanings.length}</span></h2><div class="inline-history">${cleaningHistory(item)}</div></section>`:'<section class="mobile-entry-panel"><h2>Scan equipment QR</h2><p>Open the QR on your equipment to register cleaning and view its history.</p></section>';
+ const cleaningEnabled=item&&hasCleaningOption(item);
+ $('mobile-cleaning-view').innerHTML=item?`<section class="mobile-equipment-title"><small>${esc(data.categories.find(c=>c.id===item.categoryId)?.name||'EQUIPMENT')}</small><h2>${esc(item.code)}</h2></section><section class="mobile-entry-panel mobile-equipment-info"><h2>Equipment information</h2><dl><div><dt>Product</dt><dd>${esc(item.model)}</dd></div><div><dt>Line</dt><dd>${esc(item.line||'-')}</dd></div><div><dt>Install date</dt><dd>${dateText(item.installed)}</dd></div>${(item.plateSlots||defaultSlots()).filter(f=>f.fieldId!=='installed'&&f.fieldId!=='cleaned').map(f=>`<div><dt>${esc(f.label)}</dt><dd>${f.mode==='blank'?'—':esc(fieldType(f)==='date'?dateText(f.value):f.value||'—')}</dd></div>`).join('')}${cleaningEnabled?`<div><dt>Last cleaned</dt><dd>${dateText(lastClean(item))}</dd></div>`:''}</dl></section>${cleaningEnabled?`<section class="mobile-entry-panel">${canRecordCleaning(item)?cleaningEntry(item):'<p class="mobile-session-note">Scan this equipment QR again to register cleaning.</p>'}</section><section class="mobile-history-panel"><h2>Cleaning history <span>${item.cleanings.length}</span></h2><div class="inline-history">${cleaningHistory(item)}</div></section>`:''}`:'<section class="mobile-entry-panel"><h2>Scan equipment QR</h2><p>Open the QR on your equipment to view its information.</p></section>';
 }
 function render(){
  if(isMobileDevice()){renderMobileCleaning();return;}
