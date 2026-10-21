@@ -40,9 +40,10 @@ function cleaningState(e,asOf=today()){
 }
 function cleaningBadge(e){const s=cleaningState(e);return `<span class="cycle-badge ${s.key}">${esc(s.label)}</span>`;}
 function cleaningHistory(e){return e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<p class="empty">No cleaning records</p>';}
+function cleaningEntry(e){return canRecordCleaning(e)?`<form class="inline-clean-form" data-clean-form="${e.id}" data-revision="${data.revision}" data-request="${crypto.randomUUID()}"><h4>Record cleaning</h4><label>Date<input name="date" type="date" min="${esc(e.installed)}" max="${today()}" value="${today()}" required></label><label>Notes<textarea name="note" maxlength="300" rows="3" placeholder="Work performed / findings"></textarea></label><p class="error" role="alert"></p><button class="primary" type="submit" ${online?'':'disabled'}>Save cleaning</button></form>`:'<div class="mobile-cleaning-note"><h4>Mobile QR entry</h4><p>Scan this equipment’s QR with your mobile device to record cleaning.</p><p>This web view shows the cleaning schedule and history.</p></div>';}
 function inlineEquipment(e){
  const state=cleaningState(e);
- const entry=canRecordCleaning(e)?`<form class="inline-clean-form" data-clean-form="${e.id}" data-revision="${data.revision}" data-request="${crypto.randomUUID()}"><h4>Record cleaning</h4><label>Date<input name="date" type="date" min="${esc(e.installed)}" max="${today()}" value="${today()}" required></label><label>Notes<textarea name="note" maxlength="300" rows="3" placeholder="Work performed / findings"></textarea></label><p class="error" role="alert"></p><button class="primary" type="submit" ${online?'':'disabled'}>Save cleaning</button></form>`:'<div class="mobile-cleaning-note"><h4>Mobile QR entry</h4><p>Scan this equipment’s QR with your mobile device to record cleaning.</p><p>This web view shows the cleaning schedule and history.</p></div>';
+ const entry=cleaningEntry(e);
  return `<section class="equipment-inline" id="equipment-panel-${e.id}" aria-label="${esc(e.code)} cleaning and history"><div class="inline-top"><div><h3>${esc(e.code)} · Cleaning</h3><p>Product cycle: <strong>${e.cleaningIntervalDays?e.cleaningIntervalDays+' days':'Not set'}</strong> · Next cleaning: <strong>${dateText(state.due)}</strong> ${cleaningBadge(e)}</p></div><div class="inline-actions"><button type="button" data-inline-edit="${e.id}">Edit equipment</button><button type="button" data-inline-plate="${e.id}">Nameplate</button><button type="button" data-detail="${e.id}" aria-label="Close ${esc(e.code)} details">✕</button></div></div><div class="inline-cleaning-grid">${entry}<div class="inline-history"><h4>Cleaning history <span>${e.cleanings.length}</span></h4>${cleaningHistory(e)}</div></div></section>`;
 }
 function renderCleaningSummary(){
@@ -54,7 +55,7 @@ function message(text,error=true){$('message').textContent=text;$('message').cla
 async function api(path,options={}){
  const r=await fetch(API+path,{...options,cache:'no-store',signal:AbortSignal.timeout(60000)});
  let result;try{result=await r.json();}catch{throw Error(`Server error ${r.status}`);}
- if(!r.ok)throw Error(result.error||`Server error ${r.status}`);return result;
+ if(!r.ok)throw Error(result.error||result.detail||`Server error ${r.status}`);return result;
 }
 const json=body=>({method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 async function save(form,error,fn){const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);$(error).textContent='';try{await fn();}catch(e){$(error).textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}}
@@ -77,7 +78,21 @@ function renderDetail(){
  $('detail').innerHTML=`<article class="info"><span class="tag">${esc(category)} / ${esc(e.model)} / ${esc(e.number)}</span><h1>${esc(e.code)}</h1><div class="info-grid"><div><small>LINE</small><strong>${esc(e.line||'-')}</strong></div><div><small>INSTALL DATE</small><strong>${dateText(e.installed)}</strong></div><div><small>LAST CLEANED</small><strong>${dateText(lastClean(e))}</strong></div></div></article>`;
  $('history').innerHTML=e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<div class="empty">No cleaning records</div>';
 }
+
+function mobileData(result){return {revision:result.revision,logo:result.logo||'',equipment:result.item?[result.item]:[],categories:[],productCycles:[]};}
+function renderMobileCleaning(){
+ document.body.classList.add('mobile-cleaning');
+ document.querySelector('header nav').hidden=true;
+ document.querySelector('header h1').textContent='Cleaning';
+ document.querySelector('header a').removeAttribute('href');
+ $('catalog-view').hidden=true;$('detail-view').hidden=true;$('mobile-cleaning-view').hidden=false;
+ $('catalog').innerHTML='';
+ const item=current();
+ $('mobile-cleaning-view').innerHTML=item?`<section class="mobile-equipment-title"><small>EQUIPMENT CLEANING</small><h2>${esc(item.code)}</h2></section><section class="mobile-entry-panel">${canRecordCleaning(item)?cleaningEntry(item):'<p class="mobile-session-note">Scan this equipment QR again to register cleaning.</p>'}</section><section class="mobile-history-panel"><h2>Cleaning history <span>${item.cleanings.length}</span></h2><div class="inline-history">${cleaningHistory(item)}</div></section>`:'<section class="mobile-entry-panel"><h2>Scan equipment QR</h2><p>Open the QR on your equipment to register cleaning and view its history.</p></section>';
+}
 function render(){
+ if(isMobileDevice()){renderMobileCleaning();return;}
+ $('mobile-cleaning-view').hidden=true;
  const filter=$('filter').value;$('filter').innerHTML='<option value="">All</option>'+data.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('filter').value=filter;
  const line=$('line-filter').value,lines=data.lines||[...new Set(data.equipment.map(e=>e.line).filter(Boolean))];
  $('line-filter').innerHTML='<option value="">All lines</option><option value="__none__">-</option>'+lines.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');$('line-filter').value=line;
@@ -86,7 +101,7 @@ function render(){
  const focused=current();if(focused)expandedCategories.add(focused.categoryId);
  ['category-open','new-open','settings-open'].forEach(id=>$(id).disabled=!online);renderCleaningSummary();renderCatalog();
 }
-async function load(){const gen=++generation;online=false;render();message('Loading…',false);try{const result=await api('/catalog');if(gen!==generation)return;data=result;online=true;selected=new Set([...selected].filter(id=>data.equipment.some(e=>e.id===id)));message('');render();}catch(e){if(gen!==generation)return;message(e.message);render();}}
+async function load(){const gen=++generation;online=false;render();message('Loading…',false);try{if(isMobileDevice()&&(!activeId()||!scanToken())){message('Scan the QR on your equipment.',false);render();return;}const result=await (isMobileDevice()?api(`/equipment/${encodeURIComponent(activeId())}`,{headers:{'X-Nameplates-Scan':scanToken()}}):api('/catalog'));if(gen!==generation)return;data=isMobileDevice()?mobileData(result):result;online=true;selected=new Set([...selected].filter(id=>data.equipment.some(e=>e.id===id)));message('');render();}catch(e){if(gen!==generation)return;message(e.message);render();}}
 function navigate(id){const u=new URL(location.href);if(id)u.searchParams.set('id',id);else u.searchParams.delete('id');history.pushState({},'',u);render();}
 function equipmentOpen(item=null){sheetOpen(item?[item]:null);}
 function suggestNumber(){if(editing)return;const model=$('equipment-model').value.trim().toUpperCase();const numbers=data.equipment.filter(e=>e.model===model).map(e=>Number(e.number));$('equipment-number').value=String(Math.max(0,...numbers)+1).padStart(2,'0');$('equipment-end').value=$('equipment-number').value;rangeSummary();}
@@ -275,7 +290,7 @@ $('rows-form').onsubmit=e=>{e.preventDefault();const print=e.submitter?.id==='ro
  if(print)printOpen(data.equipment.filter(r=>ids.includes(r.id)));else message(`${ids.length} units saved`,false);
  });};
 
-$('catalog').addEventListener('submit',async event=>{
+document.addEventListener('submit',async event=>{
  const form=event.target,isProductCycle=form.hasAttribute('data-product-cycle'),cleanId=form.dataset.cleanForm;
  if(!isProductCycle&&!cleanId)return;event.preventDefault();
  const button=form.querySelector('button[type=submit]'),error=form.querySelector('.error');
@@ -283,11 +298,11 @@ $('catalog').addEventListener('submit',async event=>{
  try{
   const body={revision:Number(form.dataset.revision)};
   let result;
-  if(isProductCycle){Object.assign(body,{categoryId:form.dataset.categoryId,model:form.dataset.model,cleaningIntervalDays:Number(form.elements.interval.value)});result=await api('/product/cycle',json(body));}
+  if(isProductCycle){if(isMobileDevice())throw Error('Product settings are available on PC only.');Object.assign(body,{categoryId:form.dataset.categoryId,model:form.dataset.model,cleaningIntervalDays:Number(form.elements.interval.value)});result=await api('/product/cycle',json(body));}
   else{const item=data.equipment.find(e=>e.id===cleanId);if(!item||!canRecordCleaning(item))throw Error('Scan the QR with your mobile device again.');Object.assign(body,{date:form.elements.date.value,note:form.elements.note.value,requestId:form.dataset.request});const options=json(body);options.method='POST';options.headers['X-Nameplates-Scan']=scanToken();result=await api(`/equipment/${cleanId}/cleaning`,options);}
-  data=result;render();message(isProductCycle?'Product cycle saved for all units':'Cleaning recorded · Next cleaning updated',false);
+  data=isMobileDevice()?mobileData(result):result;render();message(isProductCycle?'Product cycle saved for all units':'Cleaning recorded · Next cleaning updated',false);
  }catch(err){error.textContent=err.message;button.disabled=false;}
 });
 
-load().then(()=>{const item=current();if(item)document.getElementById('equipment-panel-'+item.id)?.scrollIntoView({block:'center'});});
+load().then(()=>{const item=current();if(item&&!isMobileDevice())document.getElementById('equipment-panel-'+item.id)?.scrollIntoView({block:'center'});});
 })();
