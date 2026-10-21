@@ -17,17 +17,13 @@ let lineContext=null, settingsDraft=null, settingsRevision=0, settingsSlots=[];
 const defaultSlots=()=>[{fieldId:'installed',label:'Install date',mode:'installed',value:''},{fieldId:'cleaned',label:'Last cleaned',mode:'blank',value:''}];
 const fieldType=f=>f?.valueType||(f?.id==='installed'||f?.fieldId==='installed'||/date|cleaned|날짜|일자/i.test(f?.label||'')?'date':'text');
 const fieldLibrary=()=>data.plateFields||[{id:'installed',label:'Install date'},{id:'cleaned',label:'Last cleaned'}];
-let batchRequest='',deleteContext=null;
+let batchRequest='',deleteContext=null,productEditor=null;
 let data={revision:0,logo:'',categories:[],equipment:[]}, selected=new Set(), online=false, editing=null,categoryId=null,formRevision=0,cleanRequest='',generation=0,printItems=[],printGeneration=0;
 const activeId=()=>new URL(location.href).searchParams.get('id');
 const current=()=>data.equipment.find(e=>e.id===activeId());
 const isMobileDevice=()=>!!navigator.userAgentData?.mobile||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 const scanToken=()=>new URL(location.href).searchParams.get('scan')||'';
 function canRecordCleaning(e){const token=scanToken().split('.');return isMobileDevice()&&token.length===3&&token[0]===e.id&&Number(token[1])*1000>Date.now();}
-function productCycleForm(categoryId,model){
- const cycle=(data.productCycles||[]).find(p=>p.categoryId===categoryId&&p.model===model),count=data.equipment.filter(e=>e.categoryId===categoryId&&e.model===model).length;
- return `<form class="cycle-form product-cycle-form" data-product-cycle="1" data-category-id="${esc(categoryId)}" data-model="${esc(model)}" data-revision="${data.revision}"><label>Product cleaning cycle (days)<input name="interval" type="number" min="0" max="3650" step="1" list="cleaning-cycle-options" value="${cycle?.cleaningIntervalDays||0}" required></label><button type="submit" ${online?'':'disabled'}>Save Product cycle</button><p>${cycle?.needsReview?'<strong class="cycle-review">Review cycle: existing equipment had different cycles.</strong><br>':''}Applies to all ${count} units of ${esc(model)}. 0 = off.</p><p class="error" role="alert"></p></form>`;
-}
 
 const lastClean=e=>e.cleanings.map(c=>c.date).sort().at(-1)||'';
 function cleaningState(e,asOf=today()){
@@ -40,12 +36,9 @@ function cleaningState(e,asOf=today()){
 }
 function cleaningBadge(e){const s=cleaningState(e);return `<span class="cycle-badge ${s.key}">${esc(s.label)}</span>`;}
 function cleaningHistory(e){return e.cleanings.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<article class="history-row"><strong>${dateText(c.date)}</strong>${c.note?`<p>${esc(c.note)}</p>`:''}<small>Saved ${esc(c.savedAt.replace('T',' ').replace('+07:00',''))}</small></article>`).join('')||'<p class="empty">No cleaning records</p>';}
-function cleaningEntry(e){return canRecordCleaning(e)?`<form class="inline-clean-form" data-clean-form="${e.id}" data-revision="${data.revision}" data-request="${crypto.randomUUID()}"><h4>Record cleaning</h4><label>Date<input name="date" type="date" min="${esc(e.installed)}" max="${today()}" value="${today()}" required></label><label>Notes<textarea name="note" maxlength="300" rows="3" placeholder="Work performed / findings"></textarea></label><p class="error" role="alert"></p><button class="primary" type="submit" ${online?'':'disabled'}>Save cleaning</button></form>`:'<div class="mobile-cleaning-note"><h4>Mobile QR entry</h4><p>Scan this equipment’s QR with your mobile device to record cleaning.</p><p>This web view shows the cleaning schedule and history.</p></div>';}
-function inlineEquipment(e){
- const state=cleaningState(e);
- const entry=cleaningEntry(e);
- return `<section class="equipment-inline" id="equipment-panel-${e.id}" aria-label="${esc(e.code)} cleaning and history"><div class="inline-top"><div><h3>${esc(e.code)} · Cleaning</h3><p>Product cycle: <strong>${e.cleaningIntervalDays?e.cleaningIntervalDays+' days':'Not set'}</strong> · Next cleaning: <strong>${dateText(state.due)}</strong> ${cleaningBadge(e)}</p></div><div class="inline-actions"><button type="button" data-inline-edit="${e.id}">Edit equipment</button><button type="button" data-inline-plate="${e.id}">Nameplate</button><button type="button" data-detail="${e.id}" aria-label="Close ${esc(e.code)} details">✕</button></div></div><div class="inline-cleaning-grid">${entry}<div class="inline-history"><h4>Cleaning history <span>${e.cleanings.length}</span></h4>${cleaningHistory(e)}</div></div></section>`;
-}
+function cleaningEntry(e){return canRecordCleaning(e)?`<form class="inline-clean-form" data-clean-form="${e.id}" data-revision="${data.revision}" data-request="${crypto.randomUUID()}"><h4>Record cleaning</h4><label>Date<input name="date" type="date" min="${esc(e.installed)}" max="${today()}" value="${today()}" required></label><label>Notes<textarea name="note" maxlength="300" rows="3" placeholder="Work performed / findings"></textarea></label><p class="error" role="alert"></p><button class="primary" type="submit" ${online?'':'disabled'}>Save cleaning</button></form>`:'';}
+function inlineEquipment(e){return `<section class="equipment-inline compact-history" id="equipment-panel-${e.id}" aria-label="${esc(e.code)} cleaning history"><h4>Cleaning history <span>${e.cleanings.length}</span></h4><div class="inline-history">${cleaningHistory(e)}</div></section>`;}
+
 function renderCleaningSummary(){
  const counts={all:data.equipment.length,overdue:0,today:0,soon:0,scheduled:0,off:0};
  data.equipment.forEach(e=>counts[cleaningState(e).key]++);
@@ -60,17 +53,23 @@ async function api(path,options={}){
 const json=body=>({method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 async function save(form,error,fn){const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);$(error).textContent='';try{await fn();}catch(e){$(error).textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}}
 function choices(id,value){$(id).innerHTML=data.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(value)$(id).value=value;}
-function selectedState(){ $('selected-count').textContent=`${selected.size} selected`;$('print-open').disabled=!online||!selected.size;$('delete-open').disabled=!online||!selected.size;$('line-open').disabled=!online||!selected.size;$('rows-edit').disabled=!online||!selected.size;const rows=visible();$('select-all').checked=!!rows.length&&rows.every(e=>selected.has(e.id));$('select-all').indeterminate=rows.some(e=>selected.has(e.id))&&!$('select-all').checked;}
+function selectedState(){ $('selected-count').textContent=`${selected.size} selected`;$('print-open').disabled=!online||!!productEditor||!selected.size;$('delete-open').disabled=!online||!!productEditor||!selected.size;$('line-open').disabled=!online||!!productEditor||!selected.size;$('rows-edit').disabled=!online||!!productEditor||!selected.size;const rows=visible();$('select-all').checked=!!rows.length&&rows.every(e=>selected.has(e.id));$('select-all').indeterminate=rows.some(e=>selected.has(e.id))&&!$('select-all').checked;}
 function visible(){const q=$('search').value.trim().toLowerCase(),cycle=$('cleaning-filter').value;return data.equipment.filter(e=>(!$('filter').value||e.categoryId===$('filter').value)&&(!$('line-filter').value||($('line-filter').value==='__none__'?!e.line:e.line===$('line-filter').value))&&(cycle==='all'||cleaningState(e).key===cycle)&&(!q||e.code.toLowerCase().includes(q)));}
-function renderCatalog(){
- const entries=visible();$('catalog').innerHTML=data.categories.filter(c=>!$('filter').value||c.id===$('filter').value).map(c=>{
- const items=entries.filter(e=>e.categoryId===c.id).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
- if(!items.length&&($('search').value||$('line-filter').value||$('cleaning-filter').value!=='all'))return '';
- const models=[...new Set(items.map(e=>e.model))];
- return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${items.length} units</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}">+ Product</button> <button data-category="${c.id}">Edit</button> <button class="danger-button" data-delete-category="${c.id}">Delete</button></div></div>${models.map(model=>`<section class="product-group"><div class="product-head"><h3>${esc(model)}</h3><div class="product-actions"><button data-add-category="${c.id}" data-add-model="${esc(model)}">+ Add</button><button class="primary" data-print-category="${c.id}" data-print-model="${esc(model)}">Print all</button><button class="danger-button" data-delete-category="${c.id}" data-delete-model="${esc(model)}">Delete</button></div></div>${productCycleForm(c.id,model)}${items.filter(e=>e.model===model).map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}" aria-expanded="${activeId()===e.id}" aria-controls="equipment-panel-${e.id}">${esc(e.code)} <span class="row-chevron" aria-hidden="true">${activeId()===e.id?'⌃':'⌄'}</span></button><div class="equipment-line"><small>LINE</small>${esc(e.line||'-')}</div><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div><div class="cleaning-next"><small>NEXT CLEANING</small><span>${dateText(cleaningState(e).due)}</span>${cleaningBadge(e)}</div></div>${activeId()===e.id?inlineEquipment(e):''}`).join('')}</section>`).join('')||'<div class="empty">No products</div>'}</details>`;
-
- }).join('')||'<div class="empty">No equipment</div>';selectedState();
+function productEditorMatches(categoryId,model){return !productEditor?.isNew&&productEditor?.categoryId===categoryId&&productEditor?.model===model;}
+function productGroup(category,model,items){
+ const all=data.equipment.filter(e=>e.categoryId===category.id&&e.model===model),cycle=(data.productCycles||[]).find(p=>p.categoryId===category.id&&p.model===model),editingProduct=productEditorMatches(category.id,model);
+ return `<section class="product-group"><div class="product-head"><div class="product-heading"><h3>${esc(model)}</h3><span>${editingProduct?productEditor.rows.length:all.length} units · ${editingProduct?'Product settings':cycle?.needsReview?'Review cleaning cycle':cycle?.cleaningIntervalDays?'Cleaning every '+cycle.cleaningIntervalDays+' days':'Cycle not set'}</span></div><div class="product-actions"><button type="button" class="${editingProduct?'':'primary'}" data-product-edit="${category.id}" data-product-model="${esc(model)}" ${productEditor&&!editingProduct?'disabled':''}>${editingProduct?'Settings open':'Settings'}</button><button type="button" data-print-category="${category.id}" data-print-model="${esc(model)}" ${productEditor?'disabled':''}>Print all</button><details class="product-more"><summary aria-label="More actions for ${esc(model)}">⋯</summary><button type="button" class="danger-button" data-delete-category="${category.id}" data-delete-model="${esc(model)}" ${productEditor?'disabled':''}>Delete Product</button></details></div></div>${editingProduct?productEditorHtml():items.map(e=>`<div class="equipment-row"><input type="checkbox" data-select="${e.id}" aria-label="Select ${esc(e.code)}" ${selected.has(e.id)?'checked':''}><button data-detail="${e.id}" aria-expanded="${activeId()===e.id}" aria-controls="equipment-panel-${e.id}">${esc(e.code)} <span class="row-chevron" aria-hidden="true">${activeId()===e.id?'⌃':'⌄'}</span></button><div class="equipment-line"><small>LINE</small>${esc(e.line||'-')}</div><div class="installed"><small>INSTALL DATE</small>${dateText(e.installed)}</div><div><small>LAST CLEANED</small>${dateText(lastClean(e))}</div><div class="cleaning-next"><small>NEXT CLEANING</small><span>${dateText(cleaningState(e).due)}</span>${cleaningBadge(e)}</div></div>${activeId()===e.id?inlineEquipment(e):''}`).join('')}</section>`;
 }
+function renderCatalog(){
+ document.body.classList.toggle('product-editing',!!productEditor);
+ const entries=visible();$('catalog').innerHTML=productEditor?.isNew?`<section class="product-group new-product-group"><div class="product-head"><h3>Add Product</h3></div>${productEditorHtml()}</section>`:data.categories.filter(c=>!$('filter').value||c.id===$('filter').value).map(c=>{
+ const items=entries.filter(e=>e.categoryId===c.id).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
+ if(!items.length&&($('search').value||$('line-filter').value||$('cleaning-filter').value!=='all')&&productEditor?.categoryId!==c.id)return '';
+ const models=[...new Set(items.map(e=>e.model))];if(productEditor?.categoryId===c.id&&!models.includes(productEditor.model))models.push(productEditor.model);
+ return `<details class="group" data-group="${c.id}" ${expandedCategories.has(c.id)?'open':''}><summary><span class="category-label">${esc(c.name)}</span><span class="category-count">${productEditor?.categoryId===c.id?productEditor.rows.length+' units in Product':items.length+' units'}</span><span class="category-chevron" aria-hidden="true">⌄</span></summary><div class="group-head"><div><button data-add-category="${c.id}" ${productEditor?'disabled':''}>+ Product</button><details class="product-more"><summary aria-label="Category actions for ${esc(c.name)}">⋯</summary><button data-category="${c.id}" ${productEditor?'disabled':''}>Rename category</button><button class="danger-button" data-delete-category="${c.id}" ${productEditor?'disabled':''}>Delete category</button></details></div></div>${models.map(model=>productGroup(c,model,items.filter(e=>e.model===model))).join('')||'<div class="empty">No products</div>'}</details>`;
+ }).join('')||'<div class="empty">No equipment</div>';selectedState();['new-open','settings-open','category-open','refresh'].forEach(id=>$(id).disabled=!!productEditor||!online);['filter','line-filter','cleaning-filter','search','select-all'].forEach(id=>$(id).disabled=!!productEditor);document.querySelectorAll('[data-cycle-filter]').forEach(button=>button.disabled=!!productEditor);
+}
+
 function renderDetail(){
  const e=current();if(!e){$('detail').innerHTML='<div class="empty">Equipment not found</div>';$('history').innerHTML='';document.querySelectorAll('.detail-actions button').forEach(b=>b.disabled=true);return;}
  document.querySelectorAll('.detail-actions button').forEach(b=>b.disabled=!online);
@@ -103,9 +102,14 @@ function render(){
 }
 async function load(){const gen=++generation;online=false;render();message('Loading…',false);try{if(isMobileDevice()&&(!activeId()||!scanToken())){message('Scan the QR on your equipment.',false);render();return;}const result=await (isMobileDevice()?api(`/equipment/${encodeURIComponent(activeId())}`,{headers:{'X-Nameplates-Scan':scanToken()}}):api('/catalog'));if(gen!==generation)return;data=isMobileDevice()?mobileData(result):result;online=true;selected=new Set([...selected].filter(id=>data.equipment.some(e=>e.id===id)));message('');render();}catch(e){if(gen!==generation)return;message(e.message);render();}}
 function navigate(id){const u=new URL(location.href);if(id)u.searchParams.set('id',id);else u.searchParams.delete('id');history.pushState({},'',u);render();}
-function equipmentOpen(item=null){sheetOpen(item?[item]:null);}
+function equipmentOpen(item=null){if(item)sheetOpen([item]);else addProduct($('filter').value);}
 function suggestNumber(){if(editing)return;const model=$('equipment-model').value.trim().toUpperCase();const numbers=data.equipment.filter(e=>e.model===model).map(e=>Number(e.number));$('equipment-number').value=String(Math.max(0,...numbers)+1).padStart(2,'0');$('equipment-end').value=$('equipment-number').value;rangeSummary();}
-function addProduct(category,model=''){sheetOpen(null,category,model);}
+function addProduct(category,model=''){
+ if(!online||isMobileDevice()||productEditor)return;
+ category=category||data.categories[0]?.id||'';
+ productEditor={isNew:true,categoryId:category,model,rows:[freshRow(category,model)],interval:0,revision:data.revision,requestId:crypto.randomUUID(),previewIndex:0,previewOpen:false,common:{line:'__keep__',installed:'',field1:'__keep__',field2:'__keep__'}};
+ message('');renderCatalog();document.querySelector('[data-product-name]')?.focus();
+}
 $('equipment-model').addEventListener('change',suggestNumber);
 function rangeSummary(){const a=Number($('equipment-number').value),b=Number($('equipment-end').value),model=$('equipment-model').value.trim().toUpperCase();$('range-summary').hidden=!!editing;$('range-summary').textContent=Number.isInteger(a)&&Number.isInteger(b)&&a>=1&&b>=a&&b<=9999&&b-a<300?`${model||'Product'}-${String(a).padStart(2,'0')} → ${model||'Product'}-${String(b).padStart(2,'0')} · ${b-a+1} units`:'Range · 1–9999 / Max 300 units';}
 ['equipment-number','equipment-end','equipment-model'].forEach(id=>$(id).addEventListener('input',rangeSummary));
@@ -151,7 +155,7 @@ $('delete-form').onsubmit=e=>{e.preventDefault();if(!deleteContext)return;save(e
  $('delete-dialog').close();render();if($('category-dialog').open)renderCategories();message(`${count} units deleted`,false);
 });};
 $('delete-dialog').addEventListener('close',()=>{$('delete-password').value='';deleteContext=null;});
-$('line-open').onclick=()=>{if(!online||!selected.size)return;lineContext={revision:data.revision,ids:[...selected],requestId:crypto.randomUUID()};$('line-count').textContent=`${selected.size} selected`;$('assign-line').value='';$('line-error').textContent='';$('line-dialog').showModal();};
+$('line-open').onclick=()=>{if(!online||!!productEditor||!selected.size)return;lineContext={revision:data.revision,ids:[...selected],requestId:crypto.randomUUID()};$('line-count').textContent=`${selected.size} selected`;$('assign-line').value='';$('line-error').textContent='';$('line-dialog').showModal();};
 $('line-form').onsubmit=e=>{e.preventDefault();save(e.target,'line-error',async()=>{data=await api('/equipment/line',json({...lineContext,line:$('assign-line').value}));$('line-dialog').close();render();});};
 $('clean-open').onclick=()=>{const e=current();if(!online||!e||!canRecordCleaning(e))return;formRevision=data.revision;cleanRequest=crypto.randomUUID();$('clean-form').reset();$('clean-code').textContent=e.code;$('clean-date').value=today();$('clean-date').min=e.installed;$('clean-date').max=today();$('clean-error').textContent='';$('clean-dialog').showModal();};
 $('clean-form').onsubmit=e=>{e.preventDefault();save(e.target,'clean-error',async()=>{const options=json({revision:formRevision,requestId:cleanRequest,date:$('clean-date').value,note:$('clean-note').value});options.method='POST';options.headers['X-Nameplates-Scan']=scanToken();data=await api(`/equipment/${current().id}/cleaning`,options);$('clean-dialog').close();render();});};
@@ -302,6 +306,96 @@ document.addEventListener('submit',async event=>{
   else{const item=data.equipment.find(e=>e.id===cleanId);if(!item||!canRecordCleaning(item))throw Error('Scan the QR with your mobile device again.');Object.assign(body,{date:form.elements.date.value,note:form.elements.note.value,requestId:form.dataset.request});const options=json(body);options.method='POST';options.headers['X-Nameplates-Scan']=scanToken();result=await api(`/equipment/${cleanId}/cleaning`,options);}
   data=isMobileDevice()?mobileData(result):result;render();message(isProductCycle?'Product cycle saved for all units':'Cleaning recorded · Next cleaning updated',false);
  }catch(err){error.textContent=err.message;button.disabled=false;}
+});
+
+function openProductEditor(categoryId,model){
+ if(!online||isMobileDevice()||productEditor)return;
+ const rows=data.equipment.filter(e=>e.categoryId===categoryId&&e.model===model).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
+ if(!rows.length)return;
+ const cycle=(data.productCycles||[]).find(p=>p.categoryId===categoryId&&p.model===model);
+ productEditor={categoryId,model,rows:structuredClone(rows),interval:cycle?.cleaningIntervalDays||0,revision:data.revision,requestId:crypto.randomUUID(),previewIndex:0,previewOpen:false,common:{line:'__keep__',installed:'',field1:'__keep__',field2:'__keep__'}};
+ expandedCategories.add(categoryId);message('');renderCatalog();
+}
+function productEditorRow(row,index){return `<tr data-product-row="${index}"><td><button type="button" data-product-preview="${index}" class="product-code-button">${esc(equipmentCode(row.model,row.number))}</button></td><td><input data-key="number" aria-label="Number" value="${esc(row.number)}" pattern="[0-9]{1,4}" maxlength="4" inputmode="numeric" placeholder="Optional"></td><td><select data-key="line" aria-label="Line">${rowOption('','-',row.line)}${(data.lines||[]).map(v=>rowOption(v,v,row.line)).join('')}</select></td><td><input data-key="installed" aria-label="Install date" type="date" max="${today()}" value="${esc(row.installed)}" required></td>${sheetFieldCell(row,0)}${sheetFieldCell(row,1)}<td>${row.id?'':`<button type="button" data-product-drop="${index}" ${productEditor.rows.length===1?'disabled':''} aria-label="Remove new row ${index+1}">×</button>`}</td></tr>`;}
+function productEditorHtml(){
+ const draft=productEditor,fields=fieldLibrary(),cycle=(data.productCycles||[]).find(p=>p.categoryId===draft.categoryId&&p.model===draft.model),preview=draft.rows[draft.previewIndex]||draft.rows[0];
+ return `<form class="product-settings-form" data-product-settings="1">${draft.isNew?`<div class="product-identity"><label>Category<select data-product-category required><option value="">Select category</option>${data.categories.map(c=>rowOption(c.id,c.name,draft.categoryId)).join('')}</select></label><label>Product name<input data-product-name value="${esc(draft.model)}" maxlength="60" placeholder="Enter Product name" required></label></div>${!data.categories.length?'<p>Create a category in Settings before saving a Product.</p>':''}`:''}<div class="product-settings-top"><label>Cleaning cycle (days)<input type="number" name="interval" data-product-interval min="0" max="3650" step="1" value="${draft.interval}" list="cleaning-cycle-options" required></label><span>All ${draft.rows.length} units · 0 = off${cycle?.needsReview?' · Review previous cycles':''}</span></div><details class="product-common"><summary>Apply the same setting to all rows</summary><div class="product-common-controls"><label>Line<select data-common="line">${rowOption('__keep__','Keep current',draft.common.line)}${rowOption('','-',draft.common.line)}${(data.lines||[]).map(v=>rowOption(v,v,draft.common.line)).join('')}</select></label><label>Install date<input type="date" data-common="installed" max="${today()}" value="${esc(draft.common.installed)}"></label><label>Field 1<select data-common="field1">${rowOption('__keep__','Keep current',draft.common.field1)}${fields.map(f=>rowOption(f.id,f.label,draft.common.field1)).join('')}</select></label><label>Field 2<select data-common="field2">${rowOption('__keep__','Keep current',draft.common.field2)}${rowOption('','None',draft.common.field2)}${fields.map(f=>rowOption(f.id,f.label,draft.common.field2)).join('')}</select></label><button type="button" data-product-apply>Apply to all</button></div></details><div class="product-table-scroll"><table class="entry-table product-settings-table"><thead><tr><th>Equipment / preview</th><th>No.</th><th>Line</th><th>Install date</th><th>Field 1</th><th>Field 2</th><th></th></tr></thead><tbody>${draft.rows.map(productEditorRow).join('')}</tbody></table></div><div class="product-table-actions"><button type="button" data-product-add ${draft.rows.length>=300?'disabled':''}>＋ Add row</button><span>${draft.rows.length} rows · Complete Product list</span></div><details class="product-preview-options" ${draft.previewOpen?'open':''}><summary>Label preview · S / M</summary><div class="product-preview-content"><label>Preview size<select data-product-preview-size>${rowOption('S','S · 50 × 25 mm',labelSize)}${rowOption('M','M · 80 × 40 mm',labelSize)}</select></label><div class="product-preview">${plate({...preview,code:equipmentCode(preview.model,preview.number)},labelSize)}</div></div></details><p class="error product-settings-error" role="alert"></p><div class="product-settings-actions"><button type="button" data-product-cancel>Cancel</button><button type="submit" name="action" value="print">Save &amp; Print</button><button type="submit" name="action" value="save" class="primary">Save all</button></div></form>`;
+}
+function productSlot(row,index,fieldId){
+ if(!fieldId){row.plateSlots.splice(index,1);return;}
+ if(row.plateSlots[index]?.fieldId===fieldId)return;
+ const definition=fieldLibrary().find(f=>f.id===fieldId);
+ if(!definition)throw Error('Field removed · Reload');
+ row.plateSlots[index]={fieldId,label:definition.label,valueType:fieldType(definition),mode:fieldId==='installed'?'installed':'blank',value:''};
+}
+function productPreviewUpdate(){
+ const row=productEditor?.rows[productEditor.previewIndex];
+ const el=document.querySelector('.product-settings-form .product-preview');
+ if(row&&el)el.innerHTML=plate({...row,code:equipmentCode(row.model,row.number)},labelSize);
+}
+function productEditorInput(event){
+ const el=event.target,form=el.closest('.product-settings-form');if(!form||!productEditor)return;
+ const error=form.querySelector('.product-settings-error');error.textContent='';
+ if(el.hasAttribute('data-product-name')){
+  productEditor.model=el.value.normalize('NFC').trim().replace(/\s+/g,' ').toUpperCase();
+  productEditor.rows.forEach((row,i)=>{row.model=productEditor.model;form.querySelector(`[data-product-row="${i}"] .product-code-button`).textContent=equipmentCode(row.model,row.number);});
+  productPreviewUpdate();return;
+ }
+ if(el.hasAttribute('data-product-category')){productEditor.categoryId=el.value;productEditor.rows.forEach(row=>row.categoryId=el.value);return;}
+ if(el.hasAttribute('data-common')){productEditor.common[el.dataset.common]=el.value;return;}
+ if(el.hasAttribute('data-product-interval')){productEditor.interval=Number(el.value);return;}
+ if(el.hasAttribute('data-product-preview-size')){selectLabelSize(el.value);productPreviewUpdate();return;}
+ const tr=el.closest('[data-product-row]');if(!tr||!el.dataset.key)return;
+ const index=Number(tr.dataset.productRow),row=productEditor.rows[index];productEditor.previewIndex=index;
+ if(el.hasAttribute('data-slot')){
+  const slot=Number(el.dataset.slot);
+  if(el.value&&row.plateSlots.some((f,i)=>i!==slot&&f.fieldId===el.value)){el.value=row.plateSlots[slot]?.fieldId||'';error.textContent='Select different fields';return;}
+  productSlot(row,slot,el.value);
+ }else row[el.dataset.key]=el.value;
+ tr.querySelector('.product-code-button').textContent=equipmentCode(row.model,row.number);productPreviewUpdate();
+}
+['settings-open','category-open'].forEach(id=>$(id).addEventListener('click',()=>{document.querySelector('.workspace-menu').open=false;}));
+$('catalog').addEventListener('input',e=>{if(e.target.tagName==='INPUT')productEditorInput(e);});
+$('catalog').addEventListener('change',e=>{if(e.target.tagName==='SELECT')productEditorInput(e);});
+$('catalog').addEventListener('toggle',e=>{if(e.target.matches('.product-preview-options')&&e.target.isConnected&&productEditor)productEditor.previewOpen=e.target.open;},true);
+$('catalog').addEventListener('click',event=>{
+ const button=event.target.closest('button');if(!button)return;
+ if(button.hasAttribute('data-product-edit')){openProductEditor(button.dataset.productEdit,button.dataset.productModel);return;}
+ if(!productEditor)return;
+ if(button.hasAttribute('data-product-cancel')){productEditor=null;renderCatalog();return;}
+ if(button.hasAttribute('data-product-preview')){productEditor.previewIndex=Number(button.dataset.productPreview);productEditor.previewOpen=true;const details=button.closest('form').querySelector('.product-preview-options');details.open=true;productPreviewUpdate();return;}
+ if(button.hasAttribute('data-product-drop')){if(productEditor.rows.length<=1)return;productEditor.rows.splice(Number(button.dataset.productDrop),1);productEditor.previewIndex=Math.min(productEditor.previewIndex,productEditor.rows.length-1);renderCatalog();return;}
+ if(button.hasAttribute('data-product-add')){
+  if(productEditor.rows.length>=300)return;
+  const row=freshRow(productEditor.categoryId,productEditor.model),last=productEditor.rows.at(-1);
+  row.number=String(Math.max(0,...data.equipment.filter(e=>e.model===productEditor.model).map(e=>Number(e.number)||0),...productEditor.rows.map(e=>Number(e.number)||0))+1).padStart(2,'0');
+  row.line=last.line;row.plateSlots=structuredClone(last.plateSlots);productEditor.rows.push(row);renderCatalog();return;
+ }
+ if(button.hasAttribute('data-product-apply')){
+  const form=button.closest('form'),common=productEditor.common;
+  try{
+   const rows=structuredClone(productEditor.rows);
+   for(const row of rows){
+    if(common.line!=='__keep__')row.line=common.line;if(common.installed)row.installed=common.installed;
+    if(common.field1!=='__keep__')productSlot(row,0,common.field1);
+    if(common.field2!=='__keep__')productSlot(row,1,common.field2);
+    if(new Set(row.plateSlots.map(f=>f.fieldId)).size!==row.plateSlots.length)throw Error('Select different fields');
+   }
+   productEditor.rows=rows;renderCatalog();
+  }catch(err){form.querySelector('.product-settings-error').textContent=err.message;}
+ }
+});
+document.addEventListener('submit',async event=>{
+ const form=event.target;if(!form.matches('.product-settings-form')||!productEditor)return;event.preventDefault();
+ const buttons=[...form.querySelectorAll('button')],controls=[...form.querySelectorAll('input,select')],error=form.querySelector('.product-settings-error'),draft=productEditor,print=event.submitter?.value==='print';
+ if(buttons.some(b=>b.dataset.saving==='1'))return;
+ const submit=event.submitter||form.querySelector('button[type=submit]');submit.dataset.saving='1';buttons.forEach(b=>b.disabled=true);controls.forEach(el=>el.disabled=true);error.textContent='';
+ try{
+  const rows=draft.rows.map(row=>({id:row.id||null,number:row.number,line:row.line,installed:row.installed,size:row.size||'S',plateSlots:row.plateSlots}));
+  const result=await api('/product/settings',json({revision:draft.revision,requestId:draft.requestId,create:!!draft.isNew,categoryId:draft.categoryId,model:draft.model,cleaningIntervalDays:draft.interval,rows}));
+  const ids=result.savedIds;delete result.savedIds;data=result;if(draft.isNew){expandedCategories.add(draft.categoryId);$('filter').value='';$('line-filter').value='';$('cleaning-filter').value='all';$('search').value='';}productEditor=null;render();message(`${ids.length} units · Product settings saved`,false);
+  if(print)printOpen(data.equipment.filter(e=>ids.includes(e.id)));
+ }catch(err){error.textContent=err.message;buttons.forEach(b=>b.disabled=false);controls.forEach(el=>el.disabled=false);delete submit.dataset.saving;}
 });
 
 load().then(()=>{const item=current();if(item&&!isMobileDevice())document.getElementById('equipment-panel-'+item.id)?.scrollIntoView({block:'center'});});
