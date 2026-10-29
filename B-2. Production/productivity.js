@@ -7,7 +7,7 @@
   const dateText = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const timeText = value => value ? String(value).replace('T', ' ').replace(/\.\d+/, '') : '수집시각 없음';
   let snapshot = null, available = false, loading = false, requestId = 0;
-  let controller = null;
+  let controller = null, missingModels=[], modelVersion="";
   const now = new Date();
   if(now.getHours()<8) now.setDate(now.getDate()-1);
   $('date').value = dateText(now);
@@ -143,7 +143,7 @@
       ${unresolved.length?`<div class="table-wrap"><table><thead><tr><th>모델 코드</th><th>Plant / 라인</th><th>수량</th><th>확인 내용</th></tr></thead><tbody>${unresolved.map(g=>`<tr><td><strong>${escape(g.modelName||'코드 없음')}</strong><br><button data-master-code="${escape(g.modelName)}">CAPA 검색</button></td><td>${escape(g.matchedPlant||g.plantName||'Plant 미등록')}<small>${escape(g.line)}</small></td><td>${fmt(g.qty,0)}</td><td>${escape(g.issues.join(' · '))}</td></tr>`).join('')}</tbody></table></div>`:'<p>현재 조회 조건에 미매칭·CAPA 확인 대상이 없습니다.</p>'}
       ${snapshot.issues.length?`<h3>원천 기록 검증</h3><p>문제 기록을 제외한 수량을 표시합니다. 원천 자료 확인 전 전체 실적으로 확정하지 마세요.</p><ul>${snapshot.issues.map(i=>`<li>${escape(i.date)} · ${escape(i.message)}${i.id?` (${escape(i.id)})`:''}</li>`).join('')}</ul>`:''}`;
     $('master-meta').textContent = `${snapshot.master.source} · 기준 버전 ${snapshot.master.version.slice(0,12)} · ${snapshot.master.rows.length}개 모델${snapshot.master.modifiedAt?' · '+timeText(snapshot.master.modifiedAt):''}`;
-    renderMaster();
+    renderMaster();renderMissing();
     if (snapshot.master.issues.length) $('master-meta').textContent += ' · '+snapshot.master.issues.join(' · ');
   }
 
@@ -154,9 +154,46 @@
     const rows = snapshot.master.rows.filter(m=>String(m.modelName ?? '').toLocaleLowerCase().includes(query))
       .sort((a,b)=>rank(a)-rank(b) || a.row-b.row);
     $('master-count').textContent = `${fmt(rows.length,0)} / ${fmt(snapshot.master.rows.length,0)}개 모델`;
-    $('master-rows').innerHTML = rows.length ? rows.map(m=>`<tr><td>${m.row}</td><td>${escape(m.plantName)}</td><td>${escape(m.modelName)}</td><td class="num">${fmt(m.capa)}</td><td class="${m.issues.length?'warning':'good'}">${escape(m.issues.join(' · ') || '확인')}</td></tr>`).join('')
-      : `<tr><td colspan="5" class="empty">${snapshot.master.rows.length?'검색한 모델이 없습니다.':'서버 Excel 기준정보를 확인할 수 없습니다.'}</td></tr>`;
+    $('master-rows').innerHTML = rows.length ? rows.map(m=>`<tr><td>${m.row}</td><td>${escape(m.plantName)}</td><td>${escape(m.modelName)}</td><td class="num">${fmt(m.capa)}</td><td class="${m.issues.length?'warning':'good'}">${escape(m.issues.join(' · ') || '확인')}</td><td><button data-edit-master="${m.row}">수정</button></td></tr>`).join('')
+      : `<tr><td colspan="6" class="empty">${snapshot.master.rows.length?'검색한 모델이 없습니다.':'서버 Excel 기준정보를 확인할 수 없습니다.'}</td></tr>`;
   }
+
+  function renderMissing(){
+    const entries=new Map();
+    const put=(plantName,modelName,issues,capa)=>{
+      const key=JSON.stringify([plantName||'',modelName||'']);
+      if(!entries.has(key))entries.set(key,{plantName:plantName||'',modelName:modelName||'',issues:new Set(),capa});
+      issues.forEach(i=>entries.get(key).issues.add(i));
+    };
+    selected().filter(g=>g.capa==null||g.capa<=0||g.issues.some(i=>/모델|CAPA|매핑|Plant|ID/.test(i))).forEach(g=>put(g.matchedPlant||g.plantName,g.modelName,g.issues,g.capa));
+    snapshot.master.rows.filter(m=>!Number.isFinite(m.capa)||m.capa<=0).forEach(m=>put(m.plantName,m.modelName,m.issues,m.capa));
+    missingModels=[...entries.values()];$('missing-count').textContent=missingModels.length;
+    $('missing-rows').innerHTML=missingModels.map((m,i)=>`<tr><td>${escape(m.plantName||'Plant 확인 필요')}</td><td><strong>${escape(m.modelName||'코드 없음')}</strong></td><td class="warning">${escape([...m.issues].join(' · ')||'CAPA 미등록')}</td><td><button class="primary" data-fix-model="${i}">입력 / 저장</button></td></tr>`).join('')||'<tr><td colspan="4" class="empty">모델 · CAPA 미등록 항목이 없습니다.</td></tr>';
+  }
+  function editModel(model={}){
+    if(!available||loading){$('model-save-status').textContent='서버 조회 완료 후 등록하세요.';return;}
+    modelVersion=snapshot.master.version;
+    $('model-editor-form').reset();$('model-plant').value=model.plantName||'';$('model-code').value=model.modelName||'';$('model-capa').value=model.capa>0?model.capa:'';
+    const existing=snapshot.master.rows.filter(m=>m.plantName===model.plantName&&m.modelName===model.modelName);
+    $('model-plant').readOnly=$('model-code').readOnly=existing.length>0;
+    $('model-editor-title').textContent=existing.length?'CAPA 수정':'신규 모델 · CAPA 등록';
+    $('model-plants').innerHTML=[...new Set(snapshot.master.rows.map(m=>m.plantName))].map(name=>`<option value="${escape(name)}"></option>`).join('');
+    $('model-editor-error').textContent='';$('model-editor').showModal();
+  }
+  $('model-new').onclick=()=>editModel();
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if(b.hasAttribute('data-fix-model'))editModel(missingModels[Number(b.dataset.fixModel)]);
+    if(b.hasAttribute('data-edit-master'))editModel(snapshot.master.rows.find(m=>m.row===Number(b.dataset.editMaster)));
+  });
+  $('model-editor-form').onsubmit=async e=>{
+    e.preventDefault();const form=e.target,buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);$('model-editor-error').textContent='';
+    try{
+      const result=await json(`${API}/master/model`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:modelVersion,plantName:$('model-plant').value,modelName:$('model-code').value,capa:Number($('model-capa').value)})});
+      $('model-editor').close();$('model-save-status').textContent=`서버 Excel 저장 완료 · 신규 ${result.added}개 / 수정 ${result.updated}개${result.warning?' · '+result.warning:''}`;await load();
+    }catch(err){$('model-editor-error').textContent=err.message;}
+    finally{buttons.forEach(b=>b.disabled=false);}
+  };
 
   async function history(key) {
     $('history-body').textContent = '이력을 조회합니다…';
@@ -205,6 +242,6 @@
   $('date').addEventListener('change',load);
   $('all-lines').addEventListener('click',()=>{$('line').value='';render();});
   $('refresh').addEventListener('click',load);
-  setInterval(()=>{if(!loading && !$('history').open && !document.hidden && (!snapshot || $('date').value===snapshot.date))load();},30000);
+  setInterval(()=>{if(!loading && !$('history').open && !$('model-editor').open && !document.hidden && (!snapshot || $('date').value===snapshot.date))load();},30000);
   load();
 })();

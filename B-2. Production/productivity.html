@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>생산성 — Production</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="stylesheet" href="productivity.css?v=20261007-master-upload-10">
-<script src="productivity.js?v=20261007-master-upload-10" defer></script>
+<link rel="stylesheet" href="productivity.css?v=20261029-master-edit-1">
+<script src="productivity.js?v=20261029-master-edit-1" defer></script>
 </head>
 <body>
 <header>
@@ -24,6 +24,7 @@
   </section>
   <div class="statusbar"><span id="connection" role="status" aria-live="polite">서버 조회 대기</span><span>선택일 08:00 ~ 다음 날 08:00 · 30초마다 조회</span></div>
   <div id="error" class="notice danger" role="alert" hidden></div>
+  <section class="panel" id="missing-panel"><div class="section-head"><div><h2>모델 · CAPA 미등록 <span id="missing-count" class="badge">0</span></h2><p>조회 조건의 미매칭 실적과 서버 Excel의 CAPA 미등록 모델입니다. 입력 후 기존 Excel에 바로 저장합니다.</p></div><button id="model-new" class="primary">+ 신규 모델</button></div><div class="table-wrap"><table><thead><tr><th>Plant</th><th>모델 코드</th><th>확인 내용</th><th>등록 / 수정</th></tr></thead><tbody id="missing-rows"></tbody></table></div><p id="model-save-status" class="footnote" role="status"></p></section>
   <div class="notice">교대 구분 없이 S2 등록 시각을 기준으로 <b>10개 이상 실적이 있는 라인 구간당 총 20분</b>의 생산시간을 자동 추정·저장합니다. 예: 08:19 등록 → 08:00~08:20. 시작·종료 시각과 추정시간으로 CAPA 달성률을 계산하고 자동으로 갱신합니다.</div>
   <section class="cards" aria-label="생산성 요약">
     <article class="metric accent"><span>S2 반영 실적</span><strong id="total">—</strong><small>PCS · 10개 미만 업로드 제외</small></article>
@@ -51,13 +52,13 @@
   </div>
   <section class="panel">
     <div class="section-head"><div><h2>서버 Excel · 모델 및 CAPA</h2><p id="master-meta">D:/SERVER-Storage/production/plants.xlsx</p></div><button id="master-refresh">서버 Excel 다시 확인</button></div>
-    <p class="footnote">기존 서버의 <b>D:/SERVER-Storage/production/plants.xlsx</b>에서 모델명과 CAPA를 읽습니다. 조회할 때 최신 파일을 확인합니다. 위 ‘수집 · 데이터 확인’에서 Excel로 모델·CAPA를 추가하거나 갱신할 수 있습니다. 정상 항목을 먼저 표시하고 CAPA 미등록·0 이하 항목은 아래에 표시합니다. 중복·누락은 Excel 행 번호와 함께 표시하며, 원본 수정은 기존 ‘Plant · CAPA 관리’ 또는 서버 Excel에서 진행하세요.</p>
+    <p class="footnote">기존 서버의 <b>D:/SERVER-Storage/production/plants.xlsx</b>에서 모델명과 CAPA를 읽습니다. 조회할 때 최신 파일을 확인합니다. 위 미등록 항목과 아래 수정 버튼에서 직접 입력하거나, ‘수집 · 데이터 확인’에서 Excel 파일을 등록할 수 있습니다. 정상 항목을 먼저 표시하고 CAPA 미등록·0 이하 항목은 아래에 표시합니다. 중복·누락은 Excel 행 번호와 함께 표시하며, 원본 수정은 기존 ‘Plant · CAPA 관리’ 또는 서버 Excel에서 진행하세요.</p>
     <div class="filters" role="search" aria-label="모델 CAPA 검색">
       <label>모델 검색<input type="search" id="master-search" placeholder="모델명 일부 입력" autocomplete="off"></label>
       <button id="master-clear" type="button">검색 초기화</button>
       <span id="master-count" role="status" aria-live="polite"></span>
     </div>
-    <div class="table-wrap master-table"><table><thead><tr><th>Excel 행</th><th>Plant</th><th>모델</th><th>CAPA/H</th><th>검증 결과</th></tr></thead><tbody id="master-rows"></tbody></table></div>
+    <div class="table-wrap master-table"><table><thead><tr><th>Excel 행</th><th>Plant</th><th>모델</th><th>CAPA/H</th><th>검증 결과</th><th>수정</th></tr></thead><tbody id="master-rows"></tbody></table></div>
   </section>
   <details class="panel help"><summary>계산 방식과 집계 기준</summary>
     <p><b>라인 추정시간(H)</b> = 라인별 서로 다른 20분 구간 수 × 20 ÷ 60<br><b>모델 배분시간</b> = 각 구간 20분 × (모델 수량/CAPA) ÷ Σ(구간 모델별 수량/CAPA)<br><b>UPH</b> = S2 실적 ÷ 적용 생산시간(H)<br><b>잠정 CAPA 달성률</b> = Σ S2 실적 ÷ Σ (적용 CAPA × 모델별 생산시간) × 100</p>
@@ -69,5 +70,5 @@
   </details>
 </main>
 <dialog id="history"><div class="section-head"><h2>추정시간 · CAPA 적용 이력</h2><button data-close="history" aria-label="닫기">✕</button></div><div id="history-body"></div></dialog>
-</body>
+<dialog id="model-editor"><form id="model-editor-form"><div class="section-head"><h2 id="model-editor-title">모델 · CAPA 등록</h2><button type="button" data-close="model-editor">✕</button></div><div class="form-grid"><label>Plant<input id="model-plant" list="model-plants" maxlength="120" required></label><label>모델 코드<input id="model-code" maxlength="120" required></label><label>CAPA / H<input id="model-capa" type="number" min="1" step="1" required></label></div><p class="footnote">같은 Plant·모델은 CAPA를 수정하고, 없는 모델은 신규 등록합니다.</p><p id="model-editor-error" class="warning" role="alert"></p><div class="dialog-actions"><button type="button" data-close="model-editor">취소</button><button class="primary" type="submit">서버 Excel 저장</button></div></form><datalist id="model-plants"></datalist></dialog></body>
 </html>
