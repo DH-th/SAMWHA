@@ -6,7 +6,7 @@
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="productivity.css?v=20261029-master-edit-1">
 <link rel="stylesheet" href="manpower.css?v=20261029-1">
-<script src="manpower.js?v=20261029-1" defer></script>
+<script src="manpower.js?v=20261102-history-1" defer></script>
 </head>
 <body>
 <header>
@@ -30,6 +30,7 @@
       <div class="upload-controls"><label>출결 Excel<input type="file" id="file" accept=".xlsx,.xlsm"></label><button id="read-file" class="primary">파일 읽기</button><span id="file-status" role="status">최대 10MB · .xlsx / .xlsm</span></div>
       <div id="import-workspace" hidden>
         <div class="filters import-options"><label>시트<select id="sheet"></select></label><label>원본 날짜<select id="source-date"></select></label><label>반영 교대<select id="import-shift"><option value="ALL">주간 + 야간</option><option value="DAY">DAY · 주간만</option><option value="NIGHT">NIGHT · 야간만</option></select></label></div>
+        <div id="batch-options" class="filters" hidden><label>등록 시작일<input id="import-start" type="date"></label><label>등록 종료일<input id="import-end" type="date"></label><span>이미 저장된 날짜 제외 · 최대 366일 · 시트별 등록</span></div>
         <details class="column-settings"><summary>엑셀 열 설정 · 첨부 양식 기본값</summary><div class="column-grid" id="column-fields"></div><label>결근 사유 (한 줄에 이름=열)<textarea id="reason-columns" rows="4" spellcheck="false">휴가 (พักร้อน)=I
 병가 (ลาป่วย)=J
 개인사유 (ลากิจ)=K

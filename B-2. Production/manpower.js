@@ -29,6 +29,9 @@
     } finally { clearTimeout(timeout); }
   }
   const post = (path, body, method='POST') => api(path, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const isBatch = () => $('source-date').value === '*';
+  const batchBody = c => ({importId:upload.importId, config:c, start:$('import-start').value, end:$('import-end').value});
+  const previewRequest = c => isBatch() ? post('/batch-preview', batchBody(c)) : post('/preview', {importId:upload.importId, config:c});
   async function action(button, task) {
     button.disabled = true; error('');
     try { await task(); } catch(e) { error(String(e.message)); }
@@ -58,9 +61,12 @@
   }
   function sheetChanged() {
     const s = upload.sheets.find(s=>s.name === $('sheet').value);
-    $('source-date').innerHTML = s.dates.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+    $('source-date').innerHTML = '<option value="*">기간 일괄 등록</option>' + s.dates.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
     if (s.dates.includes(date)) $('source-date').value = date;
     else if (s.dates.length) $('source-date').value = s.dates.at(-1);
+    $('import-start').value = s.dates[0] || '';
+    $('import-end').value = s.dates.at(-1) || '';
+    $('batch-options').hidden = !isBatch();
     $('source-sample').innerHTML = s.sample.map((row,i)=>`<tr><th>${i+1}</th>${row.slice(0,18).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('');
     invalidate();
   }
@@ -68,7 +74,7 @@
     invalidate();
     const mine = version;
     const c = config(); c.mappings = {};
-    const result = await post('/preview', {importId:upload.importId, config:c});
+    const result = await previewRequest(c);
     if (mine !== version) return;
     discovered = result;
     $('department-checks').innerHTML = Object.keys(result.departments).map((dept,i)=> {
@@ -106,7 +112,8 @@
     } catch(e) { $('file-status').textContent = '파일 읽기 실패 · 다시 시도하세요.'; throw e; }
   });
   $('sheet').onchange = () => action($('preview'), async()=>{sheetChanged(); await discover();});
-  $('source-date').onchange = $('import-shift').onchange = () => action($('preview'), discover);
+  $('source-date').onchange = $('import-shift').onchange = () => action($('preview'), async()=>{ $('batch-options').hidden = !isBatch(); await discover(); });
+  $('import-start').onchange = $('import-end').onchange = () => action($('preview'), discover);
   $('apply-columns').onclick = () => action($('apply-columns'), discover);
   $('column-fields').oninput = $('reason-columns').oninput = invalidate;
   $('department-checks').onchange = e => {
@@ -123,9 +130,10 @@
   $('mapping-rows').oninput = e => { if (e.target.dataset.line !== undefined) { items[discovered.items[Number(e.target.dataset.line)].key].line = e.target.value.trim(); invalidate(); } };
   $('preview').onclick = () => action($('preview'), async()=> {
     invalidate(); const mine = version, c = config();
-    const result = await post('/preview', {importId:upload.importId, config:c});
+    const batch = isBatch(), request = batch ? batchBody(c) : null;
+    const result = await previewRequest(c);
     if (mine !== version) return;
-    preview = {report:result, config:c};
+    preview = {report:result, config:c, batch, request};
     $('preview-result').hidden = false;
     const t = result.totals;
     $('preview-message').textContent = `${c.sourceDate} · ${result.groups.length}개 항목 · Total ${fmt(t.total)} / 출근 ${fmt(t.present)} / 미출근 ${fmt(t.absent)} / 미확인 ${fmt(t.pending)}명. 오류 ${result.errorCount}건 · 빈 행·미선택·합계 등 ${result.ignoredRows}행 제외.`;
@@ -133,9 +141,18 @@
     $('preview-rows').innerHTML = result.groups.map(g=>`<tr><td>${esc(g.department)} / ${esc(g.label)}</td><td>${esc(g.shift)}</td><td>${kindName(g.kind)}</td>${['total','present','absent','pending'].map(k=>`<td class="num">${fmt(g[k])}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="7" class="empty">선택된 자료가 없습니다.</td></tr>';
     $('save-date').textContent = `저장 날짜: ${c.sourceDate}`;
     $('save').disabled = result.errorCount > 0 || !result.groups.length;
+    if (batch) {
+      $('preview-message').textContent = `${request.start} ~ ${request.end} · 신규 ${result.newDays}일 / 기존 ${result.skippedDays}일 제외 · 오류 ${result.errorCount}건`;
+      $('preview-errors').innerHTML = result.errors.map(e=>`<p>${esc(e.date)} · ${e.row}행 · ${esc(e.department)}: ${esc(e.error)}</p>`).join('');
+      const status = {new:'신규 저장', existing:'기존 자료 유지', error:'오류 확인', empty:'선택 자료 없음'};
+      $('preview-rows').innerHTML = result.days.map(d=>`<tr><td>${esc(d.date)}</td><td>${status[d.status]}</td><td>—</td>${['total','present','absent','pending'].map(k=>`<td class="num">${fmt(d.totals[k])}</td>`).join('')}</tr>`).join('');
+      $('save-date').textContent = '신규 날짜만 저장 · 기존 날짜 수정은 날짜를 개별 선택';
+      $('save').disabled = result.errorCount > 0 || !result.newDays;
+    }
   });
   $('save-settings').onclick = () => action($('save-settings'), async()=> {
     const c = config();
+    if (isBatch()) c.sourceDate = $('import-start').value;
     await post('/settings', {importId:upload.importId, config:c}, 'PUT'); savedConfig = c;
     $('settings-status').textContent = '기본값 저장 완료 · 다음 업로드부터 적용';
   });
@@ -145,6 +162,15 @@
     const mine = version, ready = structuredClone(preview), importId = upload.importId;
     $('save').disabled = true; error('');
     try {
+      if (ready.batch) {
+        $('save-status').textContent = '기간 자료 저장 중…';
+        const result = await post('/batch-save', ready.request);
+        $('save-status').textContent = `${result.newDays}일 저장 완료 · 기존 ${result.skippedDays}일 유지`;
+        $('start').value = ready.request.start; $('end').value = ready.request.end;
+        preview = null;
+        await load();
+        return;
+      }
       const target = ready.config.sourceDate;
       const current = await api(`?start=${target}&end=${target}`);
       if (mine !== version) throw new Error('설정이 변경되었습니다. 미리보기를 다시 실행하세요.');

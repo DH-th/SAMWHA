@@ -70,7 +70,7 @@
       snapshot = data;
       available = true;
       $('error').hidden = legacyGroups.length===0;
-      if(legacyGroups.length) $('error').textContent='이전 서버 계산이 실행 중입니다. 서버 PC에서 실행 중인 server.py와 같은 폴더의 productivity.py를 최신 파일로 교체한 뒤 서버 프로그램을 완전히 종료하고 다시 실행하세요. 웹 새로고침만으로는 서버 계산이 바뀌지 않습니다. 라인 구간은 20분이며 모델 배분은 서버 업데이트 후 확인할 수 있습니다.';
+      if(legacyGroups.length) $('error').textContent='이전 서버 계산이 실행 중입니다. 서버 PC에서 실행 중인 server.py와 같은 폴더의 productivity.py를 최신 파일로 교체한 뒤 서버 프로그램을 완전히 종료하고 다시 실행하세요. 웹 새로고침만으로는 서버 계산이 바뀌지 않습니다. 라인 시간은 업로드 주기를 따르며 모델 배분은 서버 업데이트 후 확인할 수 있습니다.';
       $('connection').textContent = `조회 완료 ${timeText(data.generatedAt)} · ${timeText(data.windowStart)} ~ ${timeText(data.windowEnd)}`;
       options('line', data.groups.map(g=>g.line), '전체 라인');
       options('plant', data.groups.map(g=>g.plantName), '전체 Plant');
@@ -92,7 +92,7 @@
   function lineHours(groups) {
     const intervals = new Set();
     groups.forEach(g=>(g.estimate?.intervals||[]).forEach(i=>intervals.add(JSON.stringify([g.line,i.start,i.end]))));
-    return intervals.size / 3;
+    return [...intervals].reduce((sum,key)=>{const [,start,end]=JSON.parse(key);return sum+(new Date(end)-new Date(start))/3600000;},0);
   }
 
   function render() {
@@ -115,7 +115,7 @@
       const qty=items.reduce((n,g)=>n+g.qty,0), hours=lineHours(items), target=items.reduce((n,g)=>n+(g.target||0),0);
       return `<tr><td><button data-line="${escape(line)}">${escape(line)}</button></td><td class="num">${fmt(qty,0)}</td><td class="num">${fmt(hours,2)}</td><td class="num">${ready?fmt(qty/hours):'—'}</td><td class="num">${ready?fmt(target):'—'}</td><td class="num good">${ready?fmt(qty/target*100)+'%':'—'}</td><td>${ready?'계산 가능':'자료 확인 필요'} · ${items.length}개 행</td></tr>`;
     }).join('') || '<tr><td colspan="7" class="empty">반영할 라인 실적이 없습니다.</td></tr>';
-    $('excluded-summary').textContent = `조회 기간 전체에서 10개 미만 업로드 ${fmt(snapshot.excluded?.count||0,0)}건 · ${fmt(snapshot.excluded?.qty||0,0)}개 제외 (수량·시간 모두 미반영)`;
+    $('excluded-summary').textContent = `조회 기간 전체에서 기준 미달 업로드 ${fmt(snapshot.excluded?.count||0,0)}건 · ${fmt(snapshot.excluded?.qty||0,0)}개 제외 (수량·시간 모두 미반영)`;
     $('rows').innerHTML = groups.length ? groups.map(g=>{
       const saved = g.comparison;
       const estimate = g.estimate || {intervals:[],issues:[]};
@@ -125,7 +125,7 @@
       <td class="num">${fmt(g.qty,0)}</td><td class="num">${fmt(g.capa)}${changed?`<small>저장 기준 ${fmt(saved.capa)}</small>`:''}</td>
       <td>${estimate.start?escape(estimate.start.slice(11)):'—'}<small>${estimate.start?escape(estimate.start.slice(0,10)):''}</small></td>
       <td>${estimate.end?escape(estimate.end.slice(11)):'—'}<small>${estimate.end?escape(estimate.end.slice(0,10)):''}</small></td>
-      <td class="num">${estimate.intervals.length?fmt(estimate.hours,2):'—'}<small>${estimate.hours==null?'서버 계산 확인 필요':estimate.intervals.length?'라인 20분 내 배분':'시각 확인 필요'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개 · 라인 20분 / 모델 ${i.minutes==null?'배분 확인 필요':fmt(i.minutes,2)+'분'}${i.allocationBasis==='quantity'?' (수량 비율)':''}</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
+      <td class="num">${estimate.intervals.length?fmt(estimate.hours,2):'—'}<small>${estimate.hours==null?'서버 계산 확인 필요':estimate.intervals.length?'라인 시간 내 배분':'시각 확인 필요'}</small>${estimate.intervals.length?`<details><summary>${estimate.intervals.length}개 구간</summary>${estimate.intervals.map(i=>`<small>${escape(i.start.slice(11))}~${escape(i.end.slice(11))} · ${fmt(i.qty,0)}개 · 라인 ${fmt((new Date(i.end)-new Date(i.start))/60000,0)}분 / 모델 ${i.minutes==null?'배분 확인 필요':fmt(i.minutes,2)+'분'}${i.allocationBasis==='quantity'?' (수량 비율)':''}</small>`).join('')}</details>`:''}</td><td class="num">${fmt(g.uph)}</td><td class="num">${fmt(g.target)}</td>
       <td class="num ${g.rate!=null?'good':''}">${g.rate==null?'—':`${fmt(g.rate)}%`}</td>
       <td><span class="pill ${g.status==='계산 가능'?'good':''}">${escape(g.status)}</span>${g.issues.length?`<small class="warning">${escape(g.issues.join(' · '))}</small>`:''}${g.warnings?.length?`<small class="warning">${escape(g.warnings.join(' · '))}</small>`:''}<small>${escape(timeText(g.lastCollectedAt))}</small></td>
       <td><div class="row-actions"><button data-history="${g.key}">이력</button></div></td></tr>`;
@@ -200,7 +200,7 @@
     $('history').showModal();
     try {
       const data = await json(`${API}/history?key=${encodeURIComponent(key)}`, {signal:AbortSignal.timeout(20000)});
-      $('history-body').innerHTML = data.entries.slice().reverse().map((h,i)=>`<article><strong>${data.entries.length-i}차 · ${h.mode==='auto'?'라인 20분 기준 자동 추정':'과거 수동 이력 · 계산 미적용'} · ${escape(timeText(h.savedAt))}</strong><br>${escape(h.operator)} · ${fmt(h.hours,2)} H · S2 ${fmt(h.qty,0)}개 · CAPA ${fmt(h.capa)}/H${h.start?`<br>${escape(timeText(h.start))} ~ ${escape(timeText(h.end))}`:''}${h.note && h.note!=='실제 가동시간이 아닌 추정치'?`<p class="history-note">${escape(h.note)}</p>`:''}</article>`).join('') || '저장 이력이 없습니다.';
+      $('history-body').innerHTML = data.entries.slice().reverse().map((h,i)=>`<article><strong>${data.entries.length-i}차 · ${h.mode==='auto'?'업로드 주기 기준 자동 추정':'과거 수동 이력 · 계산 미적용'} · ${escape(timeText(h.savedAt))}</strong><br>${escape(h.operator)} · ${fmt(h.hours,2)} H · S2 ${fmt(h.qty,0)}개 · CAPA ${fmt(h.capa)}/H${h.start?`<br>${escape(timeText(h.start))} ~ ${escape(timeText(h.end))}`:''}${h.note && h.note!=='실제 가동시간이 아닌 추정치'?`<p class="history-note">${escape(h.note)}</p>`:''}</article>`).join('') || '저장 이력이 없습니다.';
     } catch(err) { $('history-body').textContent = err.message; }
   }
 
@@ -225,8 +225,8 @@
 
   $('export').addEventListener('click', ()=>{
     if (!snapshot || !available) return;
-    const rows = [['생산일','라인','Plant','모델','S2 수량','현재 CAPA/H','적용 CAPA/H','생산 H','추정 시작','추정 종료','20분 구간 수','시간 기준','UPH','기준수량','잠정 CAPA 달성률(%)','상태','CAPA 버전','조회시각']];
-    selected().forEach(g=>rows.push([g.prodDate,g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.estimate?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'라인 20분 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
+    const rows = [['생산일','라인','Plant','모델','S2 수량','현재 CAPA/H','적용 CAPA/H','생산 H','추정 시작','추정 종료','업로드 구간 수','시간 기준','UPH','기준수량','잠정 CAPA 달성률(%)','상태','CAPA 버전','조회시각']];
+    selected().forEach(g=>rows.push([g.prodDate,g.line,g.plantName,g.modelName,g.qty,g.capa,g.comparison?.capa,g.estimate?.hours,g.estimate?.start,g.estimate?.end,g.estimate?.intervals.length,g.comparison?'업로드 주기 기준 자동 추정':'미확인',g.uph,g.target,g.rate,g.status,g.comparison?.capaVersion,snapshot.generatedAt]));
     const cell = value => {let s=String(value??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const blob = new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=`productivity_${snapshot.date}_0800.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

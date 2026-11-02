@@ -405,7 +405,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
   font-size:11px;font-weight:700;background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;}
 .lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
-</head>
+<script src="model-runs.js?v=20261102-2"></script><script src="scan-status.js?v=20261102-readonly-2" defer></script><style>.lm-time{min-width:150px;white-space:normal;line-height:1.5}</style></head>
 <body>
 <div id="ov"><div class="sp"></div><p data-i18n="connecting">กำลังเชื่อมต่อ</p></div>
 
@@ -448,6 +448,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
     <a href="admin.html" class="adm" data-i18n="adminBtn">⚙ จัดการ</a>
     <a id="productivity-link" class="adm" href="productivity.html" data-i18n="productivityBtn">생산성</a>
     <a class="adm" href="manpower.html">Manpower</a>
+    <button class="adm" id="scan-status-open" style="cursor:pointer">Line Status</button>
   </div>
 </header>
 
@@ -950,14 +951,14 @@ function fmtRecTime(iso){
   }catch{return'';}
 }
 function openSlotModal(line, slot){
-  const recs = sr().filter(r=>r.line===line&&r.slot===slot&&r.process===viewProc&&r.modelName);
-  const sorted = [...recs].sort((a,b)=>(a.serverCreatedAt||a.createdAt||'').localeCompare(b.serverCreatedAt||b.createdAt||''));
+  const recs = adr().filter(r=>r.line===line&&r.process===viewProc&&r.modelName);
+  const sorted = productionRuns(recs).filter(r=>r.slots.includes(slot));
   const h = parseInt(slot);
   const slotLabel = `${slot} ~ ${String((h+1)%24).padStart(2,'0')}:00`;
   document.getElementById('lm-title').textContent = `${line}  ${slotLabel}  ·  ${viewProc}`;
   document.getElementById('lm-body').innerHTML = sorted.length
     ? sorted.map(r=>`<div class="lm-row">
-        <span class="lm-time">${fmtRecTime(r.serverCreatedAt||r.createdAt)}</span>
+        <span class="lm-time">${fmtRecTime(r.start)} ~ ${fmtRecTime(r.end)}${r.process?` · ${r.process}`:''}</span>
         <span class="lm-model">${r.modelName}</span>
         <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
       </div>`).join('')
@@ -968,11 +969,11 @@ function openSlotModal(line, slot){
 }
 function openLineModal(line){
   const recs=adr().filter(r=>r.line===line&&r.modelName);
-  const sorted=[...recs].sort((a,b)=>(a.serverCreatedAt||a.createdAt||'').localeCompare(b.serverCreatedAt||b.createdAt||''));
+  const sorted=productionRuns(recs);
   document.getElementById('lm-title').textContent=line;
   document.getElementById('lm-body').innerHTML=sorted.length
     ?sorted.map(r=>`<div class="lm-row">
-        <span class="lm-time">${fmtRecTime(r.serverCreatedAt||r.createdAt)}</span>
+        <span class="lm-time">${fmtRecTime(r.start)} ~ ${fmtRecTime(r.end)}${r.process?` · ${r.process}`:''}</span>
         <span class="lm-model">${r.modelName}</span>
         <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
       </div>`).join('')
