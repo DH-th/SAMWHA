@@ -262,7 +262,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 /* ── 라인 모달 ── */
 .lm-backdrop{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:200;display:none;}
 .lm-backdrop.on{display:block;}
-.lm-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:20px;box-shadow:0 8px 40px rgba(13,148,136,.18);width:min(640px,94vw);max-height:80vh;display:none;flex-direction:column;overflow:hidden;z-index:201;}
+.lm-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:20px;box-shadow:0 8px 40px rgba(13,148,136,.18);width:min(448px,94vw);max-height:80vh;display:none;flex-direction:column;overflow:hidden;z-index:201;}
 .lm-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);}
 .lm-title{font-size:16px;font-weight:900;}
 .lm-cls{width:28px;height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
@@ -809,16 +809,16 @@ function buildLineRow(line,li,slots,cur){
   const filledSlots=new Set(rs.filter(r=>(r.qty||0)>0).map(r=>r.slot)).size;
   const avg=filledSlots>0?Math.round(tot/filledSlots):0;
   let row=`<tr class="${cls}">
-    <td class="col-line ln-cell" data-detail="line" data-line="${line}" onclick="openLineModal('${line}')" style="cursor:pointer">
+    <td class="col-line ln-cell" data-detail="line" data-line="${line}" style="cursor:default">
       <span class="ln-name">${line}</span>
     </td>
-    <td class="col-model" data-detail="model" data-line="${line}" onclick="openModelTotals('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
+    <td class="col-model" data-detail="model" data-line="${line}" style="cursor:default">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
   slots.forEach(slot=>{
     const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
     const key=`${line}|${slot}|${viewProc}`;
     const prev=snapQty[key]||0;
     prevQty[key]=q;
-    row+=`<td class="sv${isCur?' cur':''}"${q>0?` data-detail="slot" data-line="${line}" data-slot="${slot}" onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total" data-val="${q}" data-from="${prev}">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+    row+=`<td class="sv${isCur?' cur':''}"${q>0?` data-detail="slot" data-line="${line}" data-slot="${slot}" style="cursor:default"`:''}><div class="sv-inner">${q>0?`<span class="sv-total" data-val="${q}" data-from="${prev}">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
   });
   row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
   row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
@@ -1018,7 +1018,7 @@ function closeLineModal(){
   document.getElementById('lm-backdrop').classList.remove('on');
   document.getElementById('lm-box').style.display='none';
 }
-// Delegation survives the production table's periodic redraws. Touch keeps tap-to-open.
+// Hover only; delegation survives the production table's periodic redraws.
 document.addEventListener('pointerover',e=>{
   if(e.pointerType!=='mouse')return;
   const cell=e.target.closest('[data-detail]');
@@ -1031,7 +1031,7 @@ document.addEventListener('pointerover',e=>{
     detailHover=true;
     document.getElementById('lm-backdrop').classList.remove('on');
     const box=document.getElementById('lm-box'),rect=cell.getBoundingClientRect();
-    box.style.width=`${Math.min(560,innerWidth-24)}px`;box.style.maxHeight='65vh';box.style.transform='none';
+    box.style.width=`${Math.min(392,innerWidth-24)}px`;box.style.maxHeight='65vh';box.style.transform='none';
     const height=box.getBoundingClientRect().height,width=box.getBoundingClientRect().width;
     box.style.left=`${Math.max(12,Math.min(rect.left,innerWidth-width-12))}px`;
     box.style.top=`${Math.max(12,rect.bottom+height+10<innerHeight?rect.bottom+6:rect.top-height-6)}px`;
