@@ -9,7 +9,7 @@ function productionRuns(records){
   for(const [time,items] of batches){
    const codes=new Set(items.map(code));
    for(const [key,row] of active)if(!codes.has(key)){row.end=time;out.push(row);active.delete(key);}
-   for(const r of items){const key=code(r);if(!active.has(key))active.set(key,{...r,start:time,end:time,qty:0,slots:[]});const row=active.get(key);row.end=time;row.qty+=Number(r.qty)||0;if(!row.slots.includes(r.slot))row.slots.push(r.slot);}
+   for(const r of items){const key=code(r);if(!active.has(key))active.set(key,{...r,start:time,end:time,qty:0,slots:[],hourlyQty:{}});const row=active.get(key),qty=Number(r.qty)||0,hour=JSON.stringify([r.shift,r.slot]);row.end=time;row.qty+=qty;row.hourlyQty[hour]=(row.hourlyQty[hour]||0)+qty;if(!row.slots.includes(r.slot))row.slots.push(r.slot);}
   }out.push(...active.values());
  }return out.sort((a,b)=>a.start.localeCompare(b.start));
 }

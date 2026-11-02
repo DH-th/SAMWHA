@@ -315,6 +315,8 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
 .lm-model{flex:1;min-width:0;text-align:left;padding:0 10px;font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lm-time{font-size:11px;color:var(--muted);font-weight:600;min-width:78px;flex-shrink:0;}
 .lm-qty{font-size:14px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;flex-shrink:0;white-space:nowrap;}
+.lm-counts{display:flex;align-items:baseline;justify-content:flex-end;gap:10px;flex-wrap:wrap;flex-shrink:0;max-width:45%;padding-left:8px}
+.lm-counts .lm-qty{font-size:19px}.lm-run-total{font-size:11px;font-weight:400;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .lm-empty{text-align:center;padding:24px;color:var(--muted);font-size:13px;}
 /* ── swipe hint ── */
 .swipe-hint{
@@ -405,7 +407,7 @@ tr.g-start td:last-child,tr.g-mid td:last-child,tr.g-end td:last-child{border-ri
   font-size:11px;font-weight:700;background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;}
 .lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
-<script src="model-runs.js?v=20261102-2"></script><script src="scan-status.js?v=20261102-readonly-2" defer></script><style>.lm-time{min-width:150px;white-space:normal;line-height:1.5}</style></head>
+<script src="model-runs.js?v=20261102-hourly-3"></script><script src="scan-status.js?v=20261102-readonly-2" defer></script><style>.lm-time{min-width:150px;white-space:normal;line-height:1.5}</style></head>
 <body>
 <div id="ov"><div class="sp"></div><p data-i18n="connecting">กำลังเชื่อมต่อ</p></div>
 
@@ -952,7 +954,8 @@ function fmtRecTime(iso){
 }
 function openSlotModal(line, slot){
   const recs = adr().filter(r=>r.line===line&&r.process===viewProc&&r.modelName);
-  const sorted = productionRuns(recs).filter(r=>r.slots.includes(slot));
+  const hourKey = JSON.stringify([viewShift,slot]);
+  const sorted = productionRuns(recs).filter(r=>Object.hasOwn(r.hourlyQty,hourKey));
   const h = parseInt(slot);
   const slotLabel = `${slot} ~ ${String((h+1)%24).padStart(2,'0')}:00`;
   document.getElementById('lm-title').textContent = `${line}  ${slotLabel}  ·  ${viewProc}`;
@@ -960,7 +963,7 @@ function openSlotModal(line, slot){
     ? sorted.map(r=>`<div class="lm-row">
         <span class="lm-time">${fmtRecTime(r.start)} ~ ${fmtRecTime(r.end)}${r.process?` · ${r.process}`:''}</span>
         <span class="lm-model">${r.modelName}</span>
-        <span class="lm-qty">${(r.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span>
+        <span class="lm-counts"><span class="lm-qty" title="${slotLabel}">${(r.hourlyQty[hourKey]||0).toLocaleString()} <span style="font-size:11px;font-weight:600;color:var(--muted)">PCS</span></span><span class="lm-run-total" title="연속 생산 구간 합계">Total ${(r.qty||0).toLocaleString()}</span></span>
       </div>`).join('')
     : `<div class="lm-empty">${t('noRecords')}</div>`;
   document.getElementById('lm-backdrop').classList.add('on');
