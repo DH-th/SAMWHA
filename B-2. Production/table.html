@@ -809,16 +809,16 @@ function buildLineRow(line,li,slots,cur){
   const filledSlots=new Set(rs.filter(r=>(r.qty||0)>0).map(r=>r.slot)).size;
   const avg=filledSlots>0?Math.round(tot/filledSlots):0;
   let row=`<tr class="${cls}">
-    <td class="col-line ln-cell" onclick="openLineModal('${line}')" style="cursor:pointer">
+    <td class="col-line ln-cell" data-detail="line" data-line="${line}" onclick="openLineModal('${line}')" style="cursor:pointer">
       <span class="ln-name">${line}</span>
     </td>
-    <td class="col-model" onclick="openModelTotals('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
+    <td class="col-model" data-detail="model" data-line="${line}" onclick="openModelTotals('${line}')">${model?`<span style="color:var(--text);font-weight:700">${model}</span>`:'<span style="color:var(--border2)">—</span>'}</td>`;
   slots.forEach(slot=>{
     const q=slotQty(line,viewProc,slot);const isCur=slot===cur;
     const key=`${line}|${slot}|${viewProc}`;
     const prev=snapQty[key]||0;
     prevQty[key]=q;
-    row+=`<td class="sv${isCur?' cur':''}"${q>0?` onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total" data-val="${q}" data-from="${prev}">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
+    row+=`<td class="sv${isCur?' cur':''}"${q>0?` data-detail="slot" data-line="${line}" data-slot="${slot}" onclick="openSlotModal('${line}','${slot}')" style="cursor:pointer"`:''}><div class="sv-inner">${q>0?`<span class="sv-total" data-val="${q}" data-from="${prev}">${q.toLocaleString()}</span>`:`<span class="sv-empty">·</span>`}</div></td>`;
   });
   row+=`<td class="col-tot tv${tot===0?' z':''}">${tot>0?tot.toLocaleString():'—'}</td>`;
   row+=`<td class="col-avg tv${avg===0?' z':''}">${avg>0?avg.toLocaleString():'—'}</td>`;
@@ -955,6 +955,7 @@ function fmtRecTime(iso){
   }catch{return'';}
 }
 function openSlotModal(line, slot){
+  resetDetailPosition();
   const recs = adr().filter(r=>r.line===line&&r.process===viewProc&&r.modelName);
   const hourKey = JSON.stringify([viewShift,slot]);
   const sorted = productionRuns(recs).filter(r=>Object.hasOwn(r.hourlyQty,hourKey));
@@ -973,6 +974,7 @@ function openSlotModal(line, slot){
   document.getElementById('lm-box').style.flexDirection='column';
 }
 function openLineModal(line){
+  resetDetailPosition();
   const recs=adr().filter(r=>r.line===line&&r.modelName);
   const sorted=productionRuns(recs);
   document.getElementById('lm-title').textContent=line;
@@ -989,6 +991,7 @@ function openLineModal(line){
 }
 /* 모델 이름 칸 클릭 → 현재 탭(viewProc) 기준 라인별 모델 합계 */
 function openModelTotals(line){
+  resetDetailPosition();
   const recs=adr().filter(r=>r.line===line&&r.modelName&&r.process===viewProc);
   const map={};
   recs.forEach(r=>{const m=r.modelName;map[m]=(map[m]||0)+(r.qty||0);});
@@ -1004,10 +1007,46 @@ function openModelTotals(line){
   document.getElementById('lm-box').style.display='flex';
   document.getElementById('lm-box').style.flexDirection='column';
 }
+let detailHover=false,detailOpenTimer=null,detailCloseTimer=null;
+function resetDetailPosition(){
+  clearTimeout(detailOpenTimer);clearTimeout(detailCloseTimer);detailHover=false;
+  const box=document.getElementById('lm-box');
+  for(const name of ['left','top','transform','width','maxHeight'])box.style[name]='';
+}
 function closeLineModal(){
+  resetDetailPosition();
   document.getElementById('lm-backdrop').classList.remove('on');
   document.getElementById('lm-box').style.display='none';
 }
+// Delegation survives the production table's periodic redraws. Touch keeps tap-to-open.
+document.addEventListener('pointerover',e=>{
+  if(e.pointerType!=='mouse')return;
+  const cell=e.target.closest('[data-detail]');
+  if(!cell||cell.contains(e.relatedTarget))return;
+  clearTimeout(detailCloseTimer);clearTimeout(detailOpenTimer);
+  detailOpenTimer=setTimeout(()=>{
+    if(!cell.isConnected)return;
+    const {detail,line,slot}=cell.dataset;
+    if(detail==='slot')openSlotModal(line,slot);else if(detail==='line')openLineModal(line);else openModelTotals(line);
+    detailHover=true;
+    document.getElementById('lm-backdrop').classList.remove('on');
+    const box=document.getElementById('lm-box'),rect=cell.getBoundingClientRect();
+    box.style.width=`${Math.min(560,innerWidth-24)}px`;box.style.maxHeight='65vh';box.style.transform='none';
+    const height=box.getBoundingClientRect().height,width=box.getBoundingClientRect().width;
+    box.style.left=`${Math.max(12,Math.min(rect.left,innerWidth-width-12))}px`;
+    box.style.top=`${Math.max(12,rect.bottom+height+10<innerHeight?rect.bottom+6:rect.top-height-6)}px`;
+  },180);
+});
+document.addEventListener('pointerout',e=>{
+  if(e.pointerType!=='mouse')return;
+  const cell=e.target.closest('[data-detail]');
+  if(!cell||cell.contains(e.relatedTarget))return;
+  clearTimeout(detailOpenTimer);
+  if(detailHover)detailCloseTimer=setTimeout(closeLineModal,180);
+});
+document.getElementById('lm-box').addEventListener('pointerenter',()=>clearTimeout(detailCloseTimer));
+document.getElementById('lm-box').addEventListener('pointerleave',()=>{if(detailHover)detailCloseTimer=setTimeout(closeLineModal,180);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLineModal();});
 let xpRows=[];
 // 순차 캐스케이드 순서: shift → section → line → plant → model
 const XP_ORDER=['shift','section','line','plant','model'];
