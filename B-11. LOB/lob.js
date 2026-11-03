@@ -1,0 +1,149 @@
+'use strict';
+(() => {
+ const $=id=>document.getElementById(id),API='https://server.samhwa.cloud/api/lob';
+ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString('ko-KR',{maximumFractionDigits:d}):'—';
+ let state={revision:0,models:{},lines:{}},catalog=[],line='L.1',loaded=false,dirty=false,saving=false,options=[],proposal=null,simulation=null;
+ const current=()=>state.models[state.lines[line]];
+ const error=message=>{$('error').textContent=message||'';$('error').hidden=!message;};
+ async function api(path='',init={}){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+  try{const r=await fetch(API+path,{...init,cache:'no-store',signal:controller.signal});const b=await r.json();if(!r.ok)throw new Error(b.error||`HTTP ${r.status}`);return b;}
+  catch(e){if(e.name==='AbortError')throw new Error('서버 응답 시간 초과');throw e;}finally{clearTimeout(timer);}
+ }
+ function allModels(){
+  const map=new Map(catalog.map(m=>[m.key,m]));
+  for(const [key,m] of Object.entries(state.models))if(!map.has(key))map.set(key,{key,plant:m.plant,model:m.model,referenceCapa:null,warning:'Excel에서 찾을 수 없는 저장 모델'});
+  return [...map.values()];
+ }
+ function changed(){dirty=true;simulation=null;$('dirty').textContent='저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();}
+ function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,workers:1,parallel:1,seconds:0,manual:0})),minutes:480,target:0};}
+ function renderFloor(){
+  $('floor').innerHTML=Array.from({length:10},(_,n)=>10-n).map(n=>{
+   const name=`L.${n}`,m=state.models[state.lines[name]],result=m?LobCalc.calculate(m):null;
+   let flow='<span class="flow-empty">+ Model<br>↑</span>';
+   if(m){
+    const s1=m.s1.map((seconds,i)=>`<div class="flow-station ${result?.valid&&result.stages[i].bottleneck?'bn':''}" title="Insert ${i+1} · ${fmt(seconds)}s"><i class="person"></i><span>I${i+1}</span><small>${fmt(seconds)}s</small></div>`).join('');
+    const s2=m.s2.map((p,i)=>`<div class="flow-station ${result?.valid&&result.stages[m.s1.length+i].bottleneck?'bn':''}" style="flex:${Math.max(1,p.workers)}" title="${esc(p.name)} · ${p.workers}명 / 병렬 ${p.parallel}"><span>${esc(p.name)}</span><small>${p.workers}p</small></div>`).join('');
+    flow=`<div class="flow-section s1" style="flex:${m.s1.length}" aria-label="S1 Insert">${s1}</div>${m.s2.length?`<div class="flow-section s2" style="flex:${m.s2.reduce((s,p)=>s+Math.max(1,p.workers),0)}" aria-label="S2 공정">${s2}</div>`:''}`;
+   }
+   return `<button class="line-card ${name===line?'selected':''}" data-line="${name}" aria-pressed="${name===line}"><span class="line-label">${name}<small>↑ OUT</small></span><span class="line-model">${m?`${esc(m.plant)}<b>${esc(m.model)}</b>`:'모델 미배정'}</span><div class="flow">${flow}</div><span class="line-uph">${result?.valid?fmt(result.uph):'—'} <small>PCS/H</small></span></button>`;
+  }).join('');
+ }
+ function renderModelOptions(selected=''){
+  const q=$('model-search').value.trim().toLowerCase();
+  $('model').innerHTML='<option value="">Model 선택</option>'+allModels().filter(m=>m.plant===$('plant').value&&(!q||m.model.toLowerCase().includes(q)||m.key===selected)).sort((a,b)=>a.model.localeCompare(b.model,undefined,{numeric:true})).map(m=>`<option value="${m.key}">${esc(m.model)}</option>`).join('');
+  $('model').value=selected;
+ }
+ function selectLine(name){line=name;simulation=null;error('');renderEditor();renderFloor();}
+ function renderEditor(){
+  const m=current(),key=state.lines[line];$('line-title').textContent=line;
+  const plants=[...new Set(allModels().map(m=>m.plant))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  $('plant').innerHTML='<option value="">Plant 선택</option>'+plants.map(p=>`<option>${esc(p)}</option>`).join('');
+  $('plant').value=m?.plant||'';$('model-search').value='';renderModelOptions(key||'');
+  $('plant').disabled=$('model').disabled=!loaded;
+  for(const id of ['target','minutes','unassign'])$(id).disabled=!m;
+  $('setup').hidden=!m;$('empty').hidden=!!m;
+  $('target').value=m?.target||0;$('minutes').value=m?.minutes||480;
+  const meta=allModels().find(x=>x.key===key);$('reference').textContent=meta?.referenceCapa?`${fmt(meta.referenceCapa)} / H`:'—';
+  $('shared').textContent=m?`${m.plant} / ${m.model}\n공유 라인: ${Object.entries(state.lines).filter(([,k])=>k===key).map(([l])=>l).join(', ')} · 동일 모델 설정은 함께 변경됩니다.${meta?.warning?' '+meta.warning:''}`:'';
+  if(m){$('s1-count').value=m.s1.length;renderS1();renderStages();}renderResults();
+ }
+ function renderS1(){const m=current();$('s1-workers').innerHTML=m.s1.map((v,i)=>`<label class="worker-entry"><span>Insert ${i+1}<i class="person"></i></span><input aria-label="Insert ${i+1} 시간" data-worker="${i}" type="number" min="0" max="86400" step="0.1" value="${v||''}" placeholder="s"></label>`).join('');}
+ function processCapa(p){if(p.seconds<=0)return 0;return 3600/Math.max(p.seconds/p.parallel,p.manual?(p.workers?p.manual/p.workers:Infinity):0);}
+ function renderStages(){
+  $('stages').innerHTML=current().s2.map((p,i)=>`<tr data-index="${i}"><td><input data-field="name" value="${esc(p.name)}" list="process-names" aria-label="공정명"></td>${['workers','parallel','seconds','manual'].map(field=>`<td><input type="number" data-field="${field}" aria-label="${esc(p.name)} ${field}" min="${field==='parallel'?1:0}" max="${['workers','parallel'].includes(field)?60:86400}" step="${['workers','parallel'].includes(field)?1:.1}" value="${p[field]}"></td>`).join('')}<td><input type="number" data-field="capa" aria-label="${esc(p.name)} CAPA" min="0.1" step="0.1" value="${processCapa(p)?Number(processCapa(p).toFixed(3)):''}" placeholder="CAPA/H"></td><td><button data-move="-1" title="이전 공정" ${i===0?'disabled':''}>↑</button> <button data-move="1" title="다음 공정" ${i===current().s2.length-1?'disabled':''}>↓</button> <button data-remove title="공정 삭제">×</button></td></tr>`).join('');
+ }
+ function renderResults(){
+  const m=current(),r=m?LobCalc.calculate(m):null,ok=r?.valid;
+  $('uph').textContent=ok?fmt(r.uph):'—';$('lob').textContent=ok?fmt(r.lob)+'%':'—';$('workers').textContent=m?fmt(m.s1.length+m.s2.reduce((s,p)=>s+p.workers,0),0):'—';
+  $('bottleneck').textContent=ok?r.bottlenecks.join(' / '):'—';$('cycle').textContent=ok?`${fmt(r.cycle)} s / PCB`:'Cycle time';
+  $('section-capa').textContent=ok?`S1 ${fmt(r.s1Capa)} / S2 ${r.s2Capa===null?'미사용':fmt(r.s2Capa)}`:'S1 / S2';
+  if(!m)return;
+  $('s1-total').textContent=`총 삽입 작업 ${fmt(m.s1.reduce((s,x)=>s+x,0))}초 / PCB · ${m.s1.length}명`;
+  $('run').disabled=!ok;
+  if(!ok){$('chart').innerHTML=`<p class="muted">${r.issues.map(esc).join('<br>')}</p>`;$('recommendations').innerHTML='<p class="muted">시간·CAPA 입력 후 비교안을 확인하세요.</p>';}
+  else{
+   const max=Math.max(r.cycle,r.targetCycle||0)*1.12;
+   $('chart').innerHTML=(r.targetCycle?`<p class="caption">목표 ${fmt(m.target)} / H · 점선 ${fmt(r.targetCycle)}s</p>`:'')+r.stages.map(p=>`<div class="bar-row"><span class="bar-label">${esc(p.name)}<small>${p.section} · ${fmt(p.capa)} / H</small></span><div class="bar-track"><div class="bar ${p.section.toLowerCase()} ${p.bottleneck?'bn':''}" style="width:${100*p.cycle/max}%"></div>${r.targetCycle?`<i class="target-mark" style="left:${100*r.targetCycle/max}%"></i>`:''}</div><span class="bar-value">${fmt(p.cycle)}s</span></div>`).join('');
+   options=LobCalc.recommendations(m);
+   const targetNote=m.target&&r.uph<m.target?`<p class="muted">목표까지 ${fmt(m.target-r.uph)} / H 부족 · 병목 공정을 먼저 검토하세요.</p>`:'';
+   $('recommendations').innerHTML=targetNote+(options.length?options.map((o,i)=>`<div class="option"><button data-option="${i}">비교</button><h3>${esc(o.title)}</h3><p>${esc(o.note)}</p><strong>${fmt(r.uph)} → ${fmt(o.after.uph)} / H</strong></div>`).join(''):'<p class="muted">현재 S1 작업이 균등합니다. 목표 UPH와 각 공정의 실측 시간을 비교하세요.</p>');
+  }
+  if(!simulation)$('simulation').innerHTML='<p class="muted">설정 변경 후 Run을 눌러 다시 계산하세요.</p>';
+ }
+ function showProposal(candidate,title,note){
+  const before=LobCalc.calculate(current()),after=LobCalc.calculate(candidate);if(!before.valid||!after.valid){error('모든 공정의 시간·CAPA를 먼저 입력하세요.');return;}
+  proposal={candidate,key:state.lines[line]};$('proposal-title').textContent=title;$('proposal-note').textContent=note;
+  $('proposal-metrics').innerHTML=`<div>${fmt(before.uph)} → ${fmt(after.uph)}<small>Line CAPA / H</small></div><div>${fmt(before.lob)} → ${fmt(after.lob)}%<small>LOB</small></div><div>${before.workers} → ${after.workers}<small>인원</small></div>`;$('proposal').showModal();
+ }
+ async function load(){
+  if(dirty&&!confirm('저장하지 않은 변경을 버리고 서버 자료를 불러올까요?'))return;
+  $('reload').disabled=true;$('save').disabled=true;error('');
+  try{
+   const [s,c]=await Promise.all([api(),api('/catalog')]);state=s;catalog=c.models;loaded=true;dirty=false;simulation=null;
+   $('dirty').textContent='';$('status').textContent=`서버 연결 · ${catalog.length}개 모델 · 저장 v${state.revision}`;renderEditor();renderFloor();
+   requestAnimationFrame(()=>{const scroller=document.querySelector('.floor-scroll');scroller.scrollLeft=scroller.scrollWidth;});
+  }catch(e){error(e.message);$('status').textContent='서버 연결 실패 · lob.py 및 서버 연결 확인';}
+  finally{$('reload').disabled=false;$('save').disabled=!loaded||!dirty;}
+ }
+ $('floor').onclick=e=>{const b=e.target.closest('[data-line]');if(b&&!saving)selectLine(b.dataset.line);};
+ $('plant').onchange=()=>{renderModelOptions();};$('model-search').oninput=()=>renderModelOptions(state.lines[line]||'');
+ $('model').onchange=()=>{const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;state.models[meta.key]||=fresh(meta);state.lines[line]=meta.key;renderEditor();changed();};
+ $('unassign').onclick=()=>{state.lines[line]=null;renderEditor();changed();};
+ for(const id of ['minutes','target'])$(id).oninput=()=>{const m=current();if(!m)return;m[id]=Number($(id).value);changed();};
+ $('s1-count').onchange=()=>{
+  const m=current(),n=Number($('s1-count').value);if(!Number.isInteger(n)||n<1||n>60){error('S1 인원은 1~60명입니다.');$('s1-count').value=m.s1.length;return;}
+  // Removed operators' work is retained at the last remaining station.
+  if(n<m.s1.length){const removed=m.s1.slice(n).reduce((s,x)=>s+x,0);m.s1=m.s1.slice(0,n);m.s1[n-1]+=removed;}
+  else while(m.s1.length<n)m.s1.push(0);
+  renderS1();changed();
+ };
+ $('s1-workers').oninput=e=>{if(e.target.dataset.worker!==undefined){current().s1[Number(e.target.dataset.worker)]=Number(e.target.value);changed();}};
+ $('balance').onclick=()=>{
+  const m=current(),candidate=structuredClone(m),sum=m.s1.reduce((s,x)=>s+x,0);
+  if(!sum){error('삽입 시간을 먼저 입력하세요.');return;}
+  candidate.s1=candidate.s1.map(()=>sum/candidate.s1.length);
+  // S1 headcount changes can temporarily contain zero-time operators.
+  const before=LobCalc.calculate(m),after=LobCalc.calculate(candidate);
+  if(!before.valid&&after.valid){proposal={candidate,key:state.lines[line]};$('proposal-title').textContent='S1 균등 배분';$('proposal-note').textContent=`총 ${fmt(sum)}초를 ${m.s1.length}명에게 1인 ${fmt(sum/m.s1.length)}초로 배분합니다.`;$('proposal-metrics').innerHTML=`<div>${fmt(after.uph)} / H<small>배분 후 Line CAPA</small></div>`;$('proposal').showModal();return;}
+  showProposal(candidate,'S1 균등 배분',`총 ${fmt(sum)}초의 삽입 작업을 유지합니다. 실제 작업 분할 가능 여부를 확인하세요.`);
+ };
+ $('add-stage').onclick=()=>{if(current().s2.length>=40)return;current().s2.push({name:'Process',workers:1,parallel:1,seconds:0,manual:0});renderStages();changed();};
+ $('stages').oninput=e=>{
+  const field=e.target.dataset.field;if(!field)return;const tr=e.target.closest('tr'),p=current().s2[Number(tr.dataset.index)];
+  if(field==='name')p.name=e.target.value;
+  else if(field==='capa'){
+   const capa=Number(e.target.value);if(capa<=0){p.seconds=0;p.manual=0;}else{
+    const ratio=p.seconds>0?p.manual/p.seconds:1;
+    const resources=ratio>0?Math.min(p.parallel,p.workers/ratio):p.parallel;
+    p.seconds=resources>0?3600*resources/capa:0;p.manual=p.seconds*ratio;
+   }
+   tr.querySelector('[data-field="seconds"]').value=Number(p.seconds.toFixed(4));tr.querySelector('[data-field="manual"]').value=Number(p.manual.toFixed(4));
+  }else{
+   const old=p.seconds;p[field]=Number(e.target.value);
+   if(field==='seconds'&&(p.manual===old||old===0)){p.manual=p.seconds;tr.querySelector('[data-field="manual"]').value=p.manual;}
+   tr.querySelector('[data-field="capa"]').value=processCapa(p)?Number(processCapa(p).toFixed(3)):'';
+  }
+  changed();
+ };
+ $('stages').onclick=e=>{const button=e.target.closest('button');if(!button)return;const i=Number(button.closest('tr').dataset.index),list=current().s2;if(button.hasAttribute('data-remove'))list.splice(i,1);else{const j=i+Number(button.dataset.move);if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];}renderStages();changed();};
+ $('recommendations').onclick=e=>{const button=e.target.closest('[data-option]');if(button){const o=options[Number(button.dataset.option)];showProposal(o.candidate,o.title,o.note);}};
+ $('proposal-close').onclick=()=>$('proposal').close();$('proposal-apply').onclick=()=>{if(!proposal)return;state.models[proposal.key]=proposal.candidate;$('proposal').close();proposal=null;renderEditor();changed();};
+ $('run').onclick=()=>{
+  simulation=LobCalc.simulate(current());if(!simulation.valid){error(simulation.issues.join('\n'));return;}
+  const r=simulation,max=Math.max(1,...r.hourly);
+  $('simulation').innerHTML=`<div class="sim-total">${fmt(r.produced,0)} <small>PCS / ${fmt(r.minutes)}분${r.limited?' · 계산 상한 도달 (부분 결과)':''}</small></div><p class="muted">빈 라인 시작 · 첫 완제품 ${fmt(r.lead)}초 · 정상상태 ${fmt(r.uph)}/H</p><div class="hours">${r.hourly.map((q,i)=>`<div class="hour" title="${i*60}~${Math.min((i+1)*60,r.minutes)}분: ${q}개"><b>${fmt(q,0)}</b><i style="height:${Math.max(1,65*q/max)}px"></i><span>${i+1}H</span></div>`).join('')}</div>`;
+ };
+ $('save').onclick=async()=>{
+  if(!loaded||saving)return;saving=true;$('save').disabled=true;error('');
+  const snapshot=structuredClone(state),snapshotText=JSON.stringify(snapshot);
+  try{const saved=await api('',{method:'PUT',headers:{'Content-Type':'application/json'},body:snapshotText});
+   if(JSON.stringify(state)===snapshotText){state=saved;dirty=false;$('dirty').textContent='';}else{state.revision=saved.revision;state.savedAt=saved.savedAt;}
+   $('status').textContent=`서버 저장 완료 · v${saved.revision}`;
+  }catch(e){error(e.message);}finally{saving=false;$('save').disabled=!dirty;}
+ };
+ $('backup').onclick=()=>{if(!loaded)return;const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.href=url;a.download='samhwa-lob.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+ $('reload').onclick=load;window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+ renderFloor();load();
+})();
