@@ -18,7 +18,7 @@
  function allModels(){
   if(simulationMode)return Object.entries(savedModels).map(([key,m])=>({...m,key}));
   const map=new Map(catalog.map(m=>[m.key,m]));
-  for(const [key,m] of Object.entries(state.models))if(!map.has(key))map.set(key,{key,plant:m.plant,model:m.model,referenceCapa:null,warning:'Excel에서 찾을 수 없는 저장 모델'});
+  for(const [key,m] of Object.entries(state.models))if(!map.has(key))map.set(key,{key,plant:m.plant,model:m.model,referenceCapa:null,warning:'직접 등록 모델'});
   return [...map.values()];
  }
  function changed(){dirty=true;simulation=null;$('dirty').textContent=simulationMode?'Simulation · 임시 변경':'저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();renderSavedModels();}
@@ -57,6 +57,7 @@
   $('plant').innerHTML='<option value="">Plant 선택</option>'+plants.map(p=>`<option>${esc(p)}</option>`).join('');
   $('plant').value=m?.plant||'';$('model-search').value='';renderModelOptions(key||'');
   $('plant').disabled=$('model').disabled=!loaded;
+  if($('add-model'))$('add-model').disabled=!loaded||!$('plant').value;
   for(const id of ['target','minutes','unassign'])$(id).disabled=!m;
   $('setup').hidden=!m;$('empty').hidden=!!m;
   $('target').value=m?.target||0;$('minutes').value=m?.minutes||480;
@@ -115,7 +116,34 @@
  $('floor').onclick=e=>{const b=e.target.closest('[data-line]');if(b&&!saving)selectLine(b.dataset.line);};
  $('saved-search').oninput=renderSavedModels;
  $('saved-models').onclick=e=>{const b=e.target.closest('[data-saved-model]');if(!b||saving)return;libraryKey=b.dataset.savedModel;error('');renderEditor();renderSavedModels();document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});};
- $('plant').onchange=()=>{renderModelOptions();};$('model-search').oninput=()=>renderModelOptions((simulationMode?simulationSources[line]:currentKey())||'');
+ $('plant').onchange=()=>{renderModelOptions();if($('add-model'))$('add-model').disabled=!loaded||!$('plant').value;};$('model-search').oninput=()=>renderModelOptions((simulationMode?simulationSources[line]:currentKey())||'');
+ if($('add-model')){
+  $('add-model').onclick=()=>{
+   if(!loaded||saving||!$('plant').value)return;
+   $('new-model-plant').value=$('plant').value;$('new-model-name').value='';$('new-model-error').textContent='';
+   $('new-model-dialog').showModal();$('new-model-name').focus();
+  };
+  $('new-model-close').onclick=()=>$('new-model-dialog').close();
+  $('new-model-form').onsubmit=async e=>{
+   e.preventDefault();if(saving||$('new-model-submit').disabled)return;
+   const plant=$('new-model-plant').value,model=$('new-model-name').value.trim().replace(/(?<=\d)[A-Za-z]$/,'');
+   if(!model){$('new-model-error').textContent='모델명을 입력하세요.';return;}
+   if(!allModels().some(m=>m.plant===plant)){$('new-model-error').textContent='기존 Plant를 선택하세요.';return;}
+   $('new-model-submit').disabled=true;
+   try{
+    const existing=allModels().find(m=>m.plant===plant&&m.model===model);
+    // Match Python json.dumps([plant, model], ensure_ascii=False), including its separator space.
+    const digest=existing?null:await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`[${JSON.stringify(plant)}, ${JSON.stringify(model)}]`));
+    const key=existing?.key||[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,24);
+    const isNew=!state.models[key];
+    if(isNew)state.models[key]=fresh({plant,model});
+    libraryKey=key;$('new-model-dialog').close();error('');renderEditor();
+    if(isNew)changed();else renderSavedModels();
+    $('status').textContent=`${plant} / ${model} · ${isNew?'공정 입력 후 Save':'기존 모델 열기'}`;
+   }catch(e){$('new-model-error').textContent=`모델 추가 실패 · ${e.message}`;}
+   finally{$('new-model-submit').disabled=false;}
+  };
+ }
  $('model').onchange=()=>{
   const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;
   if(simulationMode){const key=`sim:${line}`;state.models[key]=structuredClone(savedModels[meta.key]);state.lines[line]=key;simulationSources[line]=meta.key;}
