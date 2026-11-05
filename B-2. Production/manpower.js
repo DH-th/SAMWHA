@@ -13,6 +13,22 @@
   $('line-names').innerHTML = Array.from({length:20}, (_,i)=>`<option value="L.${i+1}">`).join('');
   let days = [], available = false, upload = null, savedConfig = null, mappings = {}, items = {}, discovered = null;
   let preview = null, version = 0, selectedDate = '', loading = false, loadId = 0, saving = false;
+  let settingsQueue=Promise.resolve(),settingsSequence=0;
+  const pendingKey='samhwa-manpower-pending-settings';
+  function rememberSettings(){
+    if(!upload)return Promise.resolve();
+    let c;try{c=config();if(isBatch())c.sourceDate=$('import-start').value;}catch(e){$('settings-status').textContent=e.message;return Promise.resolve();}
+    savedConfig=structuredClone(c);
+    try{localStorage.setItem(pendingKey,JSON.stringify(c));}catch{}
+    const body={importId:upload.importId,config:c},sequence=++settingsSequence;
+    $('settings-status').textContent='선택사항 기억 중…';
+    settingsQueue=settingsQueue.then(()=>post('/settings',body,'PUT')).then(()=>{
+      if(sequence!==settingsSequence)return;
+      try{localStorage.removeItem(pendingKey);}catch{}
+      $('settings-status').textContent='자동 기억 완료 · 다음 업로드에 적용';
+    }).catch(e=>{if(sequence===settingsSequence)$('settings-status').textContent='서버 기억 실패 · 이 브라우저에 보관됨 · '+e.message;});
+    return settingsQueue;
+  }
   function error(message) { $('error').textContent = message || ''; $('error').hidden = !message; }
   async function api(path='', options={}) {
     const controller = new AbortController();
@@ -89,12 +105,13 @@
       items[item.key] ||= {kind:'', line:''};
       const m = items[item.key];
       if (!mappings[item.department]?.include) return '';
-      return `<tr><td>${esc(item.department)}</td><td>${esc(item.label || '(항목명 없음)')}</td><td><select data-kind="${i}" aria-label="${esc(item.label)} 인원 구분"><option value="">구분 선택</option><option value="direct" ${m.kind==='direct'?'selected':''}>직접 인원</option><option value="indirect" ${m.kind==='indirect'?'selected':''}>간접 인원</option></select></td><td><input data-line="${i}" list="line-names" maxlength="120" value="${esc(m.line)}" placeholder="예: L.1 (나중에 입력 가능)" aria-label="${esc(item.label)} 생산성 라인"></td></tr>`;
-    }).join('') || '<tr><td colspan="4" class="empty">반영할 부서를 먼저 선택하세요.</td></tr>';
+      return `<tr><td>${esc(item.department)}</td><td>${esc((item.shifts||[]).join(' / ')||'—')}</td><td>${esc(item.label || '(항목명 없음)')}</td><td><select data-kind="${i}" aria-label="${esc(item.label)} 인원 구분"><option value="">구분 선택</option><option value="direct" ${m.kind==='direct'?'selected':''}>직접 인원</option><option value="indirect" ${m.kind==='indirect'?'selected':''}>간접 인원</option></select></td><td><input data-line="${i}" list="line-names" maxlength="120" value="${esc(m.line)}" placeholder="예: L.1 (나중에 입력 가능)" aria-label="${esc(item.label)} 생산성 라인"></td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="empty">반영할 부서를 먼저 선택하세요.</td></tr>';
   }
   $('open-upload').onclick = () => { $('upload-panel').hidden = false; $('upload-panel').scrollIntoView({behavior:'smooth',block:'start'}); };
   $('close-upload').onclick = () => { $('upload-panel').hidden = true; };
   $('read-file').onclick = () => action($('read-file'), async()=> {
+    await settingsReady;await settingsQueue;
     const file = $('file').files[0];
     if (!file) throw new Error('출결 Excel 파일을 선택하세요.');
     if (file.size > 10*1024*1024) throw new Error('파일은 최대 10MB입니다.');
@@ -109,6 +126,7 @@
       $('file-status').textContent = upload.filename;
       $('import-workspace').hidden = false;
       await discover();
+      await rememberSettings();
     } catch(e) { $('file-status').textContent = '파일 읽기 실패 · 다시 시도하세요.'; throw e; }
   });
   $('sheet').onchange = () => action($('preview'), async()=>{sheetChanged(); await discover();});
@@ -120,13 +138,13 @@
     const i = e.target.dataset.dept;
     if (i === undefined) return;
     mappings[Object.keys(discovered.departments)[Number(i)]].include = e.target.checked;
-    invalidate(); renderMappings();
+    invalidate(); renderMappings();rememberSettings();
   };
-  function selectAll(include) { if (!discovered) return; for (const dept of Object.keys(discovered.departments)) mappings[dept].include = include; $('department-checks').querySelectorAll('input').forEach(e=>e.checked=include); invalidate(); renderMappings(); }
+  function selectAll(include) { if (!discovered) return; for (const dept of Object.keys(discovered.departments)) mappings[dept].include = include; $('department-checks').querySelectorAll('input').forEach(e=>e.checked=include); invalidate(); renderMappings();rememberSettings(); }
   $('select-all').onclick = ()=>selectAll(true); $('select-none').onclick = ()=>selectAll(false);
-  function batch(kind) { if (!discovered) return; for (const item of discovered.items) if (mappings[item.department]?.include) items[item.key].kind = kind; invalidate(); renderMappings(); }
+  function batch(kind) { if (!discovered) return; for (const item of discovered.items) if (mappings[item.department]?.include) items[item.key].kind = kind; invalidate(); renderMappings();rememberSettings(); }
   $('batch-direct').onclick = ()=>batch('direct'); $('batch-indirect').onclick = ()=>batch('indirect');
-  $('mapping-rows').onchange = e => { if (e.target.dataset.kind !== undefined) { items[discovered.items[Number(e.target.dataset.kind)].key].kind = e.target.value; invalidate(); } };
+  $('mapping-rows').onchange = e => { if (e.target.dataset.kind !== undefined) { items[discovered.items[Number(e.target.dataset.kind)].key].kind = e.target.value; invalidate();rememberSettings(); }else if(e.target.dataset.line!==undefined)rememberSettings(); };
   $('mapping-rows').oninput = e => { if (e.target.dataset.line !== undefined) { items[discovered.items[Number(e.target.dataset.line)].key].line = e.target.value.trim(); invalidate(); } };
   $('preview').onclick = () => action($('preview'), async()=> {
     invalidate(); const mine = version, c = config();
@@ -139,6 +157,7 @@
     $('preview-message').textContent = `${c.sourceDate} · ${result.groups.length}개 항목 · Total ${fmt(t.total)} / 출근 ${fmt(t.present)} / 미출근 ${fmt(t.absent)} / 미확인 ${fmt(t.pending)}명. 오류 ${result.errorCount}건 · 빈 행·미선택·합계 등 ${result.ignoredRows}행 제외.`;
     $('preview-errors').innerHTML = result.errors.map(e=>`<p>${e.row}행 · ${esc(e.department)}: ${esc(e.error)}</p>`).join('');
     $('preview-rows').innerHTML = result.groups.map(g=>`<tr><td>${esc(g.department)} / ${esc(g.label)}</td><td>${esc(g.shift)}</td><td>${kindName(g.kind)}</td>${['total','present','absent','pending'].map(k=>`<td class="num">${fmt(g[k])}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="7" class="empty">선택된 자료가 없습니다.</td></tr>';
+    $('preview-shifts').innerHTML=shiftRows(result.groups);
     $('save-date').textContent = `저장 날짜: ${c.sourceDate}`;
     $('save').disabled = result.errorCount > 0 || !result.groups.length;
     if (batch) {
@@ -151,10 +170,7 @@
     }
   });
   $('save-settings').onclick = () => action($('save-settings'), async()=> {
-    const c = config();
-    if (isBatch()) c.sourceDate = $('import-start').value;
-    await post('/settings', {importId:upload.importId, config:c}, 'PUT'); savedConfig = c;
-    $('settings-status').textContent = '기본값 저장 완료 · 다음 업로드부터 적용';
+    await rememberSettings();
   });
   $('save').onclick = async()=> {
     if (!preview || $('save').disabled || saving) return;
@@ -192,6 +208,8 @@
   function filtered(g) { return (!$('department-filter').value || g.department===$('department-filter').value) && (!$('kind-filter').value || g.kind===$('kind-filter').value) && (!$('shift-filter').value || g.shift===$('shift-filter').value); }
   const rate = t => t.present+t.absent ? (100*t.present/(t.present+t.absent)).toFixed(1)+'%' : '—';
   const empty = (cols,message) => `<tr><td colspan="${cols}" class="empty">${message}</td></tr>`;
+  function shifts(groups){return [...new Set(groups.map(g=>g.shift))].sort((a,b)=>a.localeCompare(b));}
+  function shiftRows(groups){return shifts(groups).map(shift=>{const t=sum(groups.filter(g=>g.shift===shift));return `<tr><th>${esc(shift)}</th>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(t[k])}</td>`).join('')}</tr>`;}).join('')||empty(7,'선택 자료가 없습니다.');}
   function render() {
     const records = days.map(d=>({...d,groups:d.groups.filter(filtered)}));
     const groups = records.flatMap(d=>d.groups), t = sum(groups);
@@ -202,17 +220,18 @@
     for (const kind of ['direct','indirect']) $(kind+'-present').textContent = hasData ? `출근 ${fmt(t[kind+'Present'])}` : '';
     $('unmapped').textContent = hasData ? `라인 매칭 대기 ${groups.filter(g=>!g.line).length}개 항목` : '라인 매칭 대기 —';
     $('export').disabled = !hasData;
+    $('shift-rows').innerHTML=shiftRows(groups);
     const message = !available ? '서버 자료를 조회하지 못했습니다.' : '선택 조건의 저장 자료가 없습니다. Excel을 업로드해 주세요.';
     const byDepartment = new Map();
-    for (const g of groups) { if (!byDepartment.has(g.department)) byDepartment.set(g.department,[]); byDepartment.get(g.department).push(g); }
+    for (const g of groups) { const key=JSON.stringify([g.department,g.shift]);if (!byDepartment.has(key)) byDepartment.set(key,[]); byDepartment.get(key).push(g); }
     $('department-rows').innerHTML = hasData ? [...byDepartment].sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true})).map(([name, values])=> {
       const s = sum(values);
-      return `<tr><td>${esc(name)}</td>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(s[k])}</td>`).join('')}<td class="num">${rate(s)}</td></tr>`;
-    }).join('') : empty(8,message);
-    $('daily-rows').innerHTML = hasData ? records.filter(d=>d.groups.length).map(d=> {
-      const s=sum(d.groups);
-      return `<tr><td><button class="text-button" data-date="${esc(d.date)}">${esc(d.date)}</button></td>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(s[k])}</td>`).join('')}<td class="num">${rate(s)}</td><td><button class="text-button" data-history="${esc(d.date)}">v${d.revision} 이력</button><small>${esc(dateTime(d.savedAt))}</small></td></tr>`;
+      return `<tr><td>${esc(values[0].department)}</td><td>${esc(values[0].shift)}</td>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(s[k])}</td>`).join('')}<td class="num">${rate(s)}</td></tr>`;
     }).join('') : empty(9,message);
+    $('daily-rows').innerHTML = hasData ? records.filter(d=>d.groups.length).map(d=>shifts(d.groups).map(shift=> {
+      const s=sum(d.groups.filter(g=>g.shift===shift));
+      return `<tr><td><button class="text-button" data-date="${esc(d.date)}">${esc(d.date)}</button></td><td>${esc(shift)}</td>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(s[k])}</td>`).join('')}<td class="num">${rate(s)}</td><td><button class="text-button" data-history="${esc(d.date)}">v${d.revision} 이력</button><small>${esc(dateTime(d.savedAt))}</small></td></tr>`;
+    }).join('')).join('') : empty(10,message);
     const max = Math.max(1,...records.map(d=>sum(d.groups).total));
     $('daily-chart').innerHTML = hasData ? records.filter(d=>d.groups.length).slice().reverse().map(d=> {
       const s=sum(d.groups);
@@ -268,5 +287,8 @@
     const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a'), url=URL.createObjectURL(blob);a.href=url;a.download=`manpower_${$('start').value}_${$('end').value}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
-  Promise.allSettled([api('/settings').then(r=>{savedConfig=r.config;}).catch(e=>{error('기본 설정 조회 실패: '+e.message);}),load()]);
+  const settingsReady=api('/settings').then(r=>{savedConfig=r.config;}).catch(e=>{error('기본 설정 조회 실패: '+e.message);}).finally(()=>{
+    try{const pending=JSON.parse(localStorage.getItem(pendingKey));if(pending&&typeof pending==='object')savedConfig=pending;}catch{}
+  });
+  Promise.allSettled([settingsReady,load()]);
 })();

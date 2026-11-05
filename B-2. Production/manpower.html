@@ -5,8 +5,8 @@
 <title>Manpower — Production</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="productivity.css?v=20261029-master-edit-1">
-<link rel="stylesheet" href="manpower.css?v=20261029-1">
-<script src="manpower.js?v=20261102-history-1" defer></script>
+<link rel="stylesheet" href="manpower.css?v=20261105-shift-memory-2">
+<script src="manpower.js?v=20261105-shift-memory-2" defer></script>
 </head>
 <body>
 <header>
@@ -42,11 +42,11 @@
         <div class="step-heading"><h3>1 <span>반영할 부서 선택</span></h3><div><button id="select-all">전체 선택</button><button id="select-none">전체 해제</button></div></div>
         <div id="department-checks" class="department-checks"></div>
         <div class="step-heading"><h3>2 <span>직접·간접 구분 및 생산성 라인 매칭</span></h3><div><button id="batch-direct">선택 부서 → 직접</button><button id="batch-indirect">선택 부서 → 간접</button></div></div>
-        <p class="mapping-help">같은 부서 안에서도 E열 항목별로 구분할 수 있습니다. 생산성 라인명은 나중에 입력해도 됩니다. 새 항목은 구분을 선택해야 저장됩니다.</p>
-        <div class="table-wrap mapping-table"><table><thead><tr><th>C열 부서</th><th>E열 항목 / 라인명</th><th>인원 구분</th><th>생산성 라인명</th></tr></thead><tbody id="mapping-rows"></tbody></table></div>
+        <p class="mapping-help">부서 선택·직간접 구분·라인 매칭은 자동으로 기억합니다. 같은 부서·E열 항목의 구분은 DAY/NIGHT에 공통 적용됩니다. 생산성 라인명은 나중에 입력해도 됩니다. 새 항목은 구분을 선택해야 저장됩니다.</p>
+        <div class="table-wrap mapping-table"><table><thead><tr><th>C열 부서</th><th>D열 교대</th><th>E열 항목 / 라인명</th><th>인원 구분</th><th>생산성 라인명</th></tr></thead><tbody id="mapping-rows"></tbody></table></div>
         <datalist id="line-names"></datalist>
-        <div class="upload-controls"><button id="preview" class="primary">3. 집계 미리보기</button><button id="save-settings">현재 필터 · 매칭을 기본값으로 저장</button><span id="settings-status" role="status"></span></div>
-        <div id="preview-result" hidden><div id="preview-message" class="notice"></div><div id="preview-errors" role="alert"></div><div class="table-wrap"><table><thead><tr><th>부서 / 항목</th><th>교대</th><th>구분</th><th>Total</th><th>출근</th><th>미출근</th><th>미확인</th></tr></thead><tbody id="preview-rows"></tbody></table></div><div class="upload-controls"><strong id="save-date"></strong><button id="save" class="primary" disabled>4. 날짜별 서버 저장</button><span id="save-status" role="status"></span></div></div>
+        <div class="upload-controls"><button id="preview" class="primary">3. 집계 미리보기</button><button id="save-settings">선택사항 다시 기억</button><span id="settings-status" role="status"></span></div>
+        <div id="preview-result" hidden><div id="preview-message" class="notice"></div><div id="preview-errors" role="alert"></div><div class="table-wrap"><table><thead><tr><th>교대</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th></tr></thead><tbody id="preview-shifts"></tbody></table></div><div class="table-wrap"><table><thead><tr><th>부서 / 항목</th><th>교대</th><th>구분</th><th>Total</th><th>출근</th><th>미출근</th><th>미확인</th></tr></thead><tbody id="preview-rows"></tbody></table></div><div class="upload-controls"><strong id="save-date"></strong><button id="save" class="primary" disabled>4. 날짜별 서버 저장</button><span id="save-status" role="status"></span></div></div>
       </div>
     </div>
   </section>
@@ -57,12 +57,13 @@
     <article class="metric"><span>미확인 인원</span><strong id="pending">—</strong><small>출결 미입력 · 결근으로 추정하지 않음</small></article>
   </section>
   <div class="split-summary"><span>직접 인원 <b id="direct">—</b><small id="direct-present"></small></span><span>간접 인원 <b id="indirect">—</b><small id="indirect-present"></small></span><span id="unmapped">라인 매칭 대기 —</span></div>
+  <section class="panel"><div class="section-head"><h2>DAY / NIGHT 인원</h2></div><div class="table-wrap"><table><thead><tr><th>교대</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th></tr></thead><tbody id="shift-rows"></tbody></table></div></section>
   <div class="lower-grid">
     <section class="panel"><div class="section-head"><div><h2>날짜별 인원 추이</h2><p>출근 · 미출근 · 미확인 (명) · 저장일만 표시</p></div></div><div class="legend"><span class="present-dot">출근</span><span class="absent-dot">미출근</span><span class="pending-dot">미확인</span></div><div id="daily-chart" class="manpower-chart"><p class="empty">저장된 자료가 없습니다.</p></div></section>
     <section class="panel"><div class="section-head"><div><h2>미출근 사유</h2><p>원본 사유 열 I~P 집계 · 지각 포함</p></div></div><div id="reason-chart" class="manpower-chart"><p class="empty">저장된 자료가 없습니다.</p></div></section>
   </div>
-  <section class="panel"><div class="section-head"><div><h2>날짜별 요약</h2><p>기간 합계는 연인원(명·일)입니다. 날짜를 누르면 해당 날짜의 상세만 표시합니다.</p></div><button id="all-dates">전체 날짜</button></div><div class="table-wrap"><table><thead><tr><th>날짜</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th><th>출근율</th><th>저장 정보</th></tr></thead><tbody id="daily-rows"><tr><td colspan="9" class="empty">저장 자료를 조회합니다.</td></tr></tbody></table></div></section>
-  <section class="panel"><div class="section-head"><div><h2>부서별 인원 요약</h2><p>선택한 기간·교대 합계 · 같은 부서의 세부 항목을 합산합니다.</p></div></div><div class="table-wrap department-table"><table><thead><tr><th>C열 부서</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th><th>출근율</th></tr></thead><tbody id="department-rows"></tbody></table></div></section>
+  <section class="panel"><div class="section-head"><div><h2>날짜별 요약</h2><p>기간 합계는 연인원(명·일)입니다. 날짜를 누르면 해당 날짜의 상세만 표시합니다.</p></div><button id="all-dates">전체 날짜</button></div><div class="table-wrap"><table><thead><tr><th>날짜</th><th>교대</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th><th>출근율</th><th>저장 정보</th></tr></thead><tbody id="daily-rows"><tr><td colspan="10" class="empty">저장 자료를 조회합니다.</td></tr></tbody></table></div></section>
+  <section class="panel"><div class="section-head"><div><h2>부서별 인원 요약</h2><p>선택 기간의 부서별 DAY / NIGHT를 각각 집계합니다.</p></div></div><div class="table-wrap department-table"><table><thead><tr><th>C열 부서</th><th>교대</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th><th>출근율</th></tr></thead><tbody id="department-rows"></tbody></table></div></section>
   <section class="panel"><div class="section-head"><div><h2>부서 · 라인별 상세 <span id="detail-date" class="badge">전체 날짜</span></h2><p>원래 부서명·항목명과 매칭한 생산성 라인명을 함께 보존합니다.</p></div></div><div class="table-wrap detail-table"><table><thead><tr><th>날짜</th><th>부서</th><th>원본 항목 / 라인</th><th>생산성 라인</th><th>교대</th><th>구분</th><th>Total</th><th>출근</th><th>미출근</th><th>미확인</th><th>미출근 사유</th></tr></thead><tbody id="detail-rows"><tr><td colspan="11" class="empty">저장된 자료가 없습니다.</td></tr></tbody></table></div></section>
   <details class="panel help"><summary>자료 기준과 생산성 연동</summary><p>첨부 출결 양식의 C열로 부서를 걸러낸 후 E열 항목별로 직접/간접 인원과 생산성 라인을 지정합니다. F열 Total, G열 출근, H열 미출근과 I~P열 사유를 읽습니다. 원본 H열에는 지각도 포함되어 있어 사유를 그대로 표시합니다.</p><p>인원이 없는 빈 행과 Day Total / Night Total / Total 합계 행은 제외합니다. Total이 있고 출결이 모두 빈 행은 미확인으로 저장합니다. Total = 출근 + 미출근 + 미확인이며, 출근율은 출근 ÷ (출근 + 미출근)입니다.</p><p>자료는 날짜별 스냅샷으로 서버에 저장하며, 같은 날짜를 교체하면 이전 버전을 보존합니다. 기본 필터·매칭 변경은 다음 업로드부터 적용됩니다. 생산성용 라인명은 LOB·UPPH 연동을 위한 기준이며, 실제 공수·작업시간 연동은 추후 추가합니다.</p></details>
 </main>
