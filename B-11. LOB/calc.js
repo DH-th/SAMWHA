@@ -2,8 +2,8 @@
 (() => {
  const finite=x=>Number.isFinite(x)&&x>=0;
  function stages(m){
-  return [...m.s1.map((seconds,i)=>({name:`Insert ${i+1}`,section:'S1',seconds,count:1,index:i})),
-   ...m.s2.map((p,i)=>({...p,section:'S2',index:i}))];
+  return [...m.s1.map((seconds,i)=>({name:`Insert ${i+1}`,section:'S1',seconds,count:1,array:1,index:i})),
+   ...m.s2.map((p,i)=>({...p,array:p.array??1,section:'S2',index:i}))];
  }
  function calculate(m){
   const list=stages(m),issues=[];
@@ -11,14 +11,15 @@
    if(!p.name.trim())issues.push('공정명을 입력하세요.');
    if(!finite(p.seconds)||p.seconds<=0)issues.push(`${p.name}: 시간 입력`);
    if(!Number.isInteger(p.count)||p.count<1||p.count>60)issues.push(`${p.name}: 개수 확인`);
-   p.cycle=p.seconds/p.count;
+   if(!Number.isInteger(p.array)||p.array<1||p.array>64)issues.push(`${p.name}: PCB Array 확인 (1~64)`);
+   p.cycle=p.seconds/(p.count*p.array);
    p.capa=p.cycle>0?3600/p.cycle:0;
   }
   if(!m.s1.length)issues.push('S1 인원을 입력하세요.');
   if(!finite(m.minutes)||m.minutes<=0)issues.push('순가동 분 입력');
   if(!finite(m.target)||m.target>100000)issues.push('목표 UPH 입력 확인');
   if(issues.length)return {valid:false,issues,stages:list};
-  const cycle=Math.max(...list.map(p=>p.cycle)),positions=list.reduce((s,p)=>s+p.count,0),work=list.reduce((s,p)=>s+p.seconds,0);
+  const cycle=Math.max(...list.map(p=>p.cycle)),positions=list.reduce((s,p)=>s+p.count,0),work=list.reduce((s,p)=>s+p.seconds/p.array,0);
   for(const p of list){p.bottleneck=Math.abs(p.cycle-cycle)<1e-7;p.load=p.cycle/cycle*100;}
   return {valid:true,issues:[],stages:list,cycle,uph:3600/cycle,positions,work,
    lob:positions?100*work/(positions*cycle):0,
@@ -29,25 +30,28 @@
  }
  function simulate(m,limit=100000){
   const result=calculate(m);if(!result.valid)return result;
-  const horizon=m.minutes*60,stations=result.stages.map(p=>({...p,machines:Array(p.count).fill(0),busy:0}));
+  const horizon=m.minutes*60;
   const hourly=Array(Math.ceil(m.minutes/60)).fill(0),trace=[];
-  let produced=0,limited=false;
-  for(let job=0;job<limit;job++){
-   let ready=0;const path=[];
-   for(const p of stations){
-    const machine=p.machines.indexOf(Math.min(...p.machines));
-    const start=Math.max(ready,p.machines[machine]);
-    const finish=start+p.seconds;
-    p.machines[machine]=finish;
-    p.busy+=Math.max(0,Math.min(horizon,finish)-Math.min(horizon,start));
-    path.push({name:p.name,start,finish});ready=finish;
+  let arrivals=null,limited=false;
+  const paths=Array.from({length:12},()=>[]);
+  for(const p of result.stages){
+   const machines=Array(p.count).fill(0),output=[],available=arrivals?arrivals.length:limit;
+   // PCB counts are conserved. A downstream batch waits for its full array.
+   for(let unit=0;unit+p.array<=available;unit+=p.array){
+    const machine=machines.indexOf(Math.min(...machines));
+    const start=Math.max(arrivals?arrivals[unit+p.array-1]:0,machines[machine]);
+    const finish=start+p.seconds;if(finish>horizon+1e-8)break;
+    machines[machine]=finish;
+    for(let j=0;j<p.array;j++){output.push(finish);if(unit+j<12)paths[unit+j].push({name:p.name,start,finish});}
    }
-   if(ready>horizon+1e-8)break;
-   produced++;hourly[Math.min(hourly.length-1,Math.max(0,Math.ceil(ready/3600)-1))]++;
-   if(trace.length<12)trace.push({unit:produced,path,finish:ready});
-   if(job===limit-1)limited=true;
+   if(arrivals===null&&output.length===limit)limited=true;
+   arrivals=output;
   }
-  return {...result,produced,hourly,trace,limited,minutes:m.minutes};
+  for(const [i,finish] of arrivals.entries()){
+   hourly[Math.min(hourly.length-1,Math.max(0,Math.ceil(finish/3600)-1))]++;
+   if(i<12)trace.push({unit:i+1,path:paths[i],finish});
+  }
+  return {...result,produced:arrivals.length,hourly,trace,lead:arrivals[0]??null,limited,minutes:m.minutes};
  }
  function recommendations(m){
   const base=calculate(m);if(!base.valid)return [];

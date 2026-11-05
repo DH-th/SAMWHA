@@ -17,14 +17,14 @@
   return [...map.values()];
  }
  function changed(){dirty=true;simulation=null;$('dirty').textContent='저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();}
- function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,count:1,seconds:0})),minutes:480,target:0};}
+ function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,count:1,seconds:0,array:1})),minutes:480,target:0};}
  function renderFloor(){
   $('floor').innerHTML=Array.from({length:10},(_,n)=>10-n).map(n=>{
    const name=`L.${n}`,m=state.models[state.lines[name]],result=m?LobCalc.calculate(m):null;
    let flow='<span class="flow-empty">+ Model<br>↑</span>';
    if(m){
     const s1=m.s1.map((seconds,i)=>`<div class="flow-station ${result?.valid&&result.stages[i].bottleneck?'bn':''}" title="Insert ${i+1} · ${fmt(seconds)}s"><i class="person"></i><span>I${i+1}</span><small>${fmt(seconds)}s</small></div>`).join('');
-    const s2=m.s2.map((p,i)=>`<div class="flow-station ${result?.valid&&result.stages[m.s1.length+i].bottleneck?'bn':''}" style="flex:${Math.max(1,p.count)}" title="${esc(p.name)} · ${p.count}개 · ${fmt(p.seconds)}초"><span>${esc(p.name)}</span><small>×${p.count}</small></div>`).join('');
+    const s2=m.s2.map((p,i)=>`<div class="flow-station ${result?.valid&&result.stages[m.s1.length+i].bottleneck?'bn':''}" style="flex:${Math.max(1,p.count)}" title="${esc(p.name)} · ${p.count}개 · ${fmt(p.seconds)}초 · Array ${p.array??1}"><span>${esc(p.name)}</span><small>×${p.count}</small></div>`).join('');
     flow=`<div class="flow-section s1" style="flex:${m.s1.length}" aria-label="S1 Insert">${s1}<b class="flow-label">S1</b></div>${m.s2.length?`<div class="flow-section s2" style="flex:${m.s2.reduce((s,p)=>s+Math.max(1,p.count),0)}" aria-label="S2 공정">${s2}<b class="flow-label">S2</b></div>`:''}`;
    }
    return `<button class="line-card ${name===line?'selected':''} ${m?'assigned':'unassigned'}" data-line="${name}" aria-pressed="${name===line}"><span class="line-label">${name}<small>${name===line?'●':'↑'}</small></span><span class="line-model">${m?`<b>${esc(m.model)}</b>`:'—'}</span><div class="flow">${flow}</div><span class="line-uph">${result?.valid?fmt(result.uph):'—'} <small>/ H</small></span></button>`;
@@ -52,7 +52,7 @@
  }
  function renderS1(){const m=current();$('s1-workers').innerHTML=m.s1.map((v,i)=>`<label class="worker-entry"><span>Insert ${i+1}<i class="person"></i></span><input aria-label="Insert ${i+1} 시간" data-worker="${i}" type="number" min="0" max="86400" step="0.1" value="${v||''}" placeholder="s"></label>`).join('');}
  function renderStages(){
-  $('stages').innerHTML=current().s2.map((p,i)=>`<tr data-index="${i}"><td><input data-field="name" value="${esc(p.name)}" list="process-names" aria-label="공정명"></td><td><input type="number" data-field="count" aria-label="${esc(p.name)} 개수" min="1" max="60" step="1" value="${p.count}"></td><td><input type="number" data-field="seconds" aria-label="${esc(p.name)} 시간" min="0" max="86400" step="0.1" value="${p.seconds||''}" placeholder="초"></td><td class="stage-actions"><button data-move="-1" title="이전 공정" ${i===0?'disabled':''}>↑</button><button data-move="1" title="다음 공정" ${i===current().s2.length-1?'disabled':''}>↓</button><button data-remove title="공정 삭제">×</button></td></tr>`).join('');
+  $('stages').innerHTML=current().s2.map((p,i)=>`<tr data-index="${i}"><td><input data-field="name" value="${esc(p.name)}" list="process-names" aria-label="공정명"></td><td><input type="number" data-field="count" aria-label="${esc(p.name)} 개수" min="1" max="60" step="1" value="${p.count}"></td><td><input type="number" data-field="seconds" aria-label="${esc(p.name)} 시간" min="0" max="86400" step="0.1" value="${p.seconds||''}" placeholder="초"></td><td><input type="number" data-field="array" aria-label="${esc(p.name)} PCB Array" min="1" max="64" step="1" list="array-values" value="${p.array??1}"></td><td class="stage-actions"><button data-move="-1" title="이전 공정" ${i===0?'disabled':''}>↑</button><button data-move="1" title="다음 공정" ${i===current().s2.length-1?'disabled':''}>↓</button><button data-remove title="공정 삭제">×</button></td></tr>`).join('');
  }
  function renderResults(){
   const m=current(),r=m?LobCalc.calculate(m):null,ok=r?.valid;
@@ -110,7 +110,7 @@
   if(!before.valid&&after.valid){proposal={candidate,key:state.lines[line]};$('proposal-title').textContent='S1 균등 배분';$('proposal-note').textContent=`총 ${fmt(sum)}초를 ${m.s1.length}명에게 1인 ${fmt(sum/m.s1.length)}초로 배분합니다.`;$('proposal-metrics').innerHTML=`<div>${fmt(after.uph)} / H<small>배분 후 Line CAPA</small></div>`;$('proposal').showModal();return;}
   showProposal(candidate,'S1 균등 배분',`총 ${fmt(sum)}초의 삽입 작업을 유지합니다. 실제 작업 분할 가능 여부를 확인하세요.`);
  };
- $('add-stage').onclick=()=>{if(current().s2.length>=40)return;current().s2.push({name:'Process',count:1,seconds:0});renderStages();changed();};
+ $('add-stage').onclick=()=>{if(current().s2.length>=40)return;current().s2.push({name:'Process',count:1,seconds:0,array:1});renderStages();changed();};
  $('stages').oninput=e=>{
   const field=e.target.dataset.field;if(!field)return;const tr=e.target.closest('tr'),p=current().s2[Number(tr.dataset.index)];
   if(field==='name')p.name=e.target.value;
