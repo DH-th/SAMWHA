@@ -1,11 +1,13 @@
 'use strict';
 (() => {
  const $=id=>document.getElementById(id),API='https://server.samhwa.cloud/api/lob';
+ const simulationMode=document.body.dataset.mode==='simulation';
+ let simulationSources={};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString('ko-KR',{maximumFractionDigits:d}):'—';
  let state={revision:0,models:{},lines:{}},catalog=[],line='L.1',loaded=false,dirty=false,saving=false,options=[],proposal=null,simulation=null;
  let simulationTimer=null,libraryKey=null,savedModels={};
- const currentKey=()=>libraryKey||state.lines[line];
+ const currentKey=()=>simulationMode?state.lines[line]:libraryKey;
  const current=()=>state.models[currentKey()];
  const error=message=>{$('error').textContent=message||'';$('error').hidden=!message;};
  async function api(path='',init={}){
@@ -14,11 +16,12 @@
   catch(e){if(e.name==='AbortError')throw new Error('서버 응답 시간 초과');throw e;}finally{clearTimeout(timer);}
  }
  function allModels(){
+  if(simulationMode)return Object.entries(savedModels).map(([key,m])=>({...m,key}));
   const map=new Map(catalog.map(m=>[m.key,m]));
   for(const [key,m] of Object.entries(state.models))if(!map.has(key))map.set(key,{key,plant:m.plant,model:m.model,referenceCapa:null,warning:'Excel에서 찾을 수 없는 저장 모델'});
   return [...map.values()];
  }
- function changed(){dirty=true;simulation=null;$('dirty').textContent='저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();renderSavedModels();}
+ function changed(){dirty=true;simulation=null;$('dirty').textContent=simulationMode?'Simulation · 임시 변경':'저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();renderSavedModels();}
  function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s1Array:1,s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,count:1,seconds:0,array:1})),minutes:480,target:0};}
  function renderSavedModels(){
   const open=new Set([...$('saved-models').querySelectorAll('details[open]')].map(d=>d.dataset.plant));
@@ -49,7 +52,7 @@
  }
  function selectLine(name){line=name;libraryKey=null;simulation=null;error('');renderEditor();renderFloor();renderSavedModels();}
  function renderEditor(){
-  const m=current(),key=currentKey();$('line-title').textContent=libraryKey?'Model':line;$('unassign').hidden=!!libraryKey;
+  const m=current(),key=simulationMode?simulationSources[line]:currentKey();$('line-title').textContent=simulationMode?line:'Model';$('unassign').hidden=!simulationMode;
   const plants=[...new Set(allModels().map(m=>m.plant))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   $('plant').innerHTML='<option value="">Plant 선택</option>'+plants.map(p=>`<option>${esc(p)}</option>`).join('');
   $('plant').value=m?.plant||'';$('model-search').value='';renderModelOptions(key||'');
@@ -59,7 +62,7 @@
   $('target').value=m?.target||0;$('minutes').value=m?.minutes||480;
   const meta=allModels().find(x=>x.key===key),refs=meta?.referenceCapas||[];$('reference').textContent=refs.length>1?`${fmt(refs[0])}–${fmt(refs.at(-1))} / H`:meta?.referenceCapa?`${fmt(meta.referenceCapa)} / H`:'—';
   $('reference').title=meta?.variants?.join(', ')||'';
-  $('shared').textContent=m?`${m.plant} / ${m.model}\n공유 라인: ${Object.entries(state.lines).filter(([,k])=>k===key).map(([l])=>l).join(', ')} · 동일 모델 설정은 함께 변경됩니다.${meta?.warning?' '+meta.warning:''}`:'';
+  $('shared').textContent=m?`${m.plant} / ${m.model} · ${simulationMode?'시뮬레이션 전용 · 원본 변경 없음':'모델별 공정 데이터'}${meta?.warning?' '+meta.warning:''}`:'';
   if(m){$('s1-count').value=m.s1.length;$('s1-array').value=m.s1Array??1;renderS1();renderStages();}renderResults();
  }
  function renderS1(){const m=current();$('s1-workers').innerHTML=m.s1.map((v,i)=>`<label class="worker-entry"><span>Insert ${i+1}<i class="person"></i></span><input aria-label="Insert ${i+1} 시간" data-worker="${i}" type="number" min="0" max="86400" step="0.1" value="${v||''}" placeholder="s"></label>`).join('');}
@@ -87,7 +90,7 @@
    $('recommendations').innerHTML=targetNote+(options.length?options.map((o,i)=>`<div class="option"><button data-option="${i}">비교</button><h3>${esc(o.title)}</h3><p>${esc(o.note)}</p><strong>${fmt(r.uph)} → ${fmt(o.after.uph)} / H</strong></div>`).join(''):'<p class="muted">현재 S1 작업이 균등합니다. 목표 UPH와 각 공정의 실측 시간을 비교하세요.</p>');
   }
   $('simulation').innerHTML=`<p class="muted">${ok?'자동 계산 중…':'시간·개수·Array를 입력하면 자동 계산됩니다.'}</p>`;
-  if(ok)simulationTimer=setTimeout(()=>{if(current())runSimulation();},180);
+  if(ok&&simulationMode)simulationTimer=setTimeout(()=>{if(current())runSimulation();},180);
  }
  function showProposal(candidate,title,note){
   const before=LobCalc.calculate(current()),after=LobCalc.calculate(candidate);if(!before.valid||!after.valid){error('모든 공정의 시간·CAPA를 먼저 입력하세요.');return;}
@@ -99,7 +102,11 @@
   $('reload').disabled=true;$('save').disabled=true;error('');
   try{
    const [s,c]=await Promise.all([api(),api('/catalog').catch(e=>({models:[],warning:e.message}))]);state=s;savedModels=structuredClone(s.models);if(!state.models[libraryKey])libraryKey=null;catalog=c.models;loaded=true;dirty=false;simulation=null;
-   $('dirty').textContent='';$('status').textContent=`서버 연결 · ${catalog.length}개 모델 · 저장 v${state.revision}`;renderEditor();renderFloor();renderSavedModels();
+   if(simulationMode){
+    simulationSources={...s.lines};state={...s,models:{},lines:{}};
+    for(const [name,key] of Object.entries(s.lines))if(savedModels[key]){const id=`sim:${name}`;state.models[id]=structuredClone(savedModels[key]);state.lines[name]=id;}
+   }
+   $('dirty').textContent='';$('status').textContent=simulationMode?`Simulation · 저장 모델 ${Object.keys(savedModels).length}개 · 원본 변경 없음`:`서버 연결 · ${catalog.length}개 모델 · 저장 v${state.revision}`;renderEditor();renderFloor();renderSavedModels();
    const notices=[...(state.migrationNotes||[]),...(c.warning?[`Excel 목록 조회 실패 · 저장 모델은 사용 가능합니다. ${c.warning}`]:[])];if(notices.length)error(notices.join('\n'));
    requestAnimationFrame(()=>{const scroller=document.querySelector('.floor-scroll');scroller.scrollLeft=scroller.scrollWidth;});
   }catch(e){error(e.message);$('status').textContent='서버 연결 실패 · lob.py 및 서버 연결 확인';}
@@ -108,9 +115,14 @@
  $('floor').onclick=e=>{const b=e.target.closest('[data-line]');if(b&&!saving)selectLine(b.dataset.line);};
  $('saved-search').oninput=renderSavedModels;
  $('saved-models').onclick=e=>{const b=e.target.closest('[data-saved-model]');if(!b||saving)return;libraryKey=b.dataset.savedModel;error('');renderEditor();renderSavedModels();document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});};
- $('plant').onchange=()=>{renderModelOptions();};$('model-search').oninput=()=>renderModelOptions(currentKey()||'');
- $('model').onchange=()=>{const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;state.models[meta.key]||=fresh(meta);if(libraryKey)libraryKey=meta.key;else state.lines[line]=meta.key;renderEditor();changed();};
- $('unassign').onclick=()=>{state.lines[line]=null;renderEditor();changed();};
+ $('plant').onchange=()=>{renderModelOptions();};$('model-search').oninput=()=>renderModelOptions((simulationMode?simulationSources[line]:currentKey())||'');
+ $('model').onchange=()=>{
+  const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;
+  if(simulationMode){const key=`sim:${line}`;state.models[key]=structuredClone(savedModels[meta.key]);state.lines[line]=key;simulationSources[line]=meta.key;}
+  else{state.models[meta.key]||=fresh(meta);libraryKey=meta.key;}
+  renderEditor();changed();
+ };
+ $('unassign').onclick=()=>{state.lines[line]=null;delete simulationSources[line];renderEditor();changed();};
  for(const id of ['minutes','target'])$(id).oninput=()=>{const m=current();if(!m)return;m[id]=Number($(id).value);changed();};
  $('s1-count').oninput=()=>{
   const m=current(),n=Number($('s1-count').value);if(!Number.isInteger(n)||n<1||n>60){clearTimeout(simulationTimer);simulation=null;for(const s of ['s1','s2'])$(s+'-qty').textContent='—';$('simulation').innerHTML='<p class="muted">S1 인원을 1~60명으로 입력하세요.</p>';return;}
@@ -149,7 +161,7 @@
   $('simulation').innerHTML=`<div class="section-output">${['S1','S2'].map(s=>`<div><span>${s} 완료</span><strong>${r.sections[s]?fmt(r.sections[s].produced,0):'—'} <small>PCS</small></strong></div>`).join('')}</div><p class="muted">${fmt(r.minutes)}분 · S2는 S1에서 나온 PCB를 받아 처리${r.limited?' · 계산 상한 도달 (부분 결과)':''}</p><p class="muted">첫 최종 완료 ${fmt(r.lead)}초 · 정상상태 ${fmt(r.uph)}/H</p><div class="hours">${r.hourly.map((q,i)=>`<div class="hour" title="${i*60}~${Math.min((i+1)*60,r.minutes)}분: ${q}개"><b>${fmt(q,0)}</b><i style="height:${Math.max(1,65*q/max)}px"></i><span>${i+1}H</span></div>`).join('')}</div>`;
  }
  async function saveSettings(){
-  if(!loaded||saving)return null;saving=true;$('save').disabled=true;$('excel').disabled=true;$('reload').disabled=true;error('');
+  if(simulationMode||!loaded||saving)return null;saving=true;$('save').disabled=true;$('excel').disabled=true;$('reload').disabled=true;error('');
   const snapshot=structuredClone(state),snapshotText=JSON.stringify(snapshot);
   try{const saved=await api('',{method:'PUT',headers:{'Content-Type':'application/json'},body:snapshotText});
    if(JSON.stringify(state)===snapshotText){state=saved;dirty=false;$('dirty').textContent='';}else{state.revision=saved.revision;state.savedAt=saved.savedAt;}
@@ -159,6 +171,12 @@
   }catch(e){error(e.message);return null;}finally{saving=false;$('save').disabled=!dirty;$('excel').disabled=false;$('reload').disabled=false;}
  }
  $('save').onclick=saveSettings;
+ if($('open-simulation'))$('open-simulation').onclick=async()=>{
+  if(!loaded||saving)return;
+  const win=window.open('about:blank','_blank');if(!win){error('시뮬레이션 창을 열 수 없습니다. 팝업 허용 후 다시 시도하세요.');return;}
+  if(dirty&&!await saveSettings()){win.close();return;}
+  win.opener=null;win.location.href=new URL('simulation.html',location.href).href;
+ };
  $('excel').onclick=async()=>{
   if(!loaded||saving)return;
   if(!Object.keys(state.models).length){error('모델을 선택하고 설정을 입력하세요.');return;}
