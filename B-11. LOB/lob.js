@@ -4,6 +4,7 @@
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString('ko-KR',{maximumFractionDigits:d}):'—';
  let state={revision:0,models:{},lines:{}},catalog=[],line='L.1',loaded=false,dirty=false,saving=false,options=[],proposal=null,simulation=null;
+ let simulationTimer=null;
  const current=()=>state.models[state.lines[line]];
  const error=message=>{$('error').textContent=message||'';$('error').hidden=!message;};
  async function api(path='',init={}){
@@ -17,7 +18,7 @@
   return [...map.values()];
  }
  function changed(){dirty=true;simulation=null;$('dirty').textContent='저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();}
- function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,count:1,seconds:0,array:1})),minutes:480,target:0};}
+ function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s1Array:1,s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,count:1,seconds:0,array:1})),minutes:480,target:0};}
  function renderFloor(){
   $('floor').innerHTML=Array.from({length:10},(_,n)=>10-n).map(n=>{
    const name=`L.${n}`,m=state.models[state.lines[name]],result=m?LobCalc.calculate(m):null;
@@ -48,20 +49,24 @@
   const meta=allModels().find(x=>x.key===key),refs=meta?.referenceCapas||[];$('reference').textContent=refs.length>1?`${fmt(refs[0])}–${fmt(refs.at(-1))} / H`:meta?.referenceCapa?`${fmt(meta.referenceCapa)} / H`:'—';
   $('reference').title=meta?.variants?.join(', ')||'';
   $('shared').textContent=m?`${m.plant} / ${m.model}\n공유 라인: ${Object.entries(state.lines).filter(([,k])=>k===key).map(([l])=>l).join(', ')} · 동일 모델 설정은 함께 변경됩니다.${meta?.warning?' '+meta.warning:''}`:'';
-  if(m){$('s1-count').value=m.s1.length;renderS1();renderStages();}renderResults();
+  if(m){$('s1-count').value=m.s1.length;$('s1-array').value=m.s1Array??1;renderS1();renderStages();}renderResults();
  }
  function renderS1(){const m=current();$('s1-workers').innerHTML=m.s1.map((v,i)=>`<label class="worker-entry"><span>Insert ${i+1}<i class="person"></i></span><input aria-label="Insert ${i+1} 시간" data-worker="${i}" type="number" min="0" max="86400" step="0.1" value="${v||''}" placeholder="s"></label>`).join('');}
  function renderStages(){
   $('stages').innerHTML=current().s2.map((p,i)=>`<tr data-index="${i}"><td><input data-field="name" value="${esc(p.name)}" list="process-names" aria-label="공정명"></td><td><input type="number" data-field="count" aria-label="${esc(p.name)} 개수" min="1" max="60" step="1" value="${p.count}"></td><td><input type="number" data-field="seconds" aria-label="${esc(p.name)} 시간" min="0" max="86400" step="0.1" value="${p.seconds||''}" placeholder="초"></td><td><input type="number" data-field="array" aria-label="${esc(p.name)} PCB Array" min="1" max="64" step="1" list="array-values" value="${p.array??1}"></td><td class="stage-actions"><button data-move="-1" title="이전 공정" ${i===0?'disabled':''}>↑</button><button data-move="1" title="다음 공정" ${i===current().s2.length-1?'disabled':''}>↓</button><button data-remove title="공정 삭제">×</button></td></tr>`).join('');
  }
  function renderResults(){
+  clearTimeout(simulationTimer);simulation=null;
   const m=current(),r=m?LobCalc.calculate(m):null,ok=r?.valid;
   $('uph').textContent=ok?fmt(r.uph):'—';$('lob').textContent=ok?fmt(r.lob)+'%':'—';$('workers').textContent=m?`${m.s1.length} / ${m.s2.reduce((s,p)=>s+p.count,0)}`:'—';
   $('bottleneck').textContent=ok?r.bottlenecks.join(' / '):'—';$('cycle').textContent=ok?`${fmt(r.cycle)} s / PCB`:'Cycle time';
   $('section-capa').textContent=ok?`S1 ${fmt(r.s1Capa)} / S2 ${r.s2Capa===null?'미사용':fmt(r.s2Capa)}`:'S1 / S2';
   if(!m)return;
-  $('s1-total').textContent=`총 삽입 작업 ${fmt(m.s1.reduce((s,x)=>s+x,0))}초 / PCB · ${m.s1.length}명`;
-  $('run').disabled=!ok;
+  for(const section of ['S1','S2']){
+   $(section.toLowerCase()+'-capa').textContent=fmt(LobCalc.sectionCapacity(m,section));
+   $(section.toLowerCase()+'-qty').textContent=simulation?.sections?.[section]?fmt(simulation.sections[section].produced,0):'—';
+  }
+  $('s1-total').textContent=`총 삽입 ${fmt(m.s1.reduce((s,x)=>s+x,0))}초 / ${m.s1Array??1}개 묶음 · ${m.s1.length}명`;
   if(!ok){$('chart').innerHTML=`<p class="muted">${r.issues.map(esc).join('<br>')}</p>`;$('recommendations').innerHTML='<p class="muted">시간·CAPA 입력 후 비교안을 확인하세요.</p>';}
   else{
    const max=Math.max(r.cycle,r.targetCycle||0)*1.12;
@@ -70,7 +75,8 @@
    const targetNote=m.target&&r.uph<m.target?`<p class="muted">목표까지 ${fmt(m.target-r.uph)} / H 부족 · 병목 공정을 먼저 검토하세요.</p>`:'';
    $('recommendations').innerHTML=targetNote+(options.length?options.map((o,i)=>`<div class="option"><button data-option="${i}">비교</button><h3>${esc(o.title)}</h3><p>${esc(o.note)}</p><strong>${fmt(r.uph)} → ${fmt(o.after.uph)} / H</strong></div>`).join(''):'<p class="muted">현재 S1 작업이 균등합니다. 목표 UPH와 각 공정의 실측 시간을 비교하세요.</p>');
   }
-  if(!simulation)$('simulation').innerHTML='<p class="muted">설정 변경 후 Run을 눌러 다시 계산하세요.</p>';
+  $('simulation').innerHTML=`<p class="muted">${ok?'자동 계산 중…':'시간·개수·Array를 입력하면 자동 계산됩니다.'}</p>`;
+  if(ok)simulationTimer=setTimeout(()=>{if(current())runSimulation();},180);
  }
  function showProposal(candidate,title,note){
   const before=LobCalc.calculate(current()),after=LobCalc.calculate(candidate);if(!before.valid||!after.valid){error('모든 공정의 시간·CAPA를 먼저 입력하세요.');return;}
@@ -93,14 +99,17 @@
  $('model').onchange=()=>{const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;state.models[meta.key]||=fresh(meta);state.lines[line]=meta.key;renderEditor();changed();};
  $('unassign').onclick=()=>{state.lines[line]=null;renderEditor();changed();};
  for(const id of ['minutes','target'])$(id).oninput=()=>{const m=current();if(!m)return;m[id]=Number($(id).value);changed();};
- $('s1-count').onchange=()=>{
-  const m=current(),n=Number($('s1-count').value);if(!Number.isInteger(n)||n<1||n>60){error('S1 인원은 1~60명입니다.');$('s1-count').value=m.s1.length;return;}
+ $('s1-count').oninput=()=>{
+  const m=current(),n=Number($('s1-count').value);if(!Number.isInteger(n)||n<1||n>60){clearTimeout(simulationTimer);simulation=null;for(const s of ['s1','s2'])$(s+'-qty').textContent='—';$('simulation').innerHTML='<p class="muted">S1 인원을 1~60명으로 입력하세요.</p>';return;}
+  if(n===m.s1.length){renderResults();return;}
   // Removed operators' work is retained at the last remaining station.
   if(n<m.s1.length){const removed=m.s1.slice(n).reduce((s,x)=>s+x,0);m.s1=m.s1.slice(0,n);m.s1[n-1]+=removed;}
   else while(m.s1.length<n)m.s1.push(0);
   renderS1();changed();
  };
+ $('s1-count').onchange=()=>{const n=Number($('s1-count').value);if(!Number.isInteger(n)||n<1||n>60){$('s1-count').value=current().s1.length;renderResults();}};
  $('s1-workers').oninput=e=>{if(e.target.dataset.worker!==undefined){current().s1[Number(e.target.dataset.worker)]=Number(e.target.value);changed();}};
+ $('s1-array').oninput=()=>{current().s1Array=Number($('s1-array').value);changed();};
  $('balance').onclick=()=>{
   const m=current(),candidate=structuredClone(m),sum=m.s1.reduce((s,x)=>s+x,0);
   if(!sum){error('삽입 시간을 먼저 입력하세요.');return;}
@@ -120,11 +129,12 @@
  $('stages').onclick=e=>{const button=e.target.closest('button');if(!button)return;const i=Number(button.closest('tr').dataset.index),list=current().s2;if(button.hasAttribute('data-remove'))list.splice(i,1);else{const j=i+Number(button.dataset.move);if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];}renderStages();changed();};
  $('recommendations').onclick=e=>{const button=e.target.closest('[data-option]');if(button){const o=options[Number(button.dataset.option)];showProposal(o.candidate,o.title,o.note);}};
  $('proposal-close').onclick=()=>$('proposal').close();$('proposal-apply').onclick=()=>{if(!proposal)return;state.models[proposal.key]=proposal.candidate;$('proposal').close();proposal=null;renderEditor();changed();};
- $('run').onclick=()=>{
+ function runSimulation(){
   simulation=LobCalc.simulate(current());if(!simulation.valid){error(simulation.issues.join('\n'));return;}
   const r=simulation,max=Math.max(1,...r.hourly);
-  $('simulation').innerHTML=`<div class="sim-total">${fmt(r.produced,0)} <small>PCS / ${fmt(r.minutes)}분${r.limited?' · 계산 상한 도달 (부분 결과)':''}</small></div><p class="muted">빈 라인 시작 · 첫 완제품 ${fmt(r.lead)}초 · 정상상태 ${fmt(r.uph)}/H</p><div class="hours">${r.hourly.map((q,i)=>`<div class="hour" title="${i*60}~${Math.min((i+1)*60,r.minutes)}분: ${q}개"><b>${fmt(q,0)}</b><i style="height:${Math.max(1,65*q/max)}px"></i><span>${i+1}H</span></div>`).join('')}</div>`;
- };
+  for(const section of ['S1','S2'])$(section.toLowerCase()+'-qty').textContent=r.sections[section]?fmt(r.sections[section].produced,0):'—';
+  $('simulation').innerHTML=`<div class="section-output">${['S1','S2'].map(s=>`<div><span>${s} 완료</span><strong>${r.sections[s]?fmt(r.sections[s].produced,0):'—'} <small>PCS</small></strong></div>`).join('')}</div><p class="muted">${fmt(r.minutes)}분 · S2는 S1에서 나온 PCB를 받아 처리${r.limited?' · 계산 상한 도달 (부분 결과)':''}</p><p class="muted">첫 최종 완료 ${fmt(r.lead)}초 · 정상상태 ${fmt(r.uph)}/H</p><div class="hours">${r.hourly.map((q,i)=>`<div class="hour" title="${i*60}~${Math.min((i+1)*60,r.minutes)}분: ${q}개"><b>${fmt(q,0)}</b><i style="height:${Math.max(1,65*q/max)}px"></i><span>${i+1}H</span></div>`).join('')}</div>`;
+ }
  $('save').onclick=async()=>{
   if(!loaded||saving)return;saving=true;$('save').disabled=true;error('');
   const snapshot=structuredClone(state),snapshotText=JSON.stringify(snapshot);

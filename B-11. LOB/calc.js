@@ -2,8 +2,13 @@
 (() => {
  const finite=x=>Number.isFinite(x)&&x>=0;
  function stages(m){
-  return [...m.s1.map((seconds,i)=>({name:`Insert ${i+1}`,section:'S1',seconds,count:1,array:1,index:i})),
+  return [...m.s1.map((seconds,i)=>({name:`Insert ${i+1}`,section:'S1',seconds,count:1,array:m.s1Array??1,index:i})),
    ...m.s2.map((p,i)=>({...p,array:p.array??1,section:'S2',index:i}))];
+ }
+ function sectionCapacity(m,section){
+  const list=stages(m).filter(p=>p.section===section);
+  if(!list.length||list.some(p=>!finite(p.seconds)||p.seconds<=0||!Number.isInteger(p.count)||p.count<1||p.count>60||!Number.isInteger(p.array)||p.array<1||p.array>64))return null;
+  return 3600/Math.max(...list.map(p=>p.seconds/(p.count*p.array)));
  }
  function calculate(m){
   const list=stages(m),issues=[];
@@ -33,6 +38,7 @@
   const horizon=m.minutes*60;
   const hourly=Array(Math.ceil(m.minutes/60)).fill(0),trace=[];
   let arrivals=null,limited=false;
+  const sections={};
   const paths=Array.from({length:12},()=>[]);
   for(const p of result.stages){
    const machines=Array(p.count).fill(0),output=[],available=arrivals?arrivals.length:limit;
@@ -44,14 +50,15 @@
     machines[machine]=finish;
     for(let j=0;j<p.array;j++){output.push(finish);if(unit+j<12)paths[unit+j].push({name:p.name,start,finish});}
    }
-   if(arrivals===null&&output.length===limit)limited=true;
+   if(arrivals===null&&output.length+p.array>limit)limited=true;
    arrivals=output;
+   sections[p.section]={produced:output.length,capa:sectionCapacity(m,p.section)};
   }
   for(const [i,finish] of arrivals.entries()){
    hourly[Math.min(hourly.length-1,Math.max(0,Math.ceil(finish/3600)-1))]++;
    if(i<12)trace.push({unit:i+1,path:paths[i],finish});
   }
-  return {...result,produced:arrivals.length,hourly,trace,lead:arrivals[0]??null,limited,minutes:m.minutes};
+  return {...result,produced:arrivals.length,hourly,trace,sections,lead:arrivals[0]??null,limited,minutes:m.minutes};
  }
  function recommendations(m){
   const base=calculate(m);if(!base.valid)return [];
@@ -76,6 +83,6 @@
   for(const o of out)if(o.after.valid&&o.after.uph<=base.uph+1e-7)o.note+=' 다른 병목이 남아 현재 라인 CAPA는 증가하지 않습니다.';
   return out;
  }
- const api={stages,calculate,simulate,recommendations};
+ const api={stages,sectionCapacity,calculate,simulate,recommendations};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else globalThis.LobCalc=api;
 })();
