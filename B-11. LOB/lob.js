@@ -4,8 +4,9 @@
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString('ko-KR',{maximumFractionDigits:d}):'—';
  let state={revision:0,models:{},lines:{}},catalog=[],line='L.1',loaded=false,dirty=false,saving=false,options=[],proposal=null,simulation=null;
- let simulationTimer=null;
- const current=()=>state.models[state.lines[line]];
+ let simulationTimer=null,libraryKey=null,savedModels={};
+ const currentKey=()=>libraryKey||state.lines[line];
+ const current=()=>state.models[currentKey()];
  const error=message=>{$('error').textContent=message||'';$('error').hidden=!message;};
  async function api(path='',init={}){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
@@ -17,8 +18,18 @@
   for(const [key,m] of Object.entries(state.models))if(!map.has(key))map.set(key,{key,plant:m.plant,model:m.model,referenceCapa:null,warning:'Excel에서 찾을 수 없는 저장 모델'});
   return [...map.values()];
  }
- function changed(){dirty=true;simulation=null;$('dirty').textContent='저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();}
+ function changed(){dirty=true;simulation=null;$('dirty').textContent='저장 전 변경사항';$('save').disabled=!loaded||saving;renderResults();renderFloor();renderSavedModels();}
  function fresh(meta){return {plant:meta.plant,model:meta.model,s1:[0,0,0],s1Array:1,s2:['TouchUp','ICT','FPT','FT','Coating&Silicon'].map(name=>({name,count:1,seconds:0,array:1})),minutes:480,target:0};}
+ function renderSavedModels(){
+  const open=new Set([...$('saved-models').querySelectorAll('details[open]')].map(d=>d.dataset.plant));
+  const q=$('saved-search').value.trim().toLowerCase(),groups=new Map();
+  for(const key of Object.keys(savedModels)){
+   const m=state.models[key];if(!m||!`${m.plant} ${m.model}`.toLowerCase().includes(q))continue;
+   if(!groups.has(m.plant))groups.set(m.plant,[]);groups.get(m.plant).push({key,m});
+  }
+  $('saved-count').textContent=`${Object.keys(savedModels).length} Models`;
+  $('saved-models').innerHTML=[...groups].sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true})).map(([plant,items])=>`<details data-plant="${esc(plant)}" ${q||open.has(plant)||items.some(x=>x.key===libraryKey)?'open':''}><summary>${esc(plant)} <span>${items.length}</span></summary><div class="saved-grid">${items.sort((a,b)=>a.m.model.localeCompare(b.m.model,undefined,{numeric:true})).map(({key,m})=>`<button data-saved-model="${esc(key)}" aria-pressed="${libraryKey===key}" class="saved-model ${libraryKey===key?'active':''}"><strong>${esc(m.model)}</strong><small>S1 ${fmt(LobCalc.sectionCapacity(m,'S1'))} / H · S2 ${fmt(LobCalc.sectionCapacity(m,'S2'))} / H</small>${JSON.stringify(m)!==JSON.stringify(savedModels[key])?'<em>수정 중</em>':''}</button>`).join('')}</div></details>`).join('')||`<p class="muted">${q?'검색 결과가 없습니다.':'Save한 모델이 Plant별로 표시됩니다.'}</p>`;
+ }
  function renderFloor(){
   $('floor').innerHTML=Array.from({length:10},(_,n)=>10-n).map(n=>{
    const name=`L.${n}`,m=state.models[state.lines[name]],result=m?LobCalc.calculate(m):null;
@@ -36,9 +47,9 @@
   $('model').innerHTML='<option value="">Model 선택</option>'+allModels().filter(m=>m.plant===$('plant').value&&(!q||m.model.toLowerCase().includes(q)||m.key===selected)).sort((a,b)=>a.model.localeCompare(b.model,undefined,{numeric:true})).map(m=>`<option value="${m.key}">${esc(m.model)}</option>`).join('');
   $('model').value=selected;
  }
- function selectLine(name){line=name;simulation=null;error('');renderEditor();renderFloor();}
+ function selectLine(name){line=name;libraryKey=null;simulation=null;error('');renderEditor();renderFloor();renderSavedModels();}
  function renderEditor(){
-  const m=current(),key=state.lines[line];$('line-title').textContent=line;
+  const m=current(),key=currentKey();$('line-title').textContent=libraryKey?'Model':line;$('unassign').hidden=!!libraryKey;
   const plants=[...new Set(allModels().map(m=>m.plant))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   $('plant').innerHTML='<option value="">Plant 선택</option>'+plants.map(p=>`<option>${esc(p)}</option>`).join('');
   $('plant').value=m?.plant||'';$('model-search').value='';renderModelOptions(key||'');
@@ -80,23 +91,25 @@
  }
  function showProposal(candidate,title,note){
   const before=LobCalc.calculate(current()),after=LobCalc.calculate(candidate);if(!before.valid||!after.valid){error('모든 공정의 시간·CAPA를 먼저 입력하세요.');return;}
-  proposal={candidate,key:state.lines[line]};$('proposal-title').textContent=title;$('proposal-note').textContent=note;
+  proposal={candidate,key:currentKey()};$('proposal-title').textContent=title;$('proposal-note').textContent=note;
   $('proposal-metrics').innerHTML=`<div>${fmt(before.uph)} → ${fmt(after.uph)}<small>Line CAPA / H</small></div><div>${fmt(before.lob)} → ${fmt(after.lob)}%<small>LOB</small></div><div>${before.positions} → ${after.positions}<small>작업 위치</small></div>`;$('proposal').showModal();
  }
  async function load(){
   if(dirty&&!confirm('저장하지 않은 변경을 버리고 서버 자료를 불러올까요?'))return;
   $('reload').disabled=true;$('save').disabled=true;error('');
   try{
-   const [s,c]=await Promise.all([api(),api('/catalog')]);state=s;catalog=c.models;loaded=true;dirty=false;simulation=null;
-   $('dirty').textContent='';$('status').textContent=`서버 연결 · ${catalog.length}개 모델 · 저장 v${state.revision}`;renderEditor();renderFloor();
-   if(state.migrationNotes?.length)error(state.migrationNotes.join('\n'));
+   const [s,c]=await Promise.all([api(),api('/catalog').catch(e=>({models:[],warning:e.message}))]);state=s;savedModels=structuredClone(s.models);if(!state.models[libraryKey])libraryKey=null;catalog=c.models;loaded=true;dirty=false;simulation=null;
+   $('dirty').textContent='';$('status').textContent=`서버 연결 · ${catalog.length}개 모델 · 저장 v${state.revision}`;renderEditor();renderFloor();renderSavedModels();
+   const notices=[...(state.migrationNotes||[]),...(c.warning?[`Excel 목록 조회 실패 · 저장 모델은 사용 가능합니다. ${c.warning}`]:[])];if(notices.length)error(notices.join('\n'));
    requestAnimationFrame(()=>{const scroller=document.querySelector('.floor-scroll');scroller.scrollLeft=scroller.scrollWidth;});
   }catch(e){error(e.message);$('status').textContent='서버 연결 실패 · lob.py 및 서버 연결 확인';}
   finally{$('reload').disabled=false;$('save').disabled=!loaded||!dirty;}
  }
  $('floor').onclick=e=>{const b=e.target.closest('[data-line]');if(b&&!saving)selectLine(b.dataset.line);};
- $('plant').onchange=()=>{renderModelOptions();};$('model-search').oninput=()=>renderModelOptions(state.lines[line]||'');
- $('model').onchange=()=>{const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;state.models[meta.key]||=fresh(meta);state.lines[line]=meta.key;renderEditor();changed();};
+ $('saved-search').oninput=renderSavedModels;
+ $('saved-models').onclick=e=>{const b=e.target.closest('[data-saved-model]');if(!b||saving)return;libraryKey=b.dataset.savedModel;error('');renderEditor();renderSavedModels();document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});};
+ $('plant').onchange=()=>{renderModelOptions();};$('model-search').oninput=()=>renderModelOptions(currentKey()||'');
+ $('model').onchange=()=>{const meta=allModels().find(m=>m.key===$('model').value);if(!meta)return;state.models[meta.key]||=fresh(meta);if(libraryKey)libraryKey=meta.key;else state.lines[line]=meta.key;renderEditor();changed();};
  $('unassign').onclick=()=>{state.lines[line]=null;renderEditor();changed();};
  for(const id of ['minutes','target'])$(id).oninput=()=>{const m=current();if(!m)return;m[id]=Number($(id).value);changed();};
  $('s1-count').oninput=()=>{
@@ -116,7 +129,7 @@
   candidate.s1=candidate.s1.map(()=>sum/candidate.s1.length);
   // S1 headcount changes can temporarily contain zero-time operators.
   const before=LobCalc.calculate(m),after=LobCalc.calculate(candidate);
-  if(!before.valid&&after.valid){proposal={candidate,key:state.lines[line]};$('proposal-title').textContent='S1 균등 배분';$('proposal-note').textContent=`총 ${fmt(sum)}초를 ${m.s1.length}명에게 1인 ${fmt(sum/m.s1.length)}초로 배분합니다.`;$('proposal-metrics').innerHTML=`<div>${fmt(after.uph)} / H<small>배분 후 Line CAPA</small></div>`;$('proposal').showModal();return;}
+  if(!before.valid&&after.valid){proposal={candidate,key:currentKey()};$('proposal-title').textContent='S1 균등 배분';$('proposal-note').textContent=`총 ${fmt(sum)}초를 ${m.s1.length}명에게 1인 ${fmt(sum/m.s1.length)}초로 배분합니다.`;$('proposal-metrics').innerHTML=`<div>${fmt(after.uph)} / H<small>배분 후 Line CAPA</small></div>`;$('proposal').showModal();return;}
   showProposal(candidate,'S1 균등 배분',`총 ${fmt(sum)}초의 삽입 작업을 유지합니다. 실제 작업 분할 가능 여부를 확인하세요.`);
  };
  $('add-stage').onclick=()=>{if(current().s2.length>=40)return;current().s2.push({name:'Process',count:1,seconds:0,array:1});renderStages();changed();};
@@ -140,6 +153,7 @@
   const snapshot=structuredClone(state),snapshotText=JSON.stringify(snapshot);
   try{const saved=await api('',{method:'PUT',headers:{'Content-Type':'application/json'},body:snapshotText});
    if(JSON.stringify(state)===snapshotText){state=saved;dirty=false;$('dirty').textContent='';}else{state.revision=saved.revision;state.savedAt=saved.savedAt;}
+   savedModels=structuredClone(saved.models);renderSavedModels();
    $('status').textContent=`서버 · Excel 저장 완료 · v${saved.revision}`;
    return saved;
   }catch(e){error(e.message);return null;}finally{saving=false;$('save').disabled=!dirty;$('excel').disabled=false;$('reload').disabled=false;}
