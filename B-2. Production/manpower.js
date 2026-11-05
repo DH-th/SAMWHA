@@ -26,6 +26,7 @@
       if(sequence!==settingsSequence)return;
       try{localStorage.removeItem(pendingKey);}catch{}
       $('settings-status').textContent='자동 기억 완료 · 다음 업로드에 적용';
+      render();
     }).catch(e=>{if(sequence===settingsSequence)$('settings-status').textContent='서버 기억 실패 · 이 브라우저에 보관됨 · '+e.message;});
     return settingsQueue;
   }
@@ -78,9 +79,9 @@
   function sheetChanged() {
     const s = upload.sheets.find(s=>s.name === $('sheet').value);
     $('source-date').innerHTML = '<option value="*">기간 일괄 등록</option>' + s.dates.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
-    if (s.dates.includes(date)) $('source-date').value = date;
-    else if (s.dates.length) $('source-date').value = s.dates.at(-1);
-    $('import-start').value = s.dates[0] || '';
+    $('source-date').value = '*';
+    const end=s.dates.at(-1)||date,yearStart=end.slice(0,4)+'-01-01';
+    $('import-start').value = s.dates.find(d=>d>=yearStart) || s.dates[0] || '';
     $('import-end').value = s.dates.at(-1) || '';
     $('batch-options').hidden = !isBatch();
     $('source-sample').innerHTML = s.sample.map((row,i)=>`<tr><th>${i+1}</th>${row.slice(0,18).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('');
@@ -93,6 +94,9 @@
     const result = await previewRequest(c);
     if (mine !== version) return;
     discovered = result;
+    const selectedDepartment=$('mapping-department').value;
+    $('mapping-department').innerHTML='<option value="">전체 부서</option>'+Object.keys(result.departments).sort().map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+    if(result.departments[selectedDepartment])$('mapping-department').value=selectedDepartment;
     $('department-checks').innerHTML = Object.keys(result.departments).map((dept,i)=> {
       mappings[dept] ||= {include:false};
       return `<label><input type="checkbox" data-dept="${i}" ${mappings[dept].include?'checked':''}>${esc(dept)} <span class="subtle">${result.departments[dept]}</span></label>`;
@@ -101,13 +105,15 @@
   }
   function renderMappings() {
     if (!discovered) return;
-    $('mapping-rows').innerHTML = discovered.items.map((item,i)=> {
+    $('mapping-rows').innerHTML = discovered.items.map((item,i)=>({item,i})).sort((a,b)=>a.item.department.localeCompare(b.item.department)||String(a.item.shift||a.item.shifts?.[0]||'').localeCompare(String(b.item.shift||b.item.shifts?.[0]||''))||a.item.label.localeCompare(b.item.label,undefined,{numeric:true})).map(({item,i})=> {
       items[item.key] ||= structuredClone(items[item.legacyKey] || {kind:'', line:''});
       const m = items[item.key];
-      if (!mappings[item.department]?.include) return '';
-      return `<tr><td>${esc(item.department)}</td><td>${esc((item.shifts||[]).join(' / ')||'—')}</td><td>${esc(item.label || '(항목명 없음)')}</td><td><select data-kind="${i}" aria-label="${esc(item.label)} 인원 구분"><option value="">구분 선택</option><option value="direct" ${m.kind==='direct'?'selected':''}>직접 인원</option><option value="indirect" ${m.kind==='indirect'?'selected':''}>간접 인원</option></select></td><td><input data-line="${i}" list="line-names" maxlength="120" value="${esc(m.line)}" placeholder="예: L.1 (나중에 입력 가능)" aria-label="${esc(item.label)} 생산성 라인"></td></tr>`;
-    }).join('') || '<tr><td colspan="5" class="empty">반영할 부서를 먼저 선택하세요.</td></tr>';
+      if (!visibleItem(item)) return '';
+      return `<tr><td>${esc(item.department)}</td><td>${esc((item.shifts||[]).join(' / ')||'—')}</td><td>${esc(item.label || '(항목명 없음)')}</td><td><input data-name="${i}" maxlength="200" value="${esc(m.displayName||'')}" placeholder="${esc(item.label)}" aria-label="${esc(item.label)} 표시 이름"></td><td><select data-kind="${i}" aria-label="${esc(item.label)} 인원 구분"><option value="">구분 선택</option><option value="direct" ${m.kind==='direct'?'selected':''}>직접 인원</option><option value="indirect" ${m.kind==='indirect'?'selected':''}>간접 인원</option></select></td><td><input data-line="${i}" list="line-names" maxlength="120" value="${esc(m.line)}" placeholder="예: L.1" aria-label="${esc(item.label)} 생산성 라인"></td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="empty">선택한 부서·교대의 항목이 없습니다.</td></tr>';
   }
+  function visibleItem(item){return mappings[item.department]?.include&&(!$('mapping-department').value||item.department===$('mapping-department').value)&&(!$('mapping-shift').value||(item.shift||item.shifts?.[0])===$('mapping-shift').value);}
+  $('mapping-department').onchange=$('mapping-shift').onchange=renderMappings;
   $('open-upload').onclick = () => { $('upload-panel').hidden = false; $('upload-panel').scrollIntoView({behavior:'smooth',block:'start'}); };
   $('close-upload').onclick = () => { $('upload-panel').hidden = true; };
   $('read-file').onclick = () => action($('read-file'), async()=> {
@@ -142,10 +148,10 @@
   };
   function selectAll(include) { if (!discovered) return; for (const dept of Object.keys(discovered.departments)) mappings[dept].include = include; $('department-checks').querySelectorAll('input').forEach(e=>e.checked=include); invalidate(); renderMappings();rememberSettings(); }
   $('select-all').onclick = ()=>selectAll(true); $('select-none').onclick = ()=>selectAll(false);
-  function batch(kind) { if (!discovered) return; for (const item of discovered.items) if (mappings[item.department]?.include) items[item.key].kind = kind; invalidate(); renderMappings();rememberSettings(); }
+  function batch(kind) { if (!discovered) return; for (const item of discovered.items) if (visibleItem(item)) items[item.key].kind = kind; invalidate(); renderMappings();rememberSettings(); }
   $('batch-direct').onclick = ()=>batch('direct'); $('batch-indirect').onclick = ()=>batch('indirect');
-  $('mapping-rows').onchange = e => { if (e.target.dataset.kind !== undefined) { items[discovered.items[Number(e.target.dataset.kind)].key].kind = e.target.value; invalidate();rememberSettings(); }else if(e.target.dataset.line!==undefined)rememberSettings(); };
-  $('mapping-rows').oninput = e => { if (e.target.dataset.line !== undefined) { items[discovered.items[Number(e.target.dataset.line)].key].line = e.target.value.trim(); invalidate(); } };
+  $('mapping-rows').onchange = e => { if (e.target.dataset.kind !== undefined) { items[discovered.items[Number(e.target.dataset.kind)].key].kind = e.target.value; invalidate();rememberSettings(); }else if(e.target.dataset.line!==undefined||e.target.dataset.name!==undefined)rememberSettings(); };
+  $('mapping-rows').oninput = e => { for(const [attribute,field] of [['line','line'],['name','displayName']])if (e.target.dataset[attribute] !== undefined) { items[discovered.items[Number(e.target.dataset[attribute])].key][field] = e.target.value.trim(); invalidate(); } };
   $('preview').onclick = () => action($('preview'), async()=> {
     invalidate(); const mine = version, c = config();
     const batch = isBatch(), request = batch ? batchBody(c) : null;
@@ -161,12 +167,12 @@
     $('save-date').textContent = `저장 날짜: ${c.sourceDate}`;
     $('save').disabled = result.errorCount > 0 || !result.groups.length;
     if (batch) {
-      $('preview-message').textContent = `${request.start} ~ ${request.end} · 신규 ${result.newDays}일 / 기존 ${result.skippedDays}일 제외 · 오류 ${result.errorCount}건`;
+      $('preview-message').textContent = `${request.start} ~ ${request.end} · 신규 ${result.newDays}일 / 보완 ${result.updatedDays||0}일 / 유지 ${result.skippedDays}일 · 오류 ${result.errorCount}건`;
       $('preview-errors').innerHTML = result.errors.map(e=>`<p>${esc(e.date)} · ${e.row}행 · ${esc(e.department)}: ${esc(e.error)}</p>`).join('');
-      const status = {new:'신규 저장', existing:'기존 자료 유지', error:'오류 확인', empty:'선택 자료 없음'};
+      const status = {new:'신규 저장', updated:'빈 출결·누락 항목 보완', existing:'기존 자료 유지', error:'오류 확인', empty:'선택 자료 없음'};
       $('preview-rows').innerHTML = result.days.map(d=>`<tr><td>${esc(d.date)}</td><td>${status[d.status]}</td><td>—</td>${['total','present','absent','pending'].map(k=>`<td class="num">${fmt(d.totals[k])}</td>`).join('')}</tr>`).join('');
-      $('save-date').textContent = '신규 날짜만 저장 · 기존 날짜 수정은 날짜를 개별 선택';
-      $('save').disabled = result.errorCount > 0 || !result.newDays;
+      $('save-date').textContent = '과거 자료 등록 + 미확인 출결 보완 · 확정된 출결 유지';
+      $('save').disabled = result.errorCount > 0 || !(result.newDays+(result.updatedDays||0));
     }
   });
   $('save-settings').onclick = () => action($('save-settings'), async()=> {
@@ -181,7 +187,7 @@
       if (ready.batch) {
         $('save-status').textContent = '기간 자료 저장 중…';
         const result = await post('/batch-save', ready.request);
-        $('save-status').textContent = `${result.newDays}일 저장 완료 · 기존 ${result.skippedDays}일 유지`;
+        $('save-status').textContent = `신규 ${result.newDays}일 · 보완 ${result.updatedDays||0}일 저장 완료 · 기존 ${result.skippedDays}일 유지`;
         $('start').value = ready.request.start; $('end').value = ready.request.end;
         preview = null;
         await load();
@@ -205,13 +211,17 @@
     for (const g of groups) { for (const k of ['total','present','absent','pending']) t[k] += g[k]; t[g.kind] += g.total; t[g.kind+'Present'] += g.present; for (const [r,n] of Object.entries(g.reasons)) t.reasons[r] = (t.reasons[r] || 0)+n; }
     return t;
   }
+  function displayGroup(g){
+    const legacy=g.department+'\u001f'+g.label,choice=savedConfig?.items?.[legacy+'\u001f'+g.shift]||savedConfig?.items?.[legacy]||{};
+    return {...g,displayName:'displayName' in choice?(choice.displayName||g.label):(g.displayName||g.label),line:'line' in choice?choice.line:g.line};
+  }
   function filtered(g) { return (!$('department-filter').value || g.department===$('department-filter').value) && (!$('kind-filter').value || g.kind===$('kind-filter').value) && (!$('shift-filter').value || g.shift===$('shift-filter').value); }
   const rate = t => t.present+t.absent ? (100*t.present/(t.present+t.absent)).toFixed(1)+'%' : '—';
   const empty = (cols,message) => `<tr><td colspan="${cols}" class="empty">${message}</td></tr>`;
   function shifts(groups){return [...new Set(groups.map(g=>g.shift))].sort((a,b)=>a.localeCompare(b));}
   function shiftRows(groups){return groups.length?['TOTAL','DAY','NIGHT',...shifts(groups).filter(s=>s!=='DAY'&&s!=='NIGHT')].map(shift=>{const t=sum(shift==='TOTAL'?groups:groups.filter(g=>g.shift===shift));return `<tr><th>${esc(shift)}</th>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(t[k])}</td>`).join('')}</tr>`;}).join(''):empty(7,'선택 자료가 없습니다.');}
   function render() {
-    const records = days.map(d=>({...d,groups:d.groups.filter(filtered)}));
+    const records = days.map(d=>({...d,groups:d.groups.map(displayGroup).filter(filtered)}));
     const groups = records.flatMap(d=>d.groups), t = sum(groups);
     const hasData = available && groups.length > 0;
     for(const shift of ['DAY','NIGHT']){
@@ -250,7 +260,7 @@
   function renderDetails(records,message) {
     $('detail-date').textContent = selectedDate || '전체 날짜';
     const list = records.filter(d=>!selectedDate || d.date===selectedDate).flatMap(d=>d.groups.map(g=>({...g,date:d.date})));
-    $('detail-rows').innerHTML = list.length ? list.map(g=>`<tr><td>${esc(g.date)}</td><td>${esc(g.department)}</td><td>${esc(g.label)}</td><td>${g.line?esc(g.line):'<span class="subtle">매칭 대기</span>'}</td><td>${esc(g.shift)}</td><td>${kindName(g.kind)}</td>${['total','present','absent','pending'].map(k=>`<td class="num">${fmt(g[k])}</td>`).join('')}<td class="reason-text">${Object.entries(g.reasons).filter(([,n])=>n>0).map(([r,n])=>`${esc(r)} ${fmt(n)}`).join(' · ') || '—'}</td></tr>`).join('') : empty(11,message);
+    $('detail-rows').innerHTML = list.length ? list.map(g=>`<tr><td>${esc(g.date)}</td><td>${esc(g.department)}</td><td>${esc(g.displayName||g.label)}${g.displayName&&g.displayName!==g.label?`<small>${esc(g.label)}</small>`:''}</td><td>${g.line?esc(g.line):'<span class="subtle">매칭 대기</span>'}</td><td>${esc(g.shift)}</td><td>${kindName(g.kind)}</td>${['total','present','absent','pending'].map(k=>`<td class="num">${fmt(g[k])}</td>`).join('')}<td class="reason-text">${Object.entries(g.reasons).filter(([,n])=>n>0).map(([r,n])=>`${esc(r)} ${fmt(n)}`).join(' · ') || '—'}</td></tr>`).join('') : empty(11,message);
   }
   async function load() {
     const mine = ++loadId; loading=true; available=false; $('refresh').disabled=true; $('export').disabled=true;
@@ -286,8 +296,8 @@
   $('close-history').onclick=()=>$('history').close();
   $('export').onclick=()=> {
     if (!available || loading) return;
-    const rows=[['날짜','부서','원본 항목','생산성 라인','교대','구분','Total','출근','미출근','미확인','미출근 사유','원본 파일','저장 버전']];
-    for (const d of days) for (const g of d.groups.filter(filtered)) rows.push([d.date,g.department,g.label,g.line,g.shift,kindName(g.kind),g.total,g.present,g.absent,g.pending,Object.entries(g.reasons).filter(([,n])=>n).map(([r,n])=>`${r}: ${n}`).join(' / '),d.filename,d.revision]);
+    const rows=[['날짜','부서','원본 항목','표시 이름','생산성 라인','교대','구분','Total','출근','미출근','미확인','미출근 사유','원본 파일','저장 버전']];
+    for (const d of days) for (const g of d.groups.map(displayGroup).filter(filtered)) rows.push([d.date,g.department,g.label,g.displayName||g.label,g.line,g.shift,kindName(g.kind),g.total,g.present,g.absent,g.pending,Object.entries(g.reasons).filter(([,n])=>n).map(([r,n])=>`${r}: ${n}`).join(' / '),d.filename,d.revision]);
     const safe=v=>{let s=String(v??'');if (/^[=+@\-\t\r]/.test(s)) s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a'), url=URL.createObjectURL(blob);a.href=url;a.download=`manpower_${$('start').value}_${$('end').value}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
