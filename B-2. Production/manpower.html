@@ -5,8 +5,8 @@
 <title>Manpower — Production</title>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="productivity.css?v=20261029-master-edit-1">
-<link rel="stylesheet" href="manpower.css?v=20261105-shift-memory-2">
-<script src="manpower.js?v=20261105-shift-memory-2" defer></script>
+<link rel="stylesheet" href="manpower.css?v=20261105-shift-split-3">
+<script src="manpower.js?v=20261105-shift-split-3" defer></script>
 </head>
 <body>
 <header>
@@ -42,7 +42,7 @@
         <div class="step-heading"><h3>1 <span>반영할 부서 선택</span></h3><div><button id="select-all">전체 선택</button><button id="select-none">전체 해제</button></div></div>
         <div id="department-checks" class="department-checks"></div>
         <div class="step-heading"><h3>2 <span>직접·간접 구분 및 생산성 라인 매칭</span></h3><div><button id="batch-direct">선택 부서 → 직접</button><button id="batch-indirect">선택 부서 → 간접</button></div></div>
-        <p class="mapping-help">부서 선택·직간접 구분·라인 매칭은 자동으로 기억합니다. 같은 부서·E열 항목의 구분은 DAY/NIGHT에 공통 적용됩니다. 생산성 라인명은 나중에 입력해도 됩니다. 새 항목은 구분을 선택해야 저장됩니다.</p>
+        <p class="mapping-help">부서 선택·직간접 구분·라인 매칭은 자동으로 기억합니다. 같은 부서·E열 항목도 D열 DAY/NIGHT별로 나누어 설정합니다. 생산성 라인명은 나중에 입력해도 됩니다. 새 항목은 구분을 선택해야 저장됩니다.</p>
         <div class="table-wrap mapping-table"><table><thead><tr><th>C열 부서</th><th>D열 교대</th><th>E열 항목 / 라인명</th><th>인원 구분</th><th>생산성 라인명</th></tr></thead><tbody id="mapping-rows"></tbody></table></div>
         <datalist id="line-names"></datalist>
         <div class="upload-controls"><button id="preview" class="primary">3. 집계 미리보기</button><button id="save-settings">선택사항 다시 기억</button><span id="settings-status" role="status"></span></div>
@@ -50,14 +50,18 @@
       </div>
     </div>
   </section>
-  <section class="cards manpower-cards" aria-label="인원 요약">
-    <article class="metric accent"><span>Total 인원</span><strong id="total">—</strong><small id="total-note">저장 자료를 조회하세요</small></article>
+  <section class="cards shift-count-cards" aria-label="TOTAL DAY NIGHT 인원">
+    <article class="metric accent"><span>TOTAL</span><strong id="total">—</strong><small id="total-note">저장 자료를 조회하세요</small></article>
+    <article class="metric"><span>DAY</span><strong id="count-day">—</strong><small id="note-day">저장 자료를 조회하세요</small></article>
+    <article class="metric"><span>NIGHT</span><strong id="count-night">—</strong><small id="note-night">저장 자료를 조회하세요</small></article>
+  </section>
+  <section class="cards manpower-cards" aria-label="출결 요약">
     <article class="metric"><span>출근 인원</span><strong id="present">—</strong><small id="rate">확인 인원 기준 출근율</small></article>
     <article class="metric"><span>미출근 인원</span><strong id="absent">—</strong><small>원본 H열 · 결근 사유별 확인</small></article>
     <article class="metric"><span>미확인 인원</span><strong id="pending">—</strong><small>출결 미입력 · 결근으로 추정하지 않음</small></article>
   </section>
   <div class="split-summary"><span>직접 인원 <b id="direct">—</b><small id="direct-present"></small></span><span>간접 인원 <b id="indirect">—</b><small id="indirect-present"></small></span><span id="unmapped">라인 매칭 대기 —</span></div>
-  <section class="panel"><div class="section-head"><h2>DAY / NIGHT 인원</h2></div><div class="table-wrap"><table><thead><tr><th>교대</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th></tr></thead><tbody id="shift-rows"></tbody></table></div></section>
+  <section class="panel"><div class="section-head"><h2>TOTAL / DAY / NIGHT 인원</h2></div><div class="table-wrap"><table><thead><tr><th>교대</th><th>Total</th><th>직접</th><th>간접</th><th>출근</th><th>미출근</th><th>미확인</th></tr></thead><tbody id="shift-rows"></tbody></table></div></section>
   <div class="lower-grid">
     <section class="panel"><div class="section-head"><div><h2>날짜별 인원 추이</h2><p>출근 · 미출근 · 미확인 (명) · 저장일만 표시</p></div></div><div class="legend"><span class="present-dot">출근</span><span class="absent-dot">미출근</span><span class="pending-dot">미확인</span></div><div id="daily-chart" class="manpower-chart"><p class="empty">저장된 자료가 없습니다.</p></div></section>
     <section class="panel"><div class="section-head"><div><h2>미출근 사유</h2><p>원본 사유 열 I~P 집계 · 지각 포함</p></div></div><div id="reason-chart" class="manpower-chart"><p class="empty">저장된 자료가 없습니다.</p></div></section>

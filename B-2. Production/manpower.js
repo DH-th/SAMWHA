@@ -102,7 +102,7 @@
   function renderMappings() {
     if (!discovered) return;
     $('mapping-rows').innerHTML = discovered.items.map((item,i)=> {
-      items[item.key] ||= {kind:'', line:''};
+      items[item.key] ||= structuredClone(items[item.legacyKey] || {kind:'', line:''});
       const m = items[item.key];
       if (!mappings[item.department]?.include) return '';
       return `<tr><td>${esc(item.department)}</td><td>${esc((item.shifts||[]).join(' / ')||'—')}</td><td>${esc(item.label || '(항목명 없음)')}</td><td><select data-kind="${i}" aria-label="${esc(item.label)} 인원 구분"><option value="">구분 선택</option><option value="direct" ${m.kind==='direct'?'selected':''}>직접 인원</option><option value="indirect" ${m.kind==='indirect'?'selected':''}>간접 인원</option></select></td><td><input data-line="${i}" list="line-names" maxlength="120" value="${esc(m.line)}" placeholder="예: L.1 (나중에 입력 가능)" aria-label="${esc(item.label)} 생산성 라인"></td></tr>`;
@@ -209,11 +209,16 @@
   const rate = t => t.present+t.absent ? (100*t.present/(t.present+t.absent)).toFixed(1)+'%' : '—';
   const empty = (cols,message) => `<tr><td colspan="${cols}" class="empty">${message}</td></tr>`;
   function shifts(groups){return [...new Set(groups.map(g=>g.shift))].sort((a,b)=>a.localeCompare(b));}
-  function shiftRows(groups){return shifts(groups).map(shift=>{const t=sum(groups.filter(g=>g.shift===shift));return `<tr><th>${esc(shift)}</th>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(t[k])}</td>`).join('')}</tr>`;}).join('')||empty(7,'선택 자료가 없습니다.');}
+  function shiftRows(groups){return groups.length?['TOTAL','DAY','NIGHT',...shifts(groups).filter(s=>s!=='DAY'&&s!=='NIGHT')].map(shift=>{const t=sum(shift==='TOTAL'?groups:groups.filter(g=>g.shift===shift));return `<tr><th>${esc(shift)}</th>${['total','direct','indirect','present','absent','pending'].map(k=>`<td class="num">${fmt(t[k])}</td>`).join('')}</tr>`;}).join(''):empty(7,'선택 자료가 없습니다.');}
   function render() {
     const records = days.map(d=>({...d,groups:d.groups.filter(filtered)}));
     const groups = records.flatMap(d=>d.groups), t = sum(groups);
     const hasData = available && groups.length > 0;
+    for(const shift of ['DAY','NIGHT']){
+      const s=sum(groups.filter(g=>g.shift===shift));
+      $('count-'+shift.toLowerCase()).textContent=hasData?fmt(s.total):'—';
+      $('note-'+shift.toLowerCase()).textContent=hasData?`직접 ${fmt(s.direct)} · 간접 ${fmt(s.indirect)} · 출근 ${fmt(s.present)}`:'저장 자료를 조회하세요';
+    }
     for (const k of ['total','present','absent','pending','direct','indirect']) $(k).textContent = hasData ? fmt(t[k]) : '—';
     $('total-note').textContent = hasData ? `${records.filter(d=>d.groups.length).length}일 · ${records.length>1?'기간 합계 (명·일)':'명'}` : '선택 조건의 저장 자료가 없습니다';
     $('rate').textContent = hasData ? `출근율 ${rate(t)} · 출결 확인 ${fmt(t.present+t.absent)}명` : '확인 인원 기준 출근율';
