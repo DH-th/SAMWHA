@@ -135,13 +135,30 @@
   for(const section of ['S1','S2'])$(section.toLowerCase()+'-qty').textContent=r.sections[section]?fmt(r.sections[section].produced,0):'—';
   $('simulation').innerHTML=`<div class="section-output">${['S1','S2'].map(s=>`<div><span>${s} 완료</span><strong>${r.sections[s]?fmt(r.sections[s].produced,0):'—'} <small>PCS</small></strong></div>`).join('')}</div><p class="muted">${fmt(r.minutes)}분 · S2는 S1에서 나온 PCB를 받아 처리${r.limited?' · 계산 상한 도달 (부분 결과)':''}</p><p class="muted">첫 최종 완료 ${fmt(r.lead)}초 · 정상상태 ${fmt(r.uph)}/H</p><div class="hours">${r.hourly.map((q,i)=>`<div class="hour" title="${i*60}~${Math.min((i+1)*60,r.minutes)}분: ${q}개"><b>${fmt(q,0)}</b><i style="height:${Math.max(1,65*q/max)}px"></i><span>${i+1}H</span></div>`).join('')}</div>`;
  }
- $('save').onclick=async()=>{
-  if(!loaded||saving)return;saving=true;$('save').disabled=true;error('');
+ async function saveSettings(){
+  if(!loaded||saving)return null;saving=true;$('save').disabled=true;$('excel').disabled=true;$('reload').disabled=true;error('');
   const snapshot=structuredClone(state),snapshotText=JSON.stringify(snapshot);
   try{const saved=await api('',{method:'PUT',headers:{'Content-Type':'application/json'},body:snapshotText});
    if(JSON.stringify(state)===snapshotText){state=saved;dirty=false;$('dirty').textContent='';}else{state.revision=saved.revision;state.savedAt=saved.savedAt;}
-   $('status').textContent=`서버 저장 완료 · v${saved.revision}`;
-  }catch(e){error(e.message);}finally{saving=false;$('save').disabled=!dirty;}
+   $('status').textContent=`서버 · Excel 저장 완료 · v${saved.revision}`;
+   return saved;
+  }catch(e){error(e.message);return null;}finally{saving=false;$('save').disabled=!dirty;$('excel').disabled=false;$('reload').disabled=false;}
+ }
+ $('save').onclick=saveSettings;
+ $('excel').onclick=async()=>{
+  if(!loaded||saving)return;
+  if(!Object.keys(state.models).length){error('모델을 선택하고 설정을 입력하세요.');return;}
+  const saved=dirty?await saveSettings():state;if(!saved)return;
+  $('excel').disabled=true;error('');
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000);
+  try{
+   const r=await fetch(`${API}/export?revision=${saved.revision}`,{cache:'no-store',signal:controller.signal});
+   if(!r.ok){const b=await r.json();throw new Error(b.error||`HTTP ${r.status}`);}
+   const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');
+   a.href=url;a.download=`SAMHWA_LOB_v${saved.revision}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+   $('status').textContent=`Excel 다운로드 · v${saved.revision}${dirty?' · 추가 변경은 Save 필요':''}`;
+  }catch(e){error(e.name==='AbortError'?'Excel 다운로드 시간 초과':e.message);}
+  finally{clearTimeout(timer);$('excel').disabled=false;}
  };
  $('backup').onclick=()=>{if(!loaded)return;const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.href=url;a.download='samhwa-lob.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  $('reload').onclick=load;window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
